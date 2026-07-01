@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RCA — Steps + Observability (full flow)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #f5f5f7;
+    color: #24292f;
+  }
+
+  :root {
+    --text-primary: #24292f;
+    --text-secondary: #667085;
+    --text-danger: #e45b52;
+    --border-grey: #e4e4e7;
+    --surface-white: #fff;
+    --surface-grey: #fafafb;
+    --color-primary: #ed7846;
+    --color-secondary: #1c4a47;
+    --ai-purple: #5a1dcc;
+    --ai-gradient: linear-gradient(90deg, #5a1dcc 0%, #9a5ca4 33%, #dd7674 67%, #ff7d4f 100%);
+    --radius-md: 6px;
+    --radius-lg: 8px;
+  }
+
+  /* ========================================
+     VIEW SWITCHER
+     ======================================== */
+  .view-switcher {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    display: flex;
+    gap: 4px;
+    background: white;
+    border: 1px solid var(--border-grey);
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .view-btn {
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.15s;
+  }
+
+  .view-btn.active {
+    background: var(--color-secondary);
+    color: white;
+  }
+
+  .view-btn:not(.active):hover {
+    background: var(--surface-grey);
+  }
+
+  .view-section {
+    display: none;
+    min-height: 100vh;
+  }
+
+  .view-section.active {
+    display: block;
+  }
+
+  /* ========================================
+     SHARED LAYOUT SHELL
+     ======================================== */
+  .page-shell {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 223px;
+    background: var(--color-secondary);
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo {
+    padding: 16px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+
+  .sidebar-logo .star { color: var(--color-primary); }
+
+  .sidebar-nav { padding: 16px 12px; }
+
+  .sidebar-section-label {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.45px;
+    color: rgba(255,255,255,0.5);
+    padding: 8px 8px 6px;
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 8px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    margin-bottom: 2px;
+  }
+
+  .sidebar-item.active { background: #285c59; }
+  .sidebar-item svg { opacity: 0.8; flex-shrink: 0; }
+
+  /* Main */
+  .main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Breadcrumb */
+  .breadcrumb-bar {
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border-grey);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    background: white;
+  }
+
+  .breadcrumb-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px 4px 8px;
+    border: 1px solid var(--border-grey);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(37,17,79,0.05);
+    font-family: inherit;
+  }
+
+  .breadcrumb-sep { color: var(--text-secondary); font-size: 12px; }
+
+  /* Content */
+  .content-area {
+    padding: 24px 32px;
+    flex: 1;
+    background: white;
+  }
+
+  /* Exec header */
+  .exec-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .exec-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.4px;
+  }
+
+  .exec-status {
+    background: var(--text-danger);
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 2px 10px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .exec-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border: 1px solid var(--border-grey);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(37,17,79,0.05);
+    font-family: inherit;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    background: var(--color-primary);
+    cursor: pointer;
+    box-shadow: 0 0 2px rgba(37,17,79,0.2);
+    font-family: inherit;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 32px;
+    border-bottom: 1px solid var(--border-grey);
+    margin-bottom: 28px;
+  }
+
+  .tab {
+    padding: 12px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    position: relative;
+  }
+
+  .tab.active {
+    color: var(--color-secondary);
+  }
+
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--color-secondary);
+    border-radius: 1px 1px 0 0;
+  }
+
+  /* ========================================
+     STEPS TAB — Content layout
+     ======================================== */
+  .steps-layout {
+    display: flex;
+    gap: 40px;
+  }
+
+  .steps-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .steps-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border-grey);
+    padding-left: 24px;
+  }
+
+  .steps-sidebar-section {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-grey);
+  }
+
+  .steps-sidebar-section:last-child { border-bottom: none; }
+
+  .steps-sidebar-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.14px;
+  }
+
+  .sidebar-info-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+
+  .sidebar-info-row svg { opacity: 0.7; flex-shrink: 0; }
+  .sidebar-info-row .label { color: var(--text-secondary); }
+
+  .sidebar-info-row a {
+    color: var(--color-primary);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    background: var(--surface-grey);
+    border: 1px solid var(--border-grey);
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .sidebar-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+
+  .sidebar-tag-group { margin-bottom: 12px; }
+
+  /* ========================================
+     RCA CARD (Steps tab)
+     ======================================== */
+  .rca-card {
+    border: 1px solid var(--ai-purple);
+    border-radius: var(--radius-lg);
+    background: var(--surface-white);
+    overflow: hidden;
+  }
+
+  .rca-card-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #f0f0f3;
+  }
+
+  .rca-gradient-bar {
+    width: 3px;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--ai-gradient);
+    flex-shrink: 0;
+  }
+
+  .rca-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+    letter-spacing: -0.15px;
+  }
+
+  .rca-ai-label {
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--ai-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .rca-obs-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ai-purple);
+    text-decoration: none;
+    margin-left: 8px;
+    white-space: nowrap;
+  }
+
+  .rca-obs-link:hover { text-decoration: underline; }
+
+  .rca-card-body {
+    padding: 14px 16px 14px 27px;
+  }
+
+  .rca-card-summary {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin-bottom: 0;
+  }
+
+  .rca-card-summary strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .rca-card-footer {
+    padding: 10px 16px 10px 27px;
+    background: var(--surface-grey);
+    border-top: 1px solid var(--border-grey);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .rca-freq {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-danger);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .rca-freq::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--text-danger);
+  }
+
+  .rca-footer-link {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ai-purple);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .rca-footer-link:hover { text-decoration: underline; }
+
+  /* ========================================
+     STEP LIST
+     ======================================== */
+  .step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .step-context-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    opacity: 0.8;
+  }
+
+  .step-item {
+    border: 1px solid var(--border-grey);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: white;
+  }
+
+  .step-item.failed {
+    border-color: var(--text-danger);
+  }
+
+  .step-item-inner {
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .step-item.failed .step-item-inner {
+    background: linear-gradient(90deg, rgba(228,91,82,0.04), rgba(228,91,82,0.04)), white;
+  }
+
+  .step-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+  }
+
+  .step-icon.app {
+    background: #3b5bdb;
+  }
+
+  .step-icon.empty {
+    background: #e1e4eb;
+  }
+
+  .step-content { flex: 1; min-width: 0; }
+
+  .step-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+    letter-spacing: -0.16px;
+  }
+
+  .step-sub {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    opacity: 0.8;
+  }
+
+  .step-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-shrink: 0;
+  }
+
+  .step-status-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .step-status-tag.failed {
+    background: var(--text-danger);
+    color: white;
+  }
+
+  .step-status-tag.unexecuted {
+    background: rgba(225,228,235,0.4);
+    border: 1px solid rgba(102,112,133,0.1);
+    color: var(--text-secondary);
+  }
+
+  .step-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    width: 50px;
+  }
+
+  .step-chevron {
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  /* ========================================
+     OBSERVABILITY TAB — Card-based layout
+     ======================================== */
+
+  /* Obs content background */
+  .obs-content {
+    background: var(--surface-grey);
+    margin: -28px -32px 0;
+    padding: 28px 32px 40px;
+  }
+
+  /* Card container */
+  .obs-card {
+    background: var(--surface-white);
+    border: 1px solid var(--border-grey);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(31,35,40,0.04);
+    margin-bottom: 20px;
+  }
+
+  .obs-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-grey);
+    background: var(--surface-white);
+  }
+
+  .obs-card-header-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+    letter-spacing: -0.15px;
+  }
+
+  .obs-collapse {
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-reanalyze {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border: 1px solid var(--border-grey);
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: white;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.12s;
+  }
+
+  .btn-reanalyze:hover {
+    border-color: #ccc;
+    color: var(--text-primary);
+  }
+
+  .obs-card-body {
+    padding: 20px;
+  }
+
+  .obs-summary {
+    font-size: 14px;
+    color: var(--text-primary);
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+
+  /* Sub-sections within the RCA card */
+  .obs-sub-panel {
+    background: var(--surface-grey);
+    border: 1px solid var(--border-grey);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+
+  .obs-sub-panel:last-child {
+    margin-bottom: 0;
+  }
+
+  .obs-sub-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: -0.13px;
+  }
+
+  .obs-sub-title svg { opacity: 0.5; flex-shrink: 0; }
+
+  .evidence-line {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin-bottom: 6px;
+    padding-left: 12px;
+  }
+
+  .evidence-line strong { color: var(--text-primary); font-weight: 600; }
+
+  .evidence-group-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding-left: 12px;
+    margin-bottom: 4px;
+  }
+
+  .evidence-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin-bottom: 4px;
+    padding-left: 24px;
+  }
+
+  .code-tag {
+    display: inline-flex;
+    align-items: center;
+    font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  .code-tag.method { background: rgba(28,74,71,0.1); color: var(--color-secondary); }
+  .code-tag.status { background: rgba(228,91,82,0.1); color: var(--text-danger); }
+  .code-tag.time { background: rgba(228,91,82,0.08); color: var(--text-danger); }
+
+  .action-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-primary);
+    text-decoration: none;
+    margin-left: 6px;
+  }
+
+  .action-link:hover { text-decoration: underline; }
+
+  .quote-block {
+    font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--surface-white);
+    border: 1px solid var(--border-grey);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    margin: 6px 0 6px 24px;
+    line-height: 1.5;
+  }
+
+  .rec-list { list-style: none; padding: 0; }
+
+  .rec-list li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    padding-left: 16px;
+    position: relative;
+    margin-bottom: 5px;
+  }
+
+  .rec-list li::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 9px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #d0d0d0;
+  }
+
+  .obs-conclusion {
+    font-size: 14px;
+    color: var(--text-primary);
+    line-height: 1.65;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border-grey);
+    background: var(--surface-white);
+  }
+
+  .obs-conclusion strong { font-weight: 600; }
+
+  /* AI gradient top accent on RCA card */
+  .obs-card.rca-obs-card {
+    border-top: 2px solid transparent;
+    border-image: var(--ai-gradient) 1;
+    border-image-slice: 2 0 0 0;
+  }
+
+  .rca-ai-tag {
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--ai-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.2px;
+  }
+
+  /* Traces */
+  .traces-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .traces-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .traces-badge {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--surface-grey);
+    border: 1px solid var(--border-grey);
+    padding: 2px 10px;
+    border-radius: 12px;
+  }
+
+  .trace-timeline {
+    border: 1px solid var(--border-grey);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .trace-ruler {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px 8px 140px;
+    background: var(--surface-grey);
+    border-bottom: 1px solid var(--border-grey);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .trace-row {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #f0f0f3;
+  }
+
+  .trace-row:last-child { border-bottom: none; }
+
+  .trace-row-label {
+    width: 140px;
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-secondary);
+    border-right: 1px solid #f0f0f3;
+  }
+
+  .trace-row-track {
+    flex: 1;
+    padding: 8px 16px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .t-bar {
+    height: 20px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    padding: 0 6px;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .t-bar.test {
+    flex: 1;
+    background: rgba(228,91,82,0.12);
+    border: 1px solid rgba(228,91,82,0.25);
+    color: var(--text-danger);
+    font-size: 11px;
+  }
+
+  .t-bar.group {
+    height: 18px;
+    background: rgba(255,180,150,0.2);
+    border: 1px solid rgba(228,91,82,0.15);
+    color: var(--text-secondary);
+  }
+
+  .t-bar.group.fail {
+    background: rgba(228,91,82,0.18);
+    border-color: rgba(228,91,82,0.3);
+    color: var(--text-danger);
+  }
+
+  .step-bar-mini {
+    height: 16px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: rgba(255,180,150,0.18);
+    min-width: 20px;
+    padding: 0 2px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .step-bar-mini.fail {
+    background: rgba(228,91,82,0.22);
+    border: 1px solid rgba(228,91,82,0.3);
+    color: var(--text-danger);
+    font-weight: 600;
+  }
+
+  .spans-row {
+    min-height: 70px;
+    position: relative;
+  }
+
+  .spans-row .trace-row-track {
+    position: relative;
+    min-height: 60px;
+    display: block;
+  }
+
+  .span-col {
+    position: absolute;
+    width: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .span-bar { border-radius: 3px; background: #6366f1; }
+  .span-bar.error { background: var(--text-danger); }
+
+  /* Online dot */
+  .dot-online {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid white;
+    display: inline-block;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<!-- View switcher -->
+<div class="view-switcher">
+  <button class="view-btn active" onclick="switchView('steps')">Steps tab</button>
+  <button class="view-btn" onclick="switchView('obs')">Observability tab</button>
+</div>
+
+<!-- =====================================================
+     VIEW 1 — STEPS TAB
+     ===================================================== -->
+<div class="view-section active" id="view-steps">
+<div class="page-shell">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo"><span class="star">✦</span> kapptivate</div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section-label">Overview</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Realtime Status</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Overview</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg> Incidents</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> Analytics</div>
+      <div style="height: 1px; background: rgba(255,255,255,0.12); margin: 12px 0;"></div>
+      <div class="sidebar-section-label">By Product</div>
+      <div class="sidebar-item" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 8px; margin-bottom: 8px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg>
+        Orange Money
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" style="margin-left: auto;"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg> Live session</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg> Tests</div>
+      <div class="sidebar-item active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Executions</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Monitors</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 7c0-1.1.9-2 2-2h2"/><path d="M16 5h2c1.1 0 2 .9 2 2"/><path d="M20 13v2c0 1.1-.9 2-2 2"/><path d="M8 19H6c-1.1 0-2-.9-2-2"/></svg> Variables</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="breadcrumb-bar">
+      <button class="breadcrumb-back">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        Executions
+      </button>
+      <span class="breadcrumb-sep">/</span>
+      <span>1 - Ajout d'un animal entre 0 et 2 mois</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+    </div>
+
+    <div class="content-area">
+      <div class="exec-header">
+        <span class="exec-title">1 - Ajout d'un animal entre 0 et 2 mois</span>
+        <span class="exec-status">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+          Failed
+        </span>
+        <div class="exec-actions">
+          <button class="btn-secondary">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            Edit related test
+          </button>
+          <button class="btn-primary">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
+            Run again
+          </button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active">Steps</div>
+        <div class="tab">Screenshots</div>
+        <div class="tab">Video</div>
+        <div class="tab">Observability</div>
+      </div>
+
+      <div class="steps-layout">
+        <div class="steps-main">
+
+          <!-- RCA Card -->
+          <div class="rca-card">
+            <div class="rca-card-header">
+              <div class="rca-gradient-bar"></div>
+              <span class="rca-card-title">Root Cause Analysis</span>
+              <span class="rca-ai-label">AI-generated</span>
+            </div>
+            <div class="rca-card-body">
+              <p class="rca-card-summary">
+                The failure originates from the payment service declining the transaction due to <strong>"insufficient funds."</strong> This leads to the order API returning a <strong>402 Payment Required</strong> error, causing the overall test to fail. There are no evident performance anomalies.
+              </p>
+            </div>
+            <div class="rca-card-footer">
+              <span class="rca-freq">Recurring — failed 4 times this week</span>
+              <a href="#" class="rca-footer-link" onclick="switchView('obs'); return false;">
+                View full analysis in Observability
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17l9.2-9.2M17 17V8H8"/></svg>
+              </a>
+            </div>
+          </div>
+
+          <!-- Step list -->
+          <div class="step-list">
+            <span class="step-context-label">Context initialization... (3.2s)</span>
+
+            <div class="step-item failed">
+              <div class="step-item-inner">
+                <div class="step-icon app">d.</div>
+                <div class="step-content">
+                  <div class="step-name">Ajouter un animal</div>
+                  <div class="step-sub">7 steps</div>
+                </div>
+                <div class="step-meta">
+                  <span class="step-status-tag failed">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+                    Failed
+                  </span>
+                  <span class="step-time">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    5.2s
+                  </span>
+                </div>
+                <span class="step-chevron">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </span>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-item-inner">
+                <div class="step-icon empty" style="position: relative;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" style="position: absolute;"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/></svg>
+                </div>
+                <div class="step-content">
+                  <div class="step-name">Verification</div>
+                  <div class="step-sub">2 steps</div>
+                </div>
+                <div class="step-meta">
+                  <span class="step-status-tag unexecuted">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/></svg>
+                    Unexecuted
+                  </span>
+                  <span class="step-time">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#b2b7c2" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    <span style="color: #b2b7c2;">-</span>
+                  </span>
+                </div>
+                <span class="step-chevron">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right sidebar -->
+        <div class="steps-sidebar">
+          <div class="steps-sidebar-section">
+            <div class="steps-sidebar-title">About</div>
+            <div class="sidebar-info-row">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <a href="#">https://dev-1.kapptivate.com/kapptiv...</a>
+            </div>
+            <div class="sidebar-info-row">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span class="label">By</span> alex.kapptivate
+            </div>
+          </div>
+
+          <div class="steps-sidebar-section">
+            <div class="steps-sidebar-title">Execution details</div>
+            <div class="sidebar-info-row">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              <span class="label">From</span> 30/10/2024 (22:44:30)
+            </div>
+            <div class="sidebar-info-row">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              <span class="label">to</span> 30/10/2024 (22:45:02)
+            </div>
+            <div class="sidebar-info-row">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span class="label">in</span> 32.44s
+            </div>
+          </div>
+
+          <div class="steps-sidebar-section">
+            <div class="steps-sidebar-title">Conditions</div>
+            <div class="sidebar-tag-group">
+              <div class="sidebar-label">Device</div>
+              <span class="sidebar-tag">web-agent-b1 <span class="dot-online"></span></span>
+            </div>
+            <div class="sidebar-tag-group">
+              <div class="sidebar-label">Environment</div>
+              <span class="sidebar-tag">Production</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- =====================================================
+     VIEW 2 — OBSERVABILITY TAB
+     ===================================================== -->
+<div class="view-section" id="view-obs">
+<div class="page-shell">
+  <div class="sidebar">
+    <div class="sidebar-logo"><span class="star">✦</span> kapptivate</div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section-label">Overview</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Realtime Status</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Overview</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg> Incidents</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> Analytics</div>
+      <div style="height: 1px; background: rgba(255,255,255,0.12); margin: 12px 0;"></div>
+      <div class="sidebar-section-label">By Product</div>
+      <div class="sidebar-item" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 8px; margin-bottom: 8px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg>
+        Orange Money
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" style="margin-left: auto;"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg> Live session</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg> Tests</div>
+      <div class="sidebar-item active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Executions</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Monitors</div>
+      <div class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 7c0-1.1.9-2 2-2h2"/><path d="M16 5h2c1.1 0 2 .9 2 2"/><path d="M20 13v2c0 1.1-.9 2-2 2"/><path d="M8 19H6c-1.1 0-2-.9-2-2"/></svg> Variables</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="breadcrumb-bar">
+      <button class="breadcrumb-back">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        Executions
+      </button>
+      <span class="breadcrumb-sep">/</span>
+      <span>1 - Ajout d'un animal entre 0 et 2 mois</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+    </div>
+
+    <div class="content-area">
+      <div class="exec-header">
+        <span class="exec-title">1 - Ajout d'un animal entre 0 et 2 mois</span>
+        <span class="exec-status">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+          Failed
+        </span>
+        <div class="exec-actions">
+          <button class="btn-secondary">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            Edit related test
+          </button>
+          <button class="btn-primary">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
+            Run again
+          </button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab">Steps</div>
+        <div class="tab">Screenshots</div>
+        <div class="tab">Video</div>
+        <div class="tab active">Observability</div>
+      </div>
+
+      <!-- Observability content zone (grey background) -->
+      <div class="obs-content">
+
+        <!-- ==========================================
+             CARD 1 — Root Cause Analysis
+             ========================================== -->
+        <div class="obs-card rca-obs-card">
+          <!-- Card header -->
+          <div class="obs-card-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#5a1dcc"/><stop offset="100%" stop-color="#ff7d4f"/></linearGradient></defs>
+              <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" stroke="url(#g1)" stroke-width="1.5" fill="none"/>
+            </svg>
+            <span class="obs-card-header-title">Root Cause Analysis</span>
+            <span class="rca-ai-tag">AI-generated</span>
+            <button class="btn-reanalyze">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+              Re-analyze
+            </button>
+            <span class="obs-collapse">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+            </span>
+          </div>
+
+          <!-- Card body -->
+          <div class="obs-card-body">
+            <p class="obs-summary">
+              The failure originates from the payment service declining the transaction due to "insufficient funds." This leads to the order API returning a 402 Payment Required error, causing the overall test to fail. There are no evident performance anomalies; response times for steps were normal for successful calls.
+            </p>
+
+            <!-- Evidence sub-panel -->
+            <div class="obs-sub-panel">
+              <div class="obs-sub-title">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                Evidence
+              </div>
+
+              <div class="evidence-line">
+                <strong>Order API span:</strong>
+                <span class="code-tag method">POST</span>
+                <span class="code-tag method">/api/order</span>
+                <a href="#" class="action-link">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                  Select span
+                </a>
+                shows a <span class="code-tag status">402</span> status and a 308ms duration, which is typical but indicates a failed payment.
+              </div>
+
+              <div style="margin-bottom: 10px;">
+                <div class="evidence-group-title">Payment Service logs:</div>
+                <div class="evidence-sub">Payment validation OK at <span class="code-tag time">11:27:57.795</span> for €15.50.</div>
+                <div class="evidence-sub">
+                  Payment declined at <span class="code-tag time">11:27:58.058</span> with message "insufficient funds"
+                  <a href="#" class="action-link">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    Select span
+                  </a>
+                </div>
+              </div>
+
+              <div class="evidence-line" style="margin-bottom: 4px;"><strong>Demo-site logs</strong> confirm the failure message:</div>
+              <div class="quote-block">"Payment processing failed for order ORD-MNX3ZE5G: Payment declined — insufficient funds"</div>
+              <div style="padding-left: 24px; margin-top: 6px;">
+                <a href="#" class="action-link" style="margin-left: 0;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+                  View logs
+                </a>
+              </div>
+            </div>
+
+            <!-- Recommendations sub-panel -->
+            <div class="obs-sub-panel">
+              <div class="obs-sub-title">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                Recommendations
+              </div>
+              <ul class="rec-list">
+                <li>Verify the payment provider's test environment and account balance to ensure it allows the test transaction.</li>
+                <li>Investigate payment service error handling and ensure test credentials are configured for successful transactions.</li>
+                <li>If the decline was unexpected, check if the payment mock/setup is correct; otherwise, update test data to reflect real-world limits.</li>
+                <li>Consider adding retry or fallback logic in test automation if transient declines are possible.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Card footer — conclusion -->
+          <p class="obs-conclusion"><strong>Overall,</strong> this is a payment issue, not a system or network performance problem.</p>
+        </div>
+
+        <!-- ==========================================
+             CARD 2 — Traces
+             ========================================== -->
+        <div class="obs-card">
+          <div class="obs-card-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.6;"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+            <span class="obs-card-header-title">Traces</span>
+            <span class="traces-badge">9 spans across 5 trace(s)</span>
+          </div>
+
+          <div style="padding: 0;">
+            <div class="trace-timeline" style="border: none; border-radius: 0;">
+              <div class="trace-ruler">
+                <span>0ms</span>
+                <span style="flex:1; text-align: center;">50.0s</span>
+                <span>100.0s</span>
+              </div>
+
+              <div class="trace-row">
+                <div class="trace-row-label">Test Execution</div>
+                <div class="trace-row-track"></div>
+              </div>
+
+              <div class="trace-row">
+                <div class="trace-row-label">Test</div>
+                <div class="trace-row-track">
+                  <div class="t-bar test">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 4px; flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+                    Test
+                  </div>
+                </div>
+              </div>
+
+              <div class="trace-row">
+                <div class="trace-row-label">Groups</div>
+                <div class="trace-row-track">
+                  <div class="t-bar group" style="flex: 3;">Step group #1</div>
+                  <div class="t-bar group" style="flex: 3;">Step group #2</div>
+                  <div class="t-bar group fail" style="flex: 2.5;">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 3px; flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+                    Step group #3
+                  </div>
+                </div>
+              </div>
+
+              <div class="trace-row">
+                <div class="trace-row-label">Steps</div>
+                <div class="trace-row-track" style="gap: 2px;">
+                  <div class="step-bar-mini" style="flex: 0.4;">|</div>
+                  <div class="step-bar-mini" style="flex: 0.4;">{</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini" style="flex: 1;">En...</div>
+                  <div class="step-bar-mini" style="flex: 1;">En...</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini" style="flex: 0.7;">Ent...</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini" style="flex: 1;">En...</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini" style="flex: 1;">En...</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini" style="flex: 0.8;">W...</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini" style="flex: 0.8;">C...</div>
+                  <div class="step-bar-mini" style="flex: 0.8;">E...</div>
+                  <div class="step-bar-mini" style="flex: 0.8;">E...</div>
+                  <div class="step-bar-mini" style="flex: 1;">Cli...</div>
+                  <div class="step-bar-mini fail" style="flex: 2;">⊘ Click on 'Retour au ...</div>
+                </div>
+              </div>
+
+              <div class="trace-row spans-row">
+                <div class="trace-row-label">Spans</div>
+                <div class="trace-row-track">
+                  <div class="span-col" style="left: 33%;">
+                    <div class="span-bar" style="height: 28px;"></div>
+                  </div>
+                  <div class="span-col" style="left: 50%;">
+                    <div class="span-bar" style="height: 28px;"></div>
+                  </div>
+                  <div class="span-col" style="left: 78%;">
+                    <div class="span-bar error" style="height: 24px;"></div>
+                    <div class="span-bar error" style="height: 18px; opacity: 0.6;"></div>
+                  </div>
+                  <div class="span-col" style="left: 83%;">
+                    <div class="span-bar" style="height: 20px;"></div>
+                    <div class="span-bar" style="height: 24px;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /obs-content -->
+
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function switchView(view) {
+  document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.view-btn').forEach(el => el.classList.remove('active'));
+
+  if (view === 'steps') {
+    document.getElementById('view-steps').classList.add('active');
+    document.querySelectorAll('.view-btn')[0].classList.add('active');
+  } else {
+    document.getElementById('view-obs').classList.add('active');
+    document.querySelectorAll('.view-btn')[1].classList.add('active');
+  }
+  window.scrollTo(0, 0);
+}
+</script>
+
+</body>
+</html>
