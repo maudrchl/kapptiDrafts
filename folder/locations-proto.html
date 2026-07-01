@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>kapptivate · Locations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.2.6/400.css" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.2.6/500.css" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.2.6/600.css" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.2.6/700.css" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/geist-mono@5.2.6/400.css" media="print" onload="this.media='all'">
+<style>
+:root{
+  --sidebar:#1c4a47;
+  --sidebar-hover:rgba(255,255,255,0.06);
+  --sidebar-active:#285c59;
+  --sidebar-text:#ffffff;
+  --sidebar-label:rgba(255,255,255,0.6);
+  --sidebar-white:#ffffff;
+  --sidebar-line:rgba(255,255,255,0.12);
+  --accent:#ed7846;
+  --accent-hover:#d9663a;
+  --content-bg:#FAFAFB;
+  --card:#ffffff;
+  --border:#e6e9e8;
+  --border-strong:#d5dad8;
+  --text:#1b2a24;
+  --text-muted:#69766f;
+  --text-faint:#94a09a;
+  --ok-bg:#e9f7f2;--ok-tx:#12b76a;
+  --blue-bg:#e8f0fe;--blue-tx:#2563eb;
+  --amber-bg:#fdf1e2;--amber-tx:#b26a1a;
+  --green-bg:#eaf5ee;--green-tx:#1f7a4d;
+  --radius:10px;
+  --mono:'Geist Mono','JetBrains Mono',ui-monospace,monospace;
+  font-family:'Geist','Geist Sans','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--content-bg);color:var(--text);height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;font-family:inherit}
+.app{display:flex;height:100vh}
+button,input,select,textarea{font-family:inherit;cursor:pointer;border:none;background:none}
+input{cursor:text}
+
+/* ---------- SIDEBAR ---------- */
+.sidebar{width:223px;background:var(--sidebar);flex-shrink:0;display:flex;flex-direction:column;padding:14px 12px;overflow-y:auto}
+.brand{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 0}
+.brand .logo{display:flex;align-items:center;gap:8px;color:var(--sidebar-white);font-weight:700;font-size:16px}
+.brand .mark{width:20px;height:20px;color:var(--accent)}
+.collapse{color:var(--sidebar-label)}
+.nav-sep{height:1px;background:var(--sidebar-line);margin:12px -12px}
+.ws{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px;margin-bottom:16px}
+.ws .avatar{width:32px;height:32px;border-radius:4px;background:#f6ede2;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.ws .name{color:var(--sidebar-white);font-weight:500;font-size:14px;line-height:1.2}
+.ws .sub{color:var(--sidebar-white);opacity:.7;font-size:9px;line-height:1.2;margin-top:1px}
+.nav-label{color:var(--sidebar-label);font-size:9px;font-weight:600;letter-spacing:.45px;text-transform:uppercase;padding:0 8px 8px}
+.nav-item{display:flex;align-items:center;gap:12px;color:var(--sidebar-text);font-size:13px;font-weight:500;padding:7px 8px;border-radius:6px;width:100%;text-align:left;margin-bottom:4px}
+.nav-item svg{width:14px;height:14px;flex-shrink:0}
+.nav-item:hover{background:var(--sidebar-hover)}
+.nav-item.active{background:var(--sidebar-active);color:#fff}
+.nav-item.boxed{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.2);justify-content:space-between;padding:8px 16px;margin-bottom:8px}
+.nav-item.boxed .lead{display:flex;align-items:center;gap:8px}
+.spacer{flex:1}
+.help-btn{width:32px;height:32px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);color:var(--sidebar-text);display:flex;align-items:center;justify-content:center;margin-top:12px}
+
+/* ---------- MAIN ---------- */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 22px;background:#fff;flex-shrink:0;font-size:13.5px}
+.crumb{color:var(--text-muted);display:flex;align-items:center;gap:6px}
+.crumb button{color:var(--text-muted);font-size:13.5px;display:flex;align-items:center;gap:5px}
+.crumb button:hover{color:var(--text)}
+.crumb .sep{color:var(--text-faint)}
+.crumb .cur{color:var(--text);font-weight:600}
+.content{flex:1;overflow-y:auto;padding:48px}
+
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px}
+.page-head h1{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.page-head p{color:var(--text-muted);font-size:13.5px;margin-top:4px;max-width:560px;line-height:1.5}
+.head-actions{display:flex;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;padding:8px 14px;border-radius:6px;border:1px solid #e4e4e7;background:#fff;color:var(--text)}
+.btn:hover{background:#fafafb}
+.btn svg{width:15px;height:15px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.danger{color:#e0372e;border-color:#e0372e33;background:#fff}
+.btn.danger:hover{background:#fdf3f2}
+
+.filters{display:flex;gap:10px;margin-bottom:26px}
+.search{flex:0 0 320px;position:relative}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-faint)}
+.search input{width:100%;padding:9px 12px 9px 34px;border:1px solid #e4e4e7;border-radius:8px;font-size:14px;font-weight:500;background:#fff;color:var(--text)}
+.search input::placeholder{color:#b2b7c2}
+.search input:focus{outline:none;border-color:#285c59;box-shadow:0 0 0 2px rgba(28,74,71,0.12)}
+.select{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #e4e4e7;border-radius:8px;font-size:14px;font-weight:500;color:#667085;background:#fff}
+.select:hover{background:#f4f5f5}
+.select.active{border-color:var(--text);color:#fff;background:var(--text)}
+.dd{position:relative;display:inline-block}
+.dd-menu{position:absolute;top:calc(100% + 5px);left:0;background:#fff;border:1px solid var(--border-strong);border-radius:9px;box-shadow:0 8px 24px rgba(20,40,32,.13);padding:5px;min-width:180px;z-index:30;display:none}
+.dd.open .dd-menu{display:block}
+.dd-item{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:7px;font-size:13px;color:var(--text)}
+.dd-item:hover{background:#f4f5f5}
+.dd-item.sel{color:var(--accent);font-weight:600}
+
+.section-title{display:flex;align-items:center;gap:10px;margin:6px 0 14px}
+.section-title h2{font-size:15px;font-weight:600}
+.section-title .count{font-size:12px;color:var(--text-muted);background:#eef1f0;border-radius:20px;padding:2px 9px;font-weight:600}
+.section-title .desc{color:var(--text-muted);font-size:12.5px;margin-left:2px}
+.section + .section{margin-top:34px}
+.tab-count{font-size:11px;font-weight:600;color:var(--text-muted);background:#eef1f0;border-radius:20px;padding:1px 7px;margin-left:3px}
+.tab.active .tab-count{background:#fbe9df;color:var(--accent)}
+.section-note{font-size:12.5px;color:var(--text-muted)}
+.tab-note-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;min-height:22px}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 20px}
+.subtab{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text-muted);border:1px solid transparent}
+.subtab:hover{background:#f1f2f2}
+.subtab.active{background:#fff;border-color:var(--border-strong);color:var(--text)}
+.subcount{font-size:11px;color:var(--text-faint);font-weight:600}
+.subtab.active .subcount{color:var(--text-muted)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(236px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;transition:.12s;position:relative}
+.card.click{cursor:pointer}
+.card.click:hover{border-color:var(--border-strong);box-shadow:0 4px 14px rgba(20,40,32,.06);transform:translateY(-1px)}
+.card .badge-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.card h3{font-size:15px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.card .cflag{font-size:18px;line-height:1}
+.card .zone{color:var(--text-muted);font-size:13px;margin-top:5px}
+.card .ver-row{text-align:right;margin-top:20px}
+.card .ver{font-size:12px;color:var(--text-faint)}
+.cont-grp{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);margin:0 0 12px 2px}
+.cont-grp:not(:first-of-type){margin-top:2px}
+
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;line-height:1.5;padding:2px 8px;border-radius:40px;border:1px solid transparent}
+.badge svg{width:12px;height:12px}
+.badge.ok{background:var(--ok-bg);border-color:rgba(18,183,106,0.2);color:#24292f}
+.badge.ok svg{color:var(--ok-tx)}
+.badge .bdot{width:6px;height:6px;border-radius:50%;flex:none}
+.badge.managed{background:#f5f5f8;color:var(--text);border-color:#e4e4e7}
+.badge.managed .bdot{background:#667085}
+.badge.workspace{background:rgba(5,119,255,0.06);color:var(--text);border-color:rgba(5,119,255,0.25)}
+.badge.workspace .bdot{background:#0577ff}
+.badge.personal{background:rgba(151,71,255,0.06);color:var(--text);border-color:rgba(151,71,255,0.25)}
+.badge.personal .bdot{background:#9747ff}
+.badge.shared{background:rgba(28,74,71,0.06);color:var(--text);border-color:rgba(28,74,71,0.25)}
+.badge.shared .bdot{background:#1c4a47}
+.badge.off{background:#fdf3f2;color:var(--text);border-color:rgba(224,55,46,0.2)}
+.badge.off svg{color:#e0372e}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok-tx)}
+
+/* ---------- DETAIL ---------- */
+.detail-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+.detail-head .title{display:flex;align-items:center;gap:12px}
+.detail-head h1{font-size:23px;font-weight:700}
+.detail-actions{display:flex;gap:9px}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--border);margin:18px 0 24px}
+.tab{padding:10px 0;font-size:13.5px;font-weight:500;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text);border-color:var(--accent);font-weight:600}
+.panel{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
+.block{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.block h4{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px}
+.kv .k{font-size:11.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:4px}
+.kv .v{font-size:13.5px;color:var(--text);word-break:break-word}
+.kv .v.mono{font-family:var(--mono);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.kpi .l{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.kpi .val{font-size:22px;font-weight:700;margin-top:7px;letter-spacing:-.02em}
+.kpi .sub{font-size:11.5px;color:var(--text-muted);margin-top:3px}
+.kpi .sub.up{color:var(--ok-tx)}
+.robot-photo{width:132px;height:96px;border-radius:8px;background:#f2f4f3;display:flex;align-items:center;justify-content:center;color:var(--text-faint);flex:none}
+.robot-photo svg{width:52px;height:52px}
+.ug-top{display:flex;justify-content:space-between;font-size:13.5px;font-weight:600}
+.ug-bar{height:8px;border-radius:20px;background:#eef1f0;overflow:hidden;margin-top:8px}
+.ug-fill{height:100%;background:var(--ok-tx);border-radius:20px}
+.hint{display:flex;gap:10px;align-items:flex-start;background:#f6f7f7;border-radius:8px;padding:12px 14px;font-size:13px;color:var(--text-muted);margin-top:16px;line-height:1.5}
+.heat{width:100%;border-collapse:separate;border-spacing:3px;margin-top:10px;font-size:12px}
+.heat th{padding:4px;color:var(--text-faint);font-weight:600;text-align:center}
+.heat td{padding:9px 6px;text-align:center;color:var(--text-muted);background:#f1f3f4;border-radius:6px}
+.heat td.h{background:none;color:var(--text-faint);text-align:left;font-weight:600}
+.heat td.hot{background:var(--ok-tx);color:#fff;font-weight:700}
+.set-wrap{display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start}
+.set-nav{background:#fff;border:1px solid var(--border);border-radius:12px;padding:8px}
+.set-nav button{display:flex;align-items:center;width:100%;text-align:left;padding:10px 12px;border-radius:8px;font-size:13.5px;color:var(--text-muted)}
+.set-nav button.active{background:#fafafb;color:var(--text);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
+.set-nav button:hover{background:#fafafb}
+.field-lg label{font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px}
+.field-lg input{width:100%;padding:10px 12px;border:1px solid #e4e4e7;border-radius:8px;font-size:14px;color:var(--text)}
+.toggle-row{display:flex;align-items:center;gap:12px;font-size:14px;margin-bottom:16px}
+.mon-group{padding:12px 16px;font-size:12.5px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.mon-row{display:flex;align-items:center;gap:12px;padding:14px 16px;font-size:13.5px}
+.mon-dot{width:22px;height:22px;border-radius:50%;background:var(--ok-tx);flex:none;display:flex;align-items:center;justify-content:center}
+.mon-dot:after{content:'✓';color:#fff;font-size:12px;font-weight:700}
+.usedrow{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:9px 0;border-bottom:1px solid var(--border)}
+.usedrow:last-child{border-bottom:none}
+.usedrow strong{font-weight:600}
+.badge.fail{background:#fdecea;color:#d1493a}
+.side-block h4{font-size:14px}
+.side-block p{font-size:12.5px;color:var(--text-muted);line-height:1.55;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;margin-top:6px}
+th{text-align:left;font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;font-weight:600;padding:0 10px 10px}
+td{padding:12px 10px;border-top:1px solid var(--border);font-size:13px}
+.dev-name{font-weight:600}.dev-sub{font-size:11.5px;color:var(--text-faint)}
+.hidden{display:none}
+
+/* ---------- MODAL ---------- */
+.overlay{position:fixed;inset:0;background:rgba(20,35,28,.42);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.overlay.hidden{display:none}
+.modal{background:#fff;border-radius:14px;width:560px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.25)}
+.modal-head{padding:18px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.modal-head h3{font-size:18px;font-weight:700}
+.mh-title{display:flex;align-items:center;gap:10px}
+.mh-back{color:var(--text-muted);display:flex;padding:0}
+.mh-back:hover{color:var(--text)}
+.mh-back svg{width:18px;height:18px}
+.mh-close{color:var(--text-muted);width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1}
+.mh-close:hover{background:#f2f4f3;color:var(--text)}
+.modal-intro{font-size:13px;color:var(--text-muted);line-height:1.5}
+.modal-body{padding:18px 22px;display:flex;flex-direction:column;gap:12px}
+.opt{border:1px solid var(--border-strong);border-radius:10px;padding:15px;display:flex;gap:13px;align-items:flex-start;cursor:pointer;transition:.12s}
+.opt:hover{border-color:var(--accent);background:#fffaf7}
+.opt .ic{width:38px;height:38px;border-radius:9px;background:#f2f4f3;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text)}
+.opt .ic svg{width:19px;height:19px}
+.opt h5{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.opt p{font-size:12.5px;color:var(--text-muted);margin-top:3px;line-height:1.5}
+.modal-foot{padding:14px 22px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--border)}
+.tag-soon{font-size:10px;font-weight:700;background:#eef1f0;color:var(--text-muted);padding:2px 7px;border-radius:20px;letter-spacing:.03em}
+.empty{padding:60px 20px;text-align:center;color:var(--text-muted);font-size:14px}
+.empty-state{text-align:center;padding:72px 20px;border:1px dashed var(--border-strong);border-radius:12px}
+.empty-state .es-icon{color:var(--text-faint);margin-bottom:16px}
+.empty-state .es-icon svg{width:46px;height:46px}
+.empty-state h3{font-size:16px;font-weight:700;color:var(--text)}
+.empty-state p{font-size:13.5px;color:var(--text-muted);margin-top:6px;max-width:360px;margin-left:auto;margin-right:auto;line-height:1.5}
+.badge.default{background:rgba(237,120,70,0.06);color:var(--text);border-color:rgba(237,120,70,0.25)}
+.badge.default .bdot{background:#ed7846}
+.link-btn{display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-size:13px;font-weight:600;margin-left:auto}
+.link-btn:hover{color:var(--accent-hover)}
+.link-btn svg{width:14px;height:14px}
+.section-title{justify-content:flex-start}
+.switch{position:relative;width:38px;height:22px;flex-shrink:0;display:inline-block}
+.switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2}
+.switch .track{position:absolute;inset:0;background:#d5dad8;border-radius:20px;transition:.15s}
+.switch .knob{position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.switch input:checked ~ .track{background:var(--accent)}
+.switch input:checked ~ .knob{transform:translateX(16px)}
+.grp{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);margin:18px 0 2px;padding:0 4px}
+.grp:first-child{margin-top:2px}
+.region{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--border)}
+.region:last-child{border-bottom:none}
+.region .flag{font-size:19px;width:24px;text-align:center}
+.region .info{flex:1}
+.region .info .n{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+.region .info .c{font-size:12px;color:var(--text-muted);margin-top:1px}
+.back-btn{display:flex;align-items:center;gap:6px;color:var(--text-muted);font-size:13px;font-weight:500;margin-bottom:8px}
+.back-btn:hover{color:var(--text)}.back-btn svg{width:15px;height:15px}
+.modal-scroll{max-height:50vh;overflow-y:auto;padding:0 22px}
+.modal-scroll .search{flex:1;margin-bottom:4px}
+.foot-count{margin-right:auto;font-size:13px;color:var(--text-muted);font-weight:500;align-self:center}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.stepper{display:flex;align-items:center;gap:8px;padding:16px 22px 4px}
+.step{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-faint);font-weight:600;white-space:nowrap}
+.step .num{width:20px;height:20px;border-radius:50%;background:#eef1f0;color:var(--text-muted);display:flex;align-items:center;justify-content:center;font-size:11px}
+.step.active{color:var(--text)} .step.active .num{background:var(--accent);color:#fff}
+.step.done .num{background:var(--ok-bg);color:var(--ok-tx)}
+.step-line{flex:1;height:1px;background:var(--border)}
+.hw-types{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
+.opt-tile{border:1px solid var(--border-strong);border-radius:10px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:.12s}
+.opt-tile:hover{background:#fafafb}
+.opt-tile.sel{border-color:var(--accent);background:#fffaf7}
+.opt-tile svg{width:22px;height:22px}
+.os-row{display:flex;gap:10px;margin:4px 0}
+.os-btn{flex:1;border:1px solid var(--border-strong);border-radius:10px;padding:16px 10px;text-align:center;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:9px;color:var(--text)}
+.os-btn:hover{background:#f7f8f8}
+.os-btn.sel{border-color:var(--accent);background:#fffaf7}
+.os-btn svg{width:22px;height:22px}
+.codebox{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-strong);border-radius:10px;padding:12px 14px;font-family:var(--mono);font-size:16px;letter-spacing:.08em;background:#f7f8f8;margin:6px 0}
+.codebox button{color:var(--accent);font-size:12px;font-weight:600;letter-spacing:0;font-family:'Geist','Inter',sans-serif}
+.wait{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-muted);margin-top:12px}
+.spin{width:16px;height:16px;border:2px solid var(--border-strong);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.connected{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ok-tx);font-weight:600;margin-top:12px;background:var(--ok-bg);padding:11px 13px;border-radius:8px}
+.connected svg{width:16px;height:16px}
+.radio-opt{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--border-strong);border-radius:10px;padding:12px 14px;cursor:pointer;margin-bottom:8px}
+.radio-opt.sel{border-color:var(--accent);background:#fffaf7}
+.radio-opt .rd{width:18px;height:18px;border-radius:50%;border:2px solid var(--border-strong);flex-shrink:0;margin-top:1px;position:relative}
+.radio-opt.sel .rd{border-color:var(--accent)}
+.radio-opt.sel .rd:after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--accent)}
+.radio-opt h5{font-size:13.5px;font-weight:600}
+.radio-opt p{font-size:12px;color:var(--text-muted);margin-top:2px}
+.field{margin-bottom:14px}
+.field label{font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px}
+.field input{width:100%;padding:9px 12px;border:1px solid var(--border-strong);border-radius:9px;font-size:13.5px;color:var(--text)}
+.field input:focus{outline:none;border-color:var(--accent)}
+.field input:disabled{background:#f4f5f5;color:var(--text-muted)}
+.done-icon{width:52px;height:52px;border-radius:50%;background:var(--ok-bg);color:var(--ok-tx);display:flex;align-items:center;justify-content:center;margin:8px auto 14px}
+.done-icon svg{width:28px;height:28px}
+.caps-row{display:flex;gap:8px}
+.chip{border:1px solid var(--border-strong);border-radius:20px;padding:6px 13px;font-size:12.5px;font-weight:600;color:var(--text-muted)}
+.chip.sel{border-color:var(--accent);background:#fffaf7;color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">
+        <svg class="mark" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c.5 3.2 2.3 5 5.5 5.5C14.3 8 12.5 9.8 12 13c-.5-3.2-2.3-5-5.5-5.5C9.7 7 11.5 5.2 12 2zm5.5 10c.3 2 1.4 3.1 3.5 3.5-2.1.4-3.2 1.5-3.5 3.5-.3-2-1.4-3.1-3.5-3.5 2.1-.4 3.2-1.5 3.5-3.5zM6 13c.3 2 1.4 3.1 3.5 3.5C7.4 16.9 6.3 18 6 20c-.3-2-1.4-3.1-3.5-3.5C4.6 16.1 5.7 15 6 13z"/></svg>
+        kapptivate
+      </div>
+      <span class="collapse">⊟</span>
+    </div>
+    <div class="nav-sep"></div>
+    <div class="ws">
+      <div class="avatar">🐙</div>
+      <div><div class="name">kapptivate</div><div class="sub">Workspace</div></div>
+    </div>
+
+    <div class="nav-label">Overview</div>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg>Realtime status</button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>Overview</button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>Incidents</button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Analytics</button>
+
+    <div class="nav-sep"></div>
+    <div class="nav-label">By product</div>
+    <button class="nav-item boxed"><span class="lead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Julio</span><svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H4z"/><path d="M8 20h8M12 16v4"/></svg>Live session</button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>Tests</button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>Executions</button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4 12H2m20 0h-2"/><circle cx="12" cy="12" r="5"/></svg>Monitors</button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h2M16 3h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2"/></svg>Configurations</button>
+
+    <div class="nav-sep"></div>
+    <div class="nav-label">Equipments</div>
+    <button class="nav-item active" id="nav-locations" onclick="setView('locations')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Locations</button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>Browser presets</button>
+    <button class="nav-item" id="nav-devices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>Devices lab</button>
+    <button class="nav-item" id="nav-hardware" onclick="setView('hardware')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="13" width="18" height="6" rx="1"/><path d="M7 8h.01M7 16h.01"/></svg>Hardware</button>
+
+    <div class="spacer"></div>
+    <div class="nav-sep"></div>
+    <button class="help-btn">?</button>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="crumb" id="crumb">
+        <span class="cur">Locations</span>
+      </div>
+    </div>
+    <div class="content" id="content"><!-- rendered by JS --></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay hidden" id="modal">
+  <div class="modal" id="modalContent"><!-- rendered by JS --></div>
+</div>
+
+<script>
+const ICON = {
+  cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 18a4 4 0 0 0 0-8 6 6 0 0 0-11.5-1.5A3.5 3.5 0 0 0 6 18z"/></svg>',
+  desktop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+  appliance:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="13" width="18" height="6" rx="1"/><path d="M7 8h.01M7 16h.01"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>'
+};
+const runnerLabel = {cloud:'Cloud (Playwright)',desktop:'Desktop runner',appliance:'Robot'};
+
+const LOCATIONS = [
+  // PUBLIC — catalogue de régions managées kapptivate (enabled = activée pour ce workspace)
+  {id:'pub-par',name:'Europe · Paris',kind:'public',runner:'cloud',scope:'managed',zone:'Europe/France/Paris',status:'online',version:'pw-1.48',region:'eu-west-3',cont:'Europe',flag:'🇫🇷',city:'Paris, France',enabled:true,default:true},
+  {id:'pub-fra',name:'Europe · Frankfurt',kind:'public',runner:'cloud',scope:'managed',zone:'Europe/Germany/Frankfurt',status:'online',version:'pw-1.48',region:'eu-central-1',cont:'Europe',flag:'🇩🇪',city:'Frankfurt, Germany',enabled:true},
+  {id:'pub-lon',name:'Europe · London',kind:'public',runner:'cloud',scope:'managed',zone:'Europe/UK/London',status:'online',version:'pw-1.48',region:'eu-west-2',cont:'Europe',flag:'🇬🇧',city:'London, UK',enabled:false},
+  {id:'pub-sto',name:'Europe · Stockholm',kind:'public',runner:'cloud',scope:'managed',zone:'Europe/Sweden/Stockholm',status:'online',version:'pw-1.48',region:'eu-north-1',cont:'Europe',flag:'🇸🇪',city:'Stockholm, Sweden',enabled:false},
+  {id:'pub-vir',name:'US · N. Virginia',kind:'public',runner:'cloud',scope:'managed',zone:'US/Virginia',status:'online',version:'pw-1.48',region:'us-east-1',cont:'Americas',flag:'🇺🇸',city:'N. Virginia, USA',enabled:true},
+  {id:'pub-ore',name:'US · Oregon',kind:'public',runner:'cloud',scope:'managed',zone:'US/Oregon',status:'online',version:'pw-1.48',region:'us-west-2',cont:'Americas',flag:'🇺🇸',city:'Oregon, USA',enabled:false},
+  {id:'pub-sao',name:'South America · São Paulo',kind:'public',runner:'cloud',scope:'managed',zone:'Americas/Brazil/SaoPaulo',status:'online',version:'pw-1.48',region:'sa-east-1',cont:'Americas',flag:'🇧🇷',city:'São Paulo, Brazil',enabled:false},
+  {id:'pub-cpt',name:'Africa · Cape Town',kind:'public',runner:'cloud',scope:'managed',zone:'Africa/SouthAfrica/CapeTown',status:'online',version:'pw-1.48',region:'af-south-1',cont:'Africa',flag:'🇿🇦',city:'Cape Town, South Africa',enabled:false},
+  {id:'pub-abj',name:'Africa · Abidjan',kind:'public',runner:'cloud',scope:'managed',zone:'Africa/IvoryCoast/Abidjan',status:'online',version:'pw-1.48',region:'af-west-2',cont:'Africa',flag:'🇨🇮',city:'Abidjan, Côte d\'Ivoire',enabled:false},
+  {id:'pub-dkr',name:'Africa · Dakar',kind:'public',runner:'cloud',scope:'managed',zone:'Africa/Senegal/Dakar',status:'online',version:'pw-1.48',region:'af-west-1',cont:'Africa',flag:'🇸🇳',city:'Dakar, Senegal',enabled:false},
+  {id:'pub-nbo',name:'Africa · Nairobi',kind:'public',runner:'cloud',scope:'managed',zone:'Africa/Kenya/Nairobi',status:'online',version:'pw-1.48',region:'af-east-1',cont:'Africa',flag:'🇰🇪',city:'Nairobi, Kenya',enabled:false},
+  {id:'pub-mpm',name:'Africa · Maputo',kind:'public',runner:'cloud',scope:'managed',zone:'Africa/Mozambique/Maputo',status:'online',version:'pw-1.48',region:'af-southeast-1',cont:'Africa',flag:'🇲🇿',city:'Maputo, Mozambique',enabled:false},
+  {id:'pub-sin',name:'Asia · Singapore',kind:'public',runner:'cloud',scope:'managed',zone:'Asia/Singapore',status:'online',version:'pw-1.48',region:'ap-southeast-1',cont:'Asia-Pacific',flag:'🇸🇬',city:'Singapore',enabled:true},
+  {id:'pub-tok',name:'Asia · Tokyo',kind:'public',runner:'cloud',scope:'managed',zone:'Asia/Japan/Tokyo',status:'online',version:'pw-1.48',region:'ap-northeast-1',cont:'Asia-Pacific',flag:'🇯🇵',city:'Tokyo, Japan',enabled:false},
+  {id:'pub-syd',name:'Asia · Sydney',kind:'public',runner:'cloud',scope:'managed',zone:'Asia-Pacific/Australia/Sydney',status:'online',version:'pw-1.48',region:'ap-southeast-2',cont:'Asia-Pacific',flag:'🇦🇺',city:'Sydney, Australia',enabled:false},
+  // PRIVATE — appliances (parc existant, catégorisé par capacité) + desktop runners
+  {id:'ogn-3g-1',name:'ogn-3g-1',kind:'private',cat:'cellular',runner:'appliance',scope:'workspace',zone:'Guinee/Conakry/Camayenne',status:'online',version:'v4.21.0',host:'ogn-3g-1',uuid:'c1a1-3g1',caps:'Cellular · 4/4 SIM',devices:[]},
+  {id:'ogn-4g-01',name:'ogn-4g-01',kind:'private',cat:'cellular',runner:'appliance',scope:'workspace',zone:'Guinee/Kankan',status:'online',version:'v4.21.3',host:'ogn-4g-01',uuid:'c1a1-4g01',caps:'Cellular · 2/2 SIM',devices:[]},
+  {id:'ogn-4g-02',name:'ogn-4g-02',kind:'private',cat:'cellular',runner:'appliance',scope:'workspace',zone:'Guinee/Aeroport',status:'online',version:'v4.21.3',host:'ogn-4g-02',uuid:'c1a1-4g02',caps:'Cellular · 2/2 SIM',devices:[]},
+  {id:'ogn-4g-04',name:'ogn-4g-04',kind:'private',cat:'cellular',runner:'appliance',scope:'workspace',zone:'Guinee/Sonfonia',status:'online',version:'v4.21.0',host:'ogn-4g-04',uuid:'c1a1-4g04',caps:'Cellular · 0/2 SIM',devices:[]},
+  {id:'ogn-2',name:'ogn-2',kind:'private',cat:'smartphone',runner:'appliance',scope:'workspace',zone:'Guinee/Conakry/Camayenne',status:'offline',version:'v2.3.0',host:'ogn-2',uuid:'s1a1-2',caps:'Smartphone · 0 devices',devices:[]},
+  {id:'ogn-3',name:'ogn-3',kind:'private',cat:'smartphone',runner:'appliance',scope:'workspace',zone:'Guinee/Sonfonia',status:'online',version:'v2.8.0',host:'ogn-3',uuid:'s1a1-3',caps:'Smartphone',devices:[{n:'Pixel 10 #1',s:'Google (sdk_gphone16k_arm64)',u:'emulator-5554'},{n:'Pixel 10 #2',s:'Google (sdk_gphone16k_arm64)',u:'emulator-5556'}]},
+  {id:'ogn-web-1',name:'ogn-web-1',kind:'private',cat:'web',runner:'appliance',scope:'workspace',zone:'Guinee/Sonfonia',status:'online',version:'v7.23.2',host:'ogn-web-1',uuid:'w1a1-1',caps:'Web · API',devices:[]},
+  {id:'ogn-web-3',name:'ogn-web-3',kind:'private',cat:'web',runner:'appliance',scope:'workspace',zone:'Guinee/Koloma',status:'online',version:'v7.27.2',host:'ogn-web-3',uuid:'w1a1-3',caps:'Web · API',devices:[]},
+  {id:'pp-api',name:'preprod-dev-2-api-kagent',kind:'private',cat:'web',runner:'appliance',scope:'workspace',zone:'Europe/France/Paris',status:'online',version:'v2.15.18',host:'preprod-dev-2-api-kagent',uuid:'d95d6d14-ca8a-414e-963e-4ae2615811db',caps:'Web · API',devices:[]},
+  {id:'koa-web',name:'koa-web',kind:'private',cat:'desktop',runner:'desktop',scope:'personal',zone:'Europe/France/Rennes',status:'online',version:'v7.30.0',owner:'julien.kapptivate',host:'MacBook Pro · Julien',uuid:'d95d6d14-ca8a-414e-963e-4ae2615811db',caps:'Web',devices:[]},
+  {id:'koa-mobile',name:'koa-mobile',kind:'private',cat:'desktop',runner:'desktop',scope:'personal',zone:'Europe/France/Rennes',status:'online',version:'v7.28.2',owner:'julien.kapptivate',host:'MacBook Pro · Julien',uuid:'a1c2e3f4-5678-49ab-8cde-112233445566',caps:'Mobile',devices:[{n:'Pixel 10 #1',s:'Google (sdk_gphone16k_arm64)',u:'emulator-5554'},{n:'Pixel 10 #2',s:'Google (sdk_gphone16k_arm64)',u:'emulator-5556'}]}
+];
+
+const content = document.getElementById('content');
+const crumb = document.getElementById('crumb');
+let currentView = 'locations';
+let currentTab = 'public';
+let hwCat = 'all';
+let filterState = {status:'all',runner:'all',scope:'all',zone:'all'};
+function resetFilters(){filterState={status:'all',runner:'all',scope:'all',zone:'all'};}
+function render(){ if(currentView==='hardware') renderHardware(); else renderList(); }
+function setView(v){currentView=v;currentTab='public';hwCat='all';resetFilters();render();}
+function setTab(t){currentTab=t;resetFilters();renderList();}
+function setHwCat(c){hwCat=c;renderHardware();}
+const HW_CAT = [['cellular','Cellular'],['smartphone','Smartphone'],['web','Web'],['passive','Passive']];
+const catLabel = c => (HW_CAT.find(x=>x[0]===c)||[,c])[1];
+const hasHardware = () => LOCATIONS.some(l=>l.kind==='private'&&l.runner==='appliance');
+
+function zoneOptions(){
+  const list = currentTab==='public' ? LOCATIONS.filter(l=>l.kind==='public'&&l.enabled) : LOCATIONS.filter(l=>l.kind==='private'&&l.runner==='desktop');
+  const keys = [...new Set(list.map(l=>l.kind==='public'?l.cont:l.zone.split('/')[0]))];
+  return [['all','All zones'],...keys.map(k=>[k,k])];
+}
+function dropdown(key,label,options){
+  const cur=filterState[key];
+  const curText = cur==='all'?label:(options.find(o=>o[0]===cur)||[,label])[1];
+  return `<div class="dd"><button class="select ${cur!=='all'?'active':''}" data-label="${label}" onclick="toggleDD(this)"><span class="dd-label">${curText}</span> <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="dd-menu">${options.map(o=>`<button class="dd-item ${cur===o[0]?'sel':''}" onclick="setFilter('${key}','${o[0]}',this)">${o[1]}</button>`).join('')}</div></div>`;
+}
+function toggleDD(btn){
+  const dd=btn.closest('.dd'); const open=dd.classList.contains('open');
+  document.querySelectorAll('.dd.open').forEach(d=>d.classList.remove('open'));
+  if(!open) dd.classList.add('open');
+}
+function setFilter(key,val,el){
+  filterState[key]=val;
+  const menu=el.closest('.dd-menu'); menu.querySelectorAll('.dd-item').forEach(i=>i.classList.remove('sel')); el.classList.add('sel');
+  const dd=el.closest('.dd'); const trg=dd.querySelector('.select');
+  dd.querySelector('.dd-label').textContent = (val==='all'? trg.dataset.label : el.textContent);
+  trg.classList.toggle('active', val!=='all');
+  dd.classList.remove('open');
+  applyFilters();
+}
+function applyFilters(){
+  const q=(document.getElementById('locSearch')?.value||'').trim().toLowerCase();
+  document.querySelectorAll('#content .card').forEach(c=>{
+    const okQ=!q||(c.dataset.search||'').includes(q);
+    const okS=filterState.status==='all'||c.dataset.status===filterState.status;
+    const okR=filterState.runner==='all'||c.dataset.runner===filterState.runner;
+    const okSc=filterState.scope==='all'||c.dataset.scope===filterState.scope;
+    const okZ=filterState.zone==='all'||c.dataset.zone===filterState.zone;
+    c.style.display=(okQ&&okS&&okR&&okSc&&okZ)?'':'none';
+  });
+  document.querySelectorAll('#content .grid').forEach(g=>{
+    const vis=[...g.querySelectorAll('.card')].some(c=>c.style.display!=='none');
+    g.style.display=vis?'':'none';
+    const prev=g.previousElementSibling;
+    if(prev&&prev.classList.contains('cont-grp')) prev.style.display=vis?'':'none';
+  });
+}
+document.addEventListener('click',e=>{ if(!e.target.closest('.dd')) document.querySelectorAll('.dd.open').forEach(d=>d.classList.remove('open')); });
+
+function scopeBadge(loc){
+  if(loc.kind==='public') return '<span class="badge managed"><span class="bdot"></span>Managed</span>';
+  if(loc.scope==='workspace') return '<span class="badge workspace"><span class="bdot"></span>Workspace</span>';
+  if(loc.scope==='shared') return '<span class="badge shared"><span class="bdot"></span>Shared</span>';
+  return '<span class="badge personal"><span class="bdot"></span>Personal</span>';
+}
+function statusBadge(loc){
+  if(loc && loc.status==='offline') return '<span class="badge off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>Offline</span>';
+  return '<span class="badge ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.4 2.4 4.6-5.2"/></svg>Online</span>';
+}
+
+function cardHTML(loc){
+  const zk = loc.kind==='public' ? loc.cont : loc.zone.split('/')[0];
+  const search = (loc.kind==='public' ? `${loc.city} ${loc.region} ${loc.cont}` : `${loc.name} ${loc.zone} ${loc.caps||''}`).toLowerCase();
+  const data = `data-status="${loc.status}" data-runner="${loc.runner}" data-scope="${loc.scope}" data-zone="${zk}" data-search="${search}"`;
+  if(loc.kind==='public'){
+    return `<div class="card click" ${data} onclick="showDetail('${loc.id}')">
+      <div class="badge-row">${statusBadge(loc)} ${loc.default?'<span class="badge default"><span class="bdot"></span>Default</span>':''}</div>
+      <h3><span class="cflag">${loc.flag}</span>${loc.city}</h3>
+      <div class="zone">${loc.region} · ${loc.caps||'Web · API'}</div>
+      <div class="ver-row"><span class="ver">${loc.version}</span></div>
+    </div>`;
+  }
+  return `<div class="card click" ${data} onclick="showDetail('${loc.id}')">
+    <div class="badge-row">${statusBadge(loc)} ${scopeBadge(loc)}</div>
+    <h3>${loc.name}</h3>
+    <div class="zone">${loc.zone}</div>
+    <div class="ver-row"><span class="ver">${loc.version}</span></div>
+  </div>`;
+}
+
+function publicGroups(pub){
+  const conts=['Europe','Americas','Asia-Pacific','Africa'];
+  return conts.map(c=>{
+    const items=pub.filter(l=>l.cont===c);
+    if(!items.length) return '';
+    return `<div class="cont-grp">${c}</div><div class="grid" style="margin-bottom:16px">${items.map(cardHTML).join('')}</div>`;
+  }).join('');
+}
+
+function emptyState(title, sub, cta){
+  return `<div class="empty-state"><div class="es-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="6" rx="1.5"/><rect x="3" y="13" width="18" height="6" rx="1.5"/><path d="M7 8h.01M7 16h.01M17 8h1.5M17 16h1.5"/></svg></div><h3>${title}</h3>${sub?`<p>${sub}</p>`:''}${cta||''}</div>`;
+}
+function hwSubtabs(){
+  const all = LOCATIONS.filter(l=>l.kind==='private'&&l.runner==='appliance');
+  const tabs = [['all','All',all.length], ...HW_CAT.map(c=>[c[0],c[1],all.filter(l=>l.cat===c[0]).length])];
+  return `<div class="tabs" style="margin:4px 0 20px">${tabs.map(t=>`<button class="tab ${hwCat===t[0]?'active':''}" onclick="setHwCat('${t[0]}')">${t[1]} <span class="tab-count">${t[2]}</span></button>`).join('')}</div>`;
+}
+function hwGroups(){
+  const list = LOCATIONS.filter(l=>l.kind==='private'&&l.runner==='appliance');
+  const cats = hwCat==='all' ? HW_CAT.map(c=>c[0]) : [hwCat];
+  return cats.map(c=>{
+    const items=list.filter(l=>l.cat===c);
+    if(!items.length) return hwCat==='all' ? '' : emptyState(`No ${catLabel(c)} robot yet.`,'Contact our sales team to order a new one.');
+    return `${hwCat==='all'?`<div class="cont-grp">${catLabel(c)}</div>`:''}<div class="grid" style="margin-bottom:16px">${items.map(cardHTML).join('')}</div>`;
+  }).join('');
+}
+function hwZoneOptions(){
+  const list=LOCATIONS.filter(l=>l.kind==='private'&&l.runner==='appliance');
+  const keys=[...new Set(list.map(l=>l.zone.split('/')[0]))];
+  return [['all','All zones'],...keys.map(k=>[k,k])];
+}
+
+function renderList(){
+  const tb=document.querySelector('.topbar'); if(tb) tb.style.display='none';
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('nav-locations').classList.add('active');
+  const pub = LOCATIONS.filter(l=>l.kind==='public' && l.enabled);
+  const priv = LOCATIONS.filter(l=>l.kind==='private' && l.runner==='desktop');
+  content.innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1>Locations</h1>
+      </div>
+      <div class="head-actions">
+        <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>Help</button>
+        <button class="btn primary" onclick="openModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Add location</button>
+      </div>
+    </div>
+    <div class="tabs" style="margin:4px 0 20px">
+      <button class="tab ${currentTab==='public'?'active':''}" onclick="setTab('public')">Public <span class="tab-count">${pub.length}</span></button>
+      <button class="tab ${currentTab==='private'?'active':''}" onclick="setTab('private')">Private <span class="tab-count">${priv.length}</span></button>
+    </div>
+
+    <div class="filters">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="locSearch" placeholder="Search locations..." oninput="applyFilters()" /></div>
+      ${dropdown('status','Status',[['all','All statuses'],['online','Online']])}
+      ${currentTab==='private'?dropdown('scope','Scope',[['all','All scopes'],['workspace','Shared'],['personal','Personal']]):''}
+      ${dropdown('zone','Zone',zoneOptions())}
+      ${currentTab==='public'?`<button class="btn" style="margin-left:auto" onclick="openModal('public')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></svg>Manage regions</button>`:''}
+    </div>
+
+    ${currentTab==='public'
+      ? (pub.length?`<div class="grid">${pub.map(cardHTML).join('')}</div>`:emptyState('No public region enabled yet.','Turn on the regions your users are in to run tests from there.','<button class="btn primary" style="margin-top:16px" onclick="openModal(\'public\')">Manage regions</button>'))
+      : (priv.length?`<div class="grid">${priv.map(cardHTML).join('')}</div>`:emptyState('No desktop runner yet.','Install kapptivate Desktop to run tests from your own machine.','<button class="btn primary" style="margin-top:16px" onclick="openModal()">Connect a desktop runner</button>'))}`;
+}
+
+function renderHardware(){
+  const tb=document.querySelector('.topbar'); if(tb) tb.style.display='none';
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const nh=document.getElementById('nav-hardware'); if(nh) nh.classList.add('active');
+  content.innerHTML = `
+    <div class="page-head">
+      <div><h1>Hardware</h1></div>
+      <div class="head-actions">
+        <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>Help</button>
+        <button class="btn primary" onclick="openHardware()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8L2 12l4 4M18 8l4 4-4 4M14.5 4l-5 16"/></svg>Connect a robot</button>
+      </div>
+    </div>
+    ${hwSubtabs()}
+    <div class="filters">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="locSearch" placeholder="Search hardware..." oninput="applyFilters()" /></div>
+      ${dropdown('status','Status',[['all','All statuses'],['online','Online'],['offline','Offline']])}
+      ${dropdown('zone','Zone',hwZoneOptions())}
+    </div>
+    ${hwGroups()}`;
+}
+
+let curLoc=null, detailGeneral='';
+function showDetail(id){
+  const tb=document.querySelector('.topbar'); if(tb) tb.style.display='flex';
+  const loc = LOCATIONS.find(l=>l.id===id);
+  curLoc = loc;
+  const home = (loc.kind==='private' && loc.runner==='appliance') ? 'hardware' : 'locations';
+  crumb.innerHTML = `<button onclick="setView('${home}')"><svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>${home==='hardware'?'Hardware':'Locations'}</button><span class="sep">/</span><span class="cur">${loc.name}</span>`;
+  const isPublic = loc.kind==='public';
+  const unitWord = loc.runner==='appliance' ? 'robot' : 'runner';
+  const rebootIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v10M18 6a8 8 0 1 1-12 0"/></svg>`;
+  const actions = isPublic
+    ? `<button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Set as default</button>`
+    : loc.runner==='appliance'
+      ? `<button class="btn danger">${rebootIcon}Reboot robot</button>
+         <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>Test-only mode</button>
+         <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4z"/></svg>Set in maintenance</button>`
+      : `<button class="btn danger">${rebootIcon}Reboot runner</button>
+         <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4z"/></svg>Set in maintenance</button>`;
+
+  const devicesBlock = (!isPublic && loc.devices && loc.devices.length)
+    ? `<div class="block" style="margin-top:20px">
+        <h4>Connected devices <span class="count" style="font-size:12px;color:var(--text-muted);background:#eef1f0;border-radius:20px;padding:2px 9px">${loc.devices.length}</span></h4>
+        <table><thead><tr><th>Device</th><th>Status</th><th>UUID</th><th>Usage</th></tr></thead><tbody>
+        ${loc.devices.map(d=>`<tr><td><div class="dev-name">${d.n}</div><div class="dev-sub">${d.s}</div></td><td>${statusBadge()}</td><td class="dev-sub" style="font-family:'JetBrains Mono',monospace">${d.u}</td><td class="dev-sub">Not used</td></tr>`).join('')}
+        </tbody></table></div>` : '';
+
+  const sideBlock = isPublic
+    ? `<div class="block side-block">
+        <h4>About public locations</h4>
+        <p>Public locations are hosted and maintained by kapptivate. They run your web and API tests on Playwright, with no installation on your side.</p>
+        <p>Available to every workspace as soon as you sign up.</p>
+      </div>`
+    : `<div class="block side-block">
+        <h4>Runner</h4>
+        <p>This private location is powered by ${loc.runner==='desktop'?'the kapptivate Desktop app running on a user machine':'a kapptivate hardware appliance on the client network'}.</p>
+        <p>Scope: <strong>${loc.scope==='workspace'?'shared with the whole workspace':'personal to '+(loc.owner||'the owner')}</strong>.</p>
+        <button class="btn" style="width:100%;justify-content:center">Manage runner</button>
+      </div>`;
+
+  const stats = isPublic
+    ? [['Uptime (30d)','99.98%',''],['Test runs (30d)','1,284','+12% vs prev',1],['Success rate','97.3%',''],['Avg duration','4.2s','']]
+    : [['Status','Online','since 6 days'],['Test runs (30d)','342',''],['Success rate','95.1%',''],[(loc.devices&&loc.devices.length)?'Devices':'Concurrency',(loc.devices&&loc.devices.length)?String(loc.devices.length):'2 parallel','']];
+  const kpisHTML = `<div class="kpis">${stats.map(s=>`<div class="kpi"><div class="l">${s[0]}</div><div class="val">${s[1]}</div>${s[2]?`<div class="sub${s[3]?' up':''}">${s[2]}</div>`:''}</div>`).join('')}</div>`;
+
+  const runs = [['Test Web','ok','5s','2h ago'],['Test API','ok','0s','5h ago'],['Test Smartphone','ok','11s','1d ago'],['Login flow','fail','8s','2d ago']];
+  const runBadge = s => s==='ok' ? '<span class="badge ok"><span class="dot"></span>Success</span>' : '<span class="badge fail">Failed</span>';
+  const runsBlock = `<div class="block" style="margin-top:20px">
+      <h4>Recent executions <button class="link-btn" style="font-size:12.5px">View all in Executions</button></h4>
+      <table><thead><tr><th>Test</th><th>Status</th><th>Duration</th><th>When</th></tr></thead><tbody>
+      ${runs.map(r=>`<tr><td class="dev-name">${r[0]}</td><td>${runBadge(r[1])}</td><td class="dev-sub">${r[2]}</td><td class="dev-sub">${r[3]}</td></tr>`).join('')}
+      </tbody></table></div>`;
+
+  const usedBy = `<div class="block side-block" style="margin-top:20px">
+      <h4>Used by</h4>
+      <div class="usedrow"><span>Monitors</span><strong>3</strong></div>
+      <div class="usedrow"><span>Scheduled tests</span><strong>7</strong></div>
+      <div class="usedrow"><span>Allowed products</span><strong>All</strong></div>
+    </div>`;
+
+  const kind = isPublic?'public':(loc.runner==='appliance'?'appliance':'desktop');
+  const tabList = kind==='public' ? ['General','Usage','Settings','Event logs']
+    : kind==='appliance' ? ['General','Usage','Capacity','Monitors','Settings','Event logs']
+    : ['General','Usage',...(loc.devices&&loc.devices.length?['Devices']:[]),'Settings','Event logs'];
+  const aboutPhoto = kind==='appliance' ? `<div class="robot-photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="8" width="18" height="9" rx="2"/><circle cx="8" cy="12.5" r="1.3"/><path d="M12.5 12.5h5.5"/><path d="M6 8V6M18 8V6"/></svg></div>` : '';
+  detailGeneral = `${kpisHTML}
+    <div class="panel">
+      <div>
+        <div class="block">
+          <h4>About</h4>
+          <div style="display:flex;gap:20px">${aboutPhoto}
+          <div class="kv" style="flex:1">
+            <div><div class="k">Type</div><div class="v">${isPublic?'Public location':(kind==='appliance'?'Hardware robot':'Desktop runner')}</div></div>
+            <div><div class="k">${isPublic?'Region':'Host'}</div><div class="v">${isPublic?loc.region:loc.host}</div></div>
+            <div><div class="k">Zone</div><div class="v">${loc.zone}</div></div>
+            <div><div class="k">Capabilities</div><div class="v">${loc.caps||'Web · API'}</div></div>
+            <div><div class="k">Version</div><div class="v mono">${loc.version}</div></div>
+            ${!isPublic?`<div><div class="k">UUID</div><div class="v mono">${loc.uuid}</div></div>`:''}
+          </div></div>
+        </div>
+        ${runsBlock}
+        ${devicesBlock}
+      </div>
+      <div>${sideBlock}${usedBy}</div>
+    </div>`;
+  content.innerHTML = `
+    <div class="detail-head">
+      <div class="title"><h1>${loc.name}</h1>${statusBadge(loc)} ${scopeBadge(loc)}</div>
+      <div class="detail-actions">${actions}</div>
+    </div>
+    <div class="tabs" id="detailtabs">${tabList.map((t,i)=>`<button class="tab ${i===0?'active':''}" onclick="showTab('${t}')">${t}${t==='Monitors'?' <span class="tab-count">1</span>':''}</button>`).join('')}</div>
+    <div id="tabpanel">${detailGeneral}</div>`;
+}
+
+function showTab(name){
+  document.querySelectorAll('#detailtabs .tab').forEach(b=>b.classList.toggle('active', b.textContent.trim().indexOf(name)===0));
+  document.getElementById('tabpanel').innerHTML = tabContent(curLoc, name);
+}
+function tabContent(loc,name){
+  if(name==='Usage') return tabUsage(loc);
+  if(name==='Capacity') return tabCapacity(loc);
+  if(name==='Monitors') return tabMonitors(loc);
+  if(name==='Settings') return tabSettings(loc);
+  if(name==='Event logs') return tabEvents(loc);
+  if(name==='Devices') return tabDevices(loc);
+  return detailGeneral;
+}
+function tabUsage(loc){
+  const hours=['0h','1h','2h','3h','4h','5h','6h','7h','8h','9h','10h','11h'];
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const hot={'0h':{Fri:'0.5%',Sat:'8.8%'},'10h':{Fri:'1.0%',Sun:'17.2%'},'11h':{Sun:'27.3%'}};
+  const rows=hours.map(h=>`<tr><td class="h">${h}</td>${days.map(d=>{const v=hot[h]&&hot[h][d];return v?`<td class="hot">${v}</td>`:'<td>0.0%</td>';}).join('')}</tr>`).join('');
+  return `<div class="block">
+    <h4>Usage (weekly average) <span class="badge grey" style="margin-left:8px">Not used · 0.0%</span></h4>
+    <div class="ug-top" style="margin-top:10px"><span>Global usage on last week</span><span>9.5%</span></div>
+    <div class="ug-bar"><div class="ug-fill" style="width:9.5%"></div></div>
+    <div class="hint"><span>ⓘ</span> This ${loc.runner==='appliance'?'robot':'runner'} is not very used, so don't hesitate to distribute your monitoring more evenly to improve efficiency.</div>
+    <h4 style="margin-top:24px">Usage details on last week</h4>
+    <table class="heat"><thead><tr><th></th>${days.map(d=>`<th>${d}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>
+  </div>`;
+}
+function tabCapacity(loc){
+  return `<div class="block"><h4>Parallel tests capacity</h4>
+    <div class="field-lg" style="max-width:240px;margin-top:6px"><label>Capacity</label><button class="select" style="width:100%;justify-content:space-between">2 parallel tests <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button></div>
+    </div>
+    <div class="hint" style="margin-top:12px"><span>ⓘ</span> The capacity is determined by your licence. It allows you to increase the number of browsers available for web testing.</div>`;
+}
+function tabMonitors(loc){
+  return `<div class="filters" style="margin-bottom:16px">
+      <button class="select">Select… <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+      <button class="select">Status <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="search" style="margin-left:auto;flex:0 0 240px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input placeholder="Search monitor…"></div>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>Pause all monitors</button>
+    </div>
+    <div class="block" style="padding:0;overflow:hidden">
+      <div class="mon-group">⌘ POC</div>
+      <div class="mon-row"><span class="mon-dot"></span><span style="font-weight:600">Demo API</span><span class="badge ok"><span class="dot"></span>Up</span><span class="dev-sub" style="margin-left:auto">10 min · ${loc.zone.split('/').pop()} · ${loc.name}</span></div>
+    </div>`;
+}
+function tabSettings(loc){
+  const items=['About','Software update','Automatic reboot',loc.runner==='appliance'?'Robot credentials':'Runner credentials','Network configuration','Danger zone'];
+  return `<div class="set-wrap">
+    <div class="set-nav">${items.map((s,i)=>`<button class="${i===0?'active':''}">${s}</button>`).join('')}</div>
+    <div>
+      <div class="block"><h4>About</h4><div class="field-lg"><label>Name</label><input value="${loc.name}"></div><button class="btn" style="margin-top:14px">Save changes</button></div>
+      <div class="block" style="margin-top:20px"><h4>Software update</h4>
+        <div class="toggle-row" style="margin-top:6px"><label class="switch"><input type="checkbox"><span class="track"></span><span class="knob"></span></label> Automatic updates</div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13.5px"><b>Version ${loc.version}</b><div class="dev-sub">Current version</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+function tabEvents(loc){
+  return `<div class="filters" style="margin-bottom:16px">
+      <button class="select">Type <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+      <button class="select">User <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+      <button class="select" style="margin-left:auto">Past 24h <svg viewBox="0 0 24 24" width="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+      <button class="btn">Export .CSV</button>
+    </div>
+    ${emptyState('No history for this time range','Use the time range picker to refine your search and get better results.')}`;
+}
+function tabDevices(loc){
+  if(!loc.devices||!loc.devices.length) return emptyState('No connected device','This runner has no device attached.');
+  return `<div class="block"><h4>Connected devices <span class="tab-count">${loc.devices.length}</span></h4>
+    <table><thead><tr><th>Device</th><th>Status</th><th>UUID</th><th>Usage</th></tr></thead><tbody>
+    ${loc.devices.map(d=>`<tr><td><div class="dev-name">${d.n}</div><div class="dev-sub">${d.s}</div></td><td>${statusBadge()}</td><td class="dev-sub" style="font-family:var(--mono)">${d.u}</td><td class="dev-sub">Not used</td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+const modalEl = document.getElementById('modal');
+const modalContent = document.getElementById('modalContent');
+
+function openModal(screen){
+  modalEl.classList.remove('hidden');
+  if(screen==='public') modalPublic(); else modalOptions();
+}
+function closeModal(){modalEl.classList.add('hidden');}
+
+function modalHeader(title, back){
+  const b = back ? `<button class="mh-back" onclick="${back}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>` : '';
+  return `<div class="modal-head"><div class="mh-title">${b}<h3>${title}</h3></div><button class="mh-close" onclick="closeModal()">&times;</button></div>`;
+}
+
+function modalOptions(){
+  modalContent.innerHTML = modalHeader('Add a location') + `
+    <div class="modal-body">
+      <p class="modal-intro" style="margin-bottom:4px">A location is where your tests run. Pick a managed public location, or connect your own private one.</p>
+      <div class="opt" onclick="modalPublic()">
+        <div class="ic">${ICON.cloud}</div>
+        <div><h5>Use a public location</h5><p>Managed by kapptivate, runs on Playwright. Available instantly, no setup. Enable the regions you care about.</p></div>
+      </div>
+      <div class="opt" onclick="choosePrivate('desktop')">
+        <div class="ic">${ICON.desktop}</div>
+        <div><h5>Connect a desktop runner</h5><p>Install the kapptivate Desktop app on your machine to run tests locally. Register it as a personal or shared private location.</p></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button></div>`;
+}
+
+function pubCount(){return LOCATIONS.filter(l=>l.kind==='public'&&l.enabled).length;}
+
+function modalPublic(){
+  const conts=['Europe','Americas','Asia-Pacific','Africa'];
+  let rows='';
+  conts.forEach(c=>{
+    rows += `<div class="grp">${c}</div>`;
+    LOCATIONS.filter(l=>l.kind==='public'&&l.cont===c).forEach(l=>{
+      rows += `<div class="region">
+        <div class="flag">${l.flag}</div>
+        <div class="info"><div class="n">${l.city} ${l.default?'<span class="badge default">Default</span>':''}</div><div class="c">${l.region} · Playwright</div></div>
+        <label class="switch"><input type="checkbox" ${l.enabled?'checked':''} onchange="setRegion('${l.id}',this.checked)"><span class="track"></span><span class="knob"></span></label>
+      </div>`;
+    });
+  });
+  modalContent.innerHTML = modalHeader('Public locations','modalOptions()') + `
+    <p class="modal-intro" style="padding:16px 22px 2px">Turn on the regions your users are in. Managed by kapptivate, ready instantly. One region is enabled by default when your workspace is created.</p>
+    <div class="modal-scroll">${rows}</div>
+    <div class="modal-foot">
+      <span class="foot-count" id="pubCount">${pubCount()} region${pubCount()>1?'s':''} enabled</span>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="applyPublic()">Done</button>
+    </div>`;
+}
+
+function setRegion(id,on){
+  const l=LOCATIONS.find(x=>x.id===id);
+  l.enabled=on;
+  const c=pubCount();
+  document.getElementById('pubCount').textContent = `${c} region${c>1?'s':''} enabled`;
+}
+function applyPublic(){closeModal();renderList();}
+function choosePrivate(k){
+  if(k==='desktop'){dsStep=1;dsDraft.connected=false;modalDesktop();}
+  if(k==='appliance'){closeModal();alert('→ Flow appliance : appairer un boîtier via un code d\'enrôlement, il apparaît en Private / Workspace.');}
+}
+
+/* ---- Desktop runner wizard ---- */
+let dsStep=1, dsNewId=null;
+const dsDraft={os:'mac',connected:false,name:'julien-macbook',scope:'personal',caps:['Web','Mobile'],zone:'Europe/France/Rennes',host:'MacBook Pro · Julien'};
+const OS={mac:'macOS',win:'Windows',linux:'Linux'};
+const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>';
+
+function dsStepper(){
+  const steps=['Install','Pair','Configure'];
+  const cur = dsStep==='done'?4:dsStep;
+  return `<div class="stepper">${steps.map((s,i)=>{
+    const n=i+1, cls=cur>n?'done':(cur===n?'active':'');
+    return `<div class="step ${cls}"><span class="num">${cur>n?'✓':n}</span>${s}</div>${i<2?'<span class="step-line"></span>':''}`;
+  }).join('')}</div>`;
+}
+
+function toggleCap(c){
+  const i=dsDraft.caps.indexOf(c);
+  if(i<0) dsDraft.caps.push(c); else if(dsDraft.caps.length>1) dsDraft.caps.splice(i,1);
+  modalDesktop();
+}
+
+function modalDesktop(){
+  let body='',foot='';
+  if(dsStep===1){
+    body=`<div class="modal-body">
+      <p style="font-size:13px;color:var(--text-muted)">Install kapptivate Desktop on the machine that will run your tests. It turns that computer into a private location.</p>
+      <div class="os-row">${Object.keys(OS).map(v=>`<div class="os-btn ${dsDraft.os===v?'sel':''}" onclick="dsDraft.os='${v}';modalDesktop()">${ICON.desktop}${OS[v]}</div>`).join('')}</div>
+      <button class="btn" style="width:100%;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Download for ${OS[dsDraft.os]}</button>
+    </div>`;
+    foot=`<button class="btn" onclick="modalOptions()">Back</button><button class="btn primary" onclick="dsStep=2;modalDesktop()">I've installed it</button>`;
+  } else if(dsStep===2){
+    if(!dsDraft.connected) setTimeout(()=>{if(dsStep===2&&!dsDraft.connected){dsDraft.connected=true;modalDesktop();}},1700);
+    body=`<div class="modal-body">
+      <p style="font-size:13px;color:var(--text-muted)">Open the app, sign in to kapptivate, and enter this pairing code:</p>
+      <div class="codebox">KOA-4F2A-9B7C <button onclick="this.textContent='Copied ✓'">Copy</button></div>
+      ${dsDraft.connected
+        ? `<div class="connected">${CHECK} Runner detected: ${dsDraft.host} · ${dsDraft.zone}</div>`
+        : `<div class="wait"><span class="spin"></span>Waiting for the runner to connect...</div>`}
+    </div>`;
+    foot=`<button class="btn" onclick="dsStep=1;modalDesktop()">Back</button><button class="btn primary" ${dsDraft.connected?'':'disabled'} onclick="dsStep=3;modalDesktop()">Next</button>`;
+  } else if(dsStep===3){
+    body=`<div class="modal-body">
+      <div class="field"><label>Location name</label><input value="${dsDraft.name}" oninput="dsDraft.name=this.value"></div>
+      <div class="field"><label>Scope</label>
+        <div class="radio-opt ${dsDraft.scope==='personal'?'sel':''}" onclick="dsDraft.scope='personal';modalDesktop()"><span class="rd"></span><div><h5>Personal</h5><p>Only you can run tests on this runner.</p></div></div>
+        <div class="radio-opt ${dsDraft.scope==='workspace'?'sel':''}" onclick="dsDraft.scope='workspace';modalDesktop()"><span class="rd"></span><div><h5>Shared with workspace</h5><p>Anyone in kapptivate can run tests on it.</p></div></div>
+      </div>
+      <div class="field"><label>Capabilities</label><div class="caps-row">${['Web','Mobile','API'].map(c=>`<span class="chip ${dsDraft.caps.includes(c)?'sel':''}" onclick="toggleCap('${c}')">${c}</span>`).join('')}</div></div>
+      <div class="field"><label>Zone (auto-detected)</label><input value="${dsDraft.zone}" disabled></div>
+    </div>`;
+    foot=`<button class="btn" onclick="dsStep=2;modalDesktop()">Back</button><button class="btn primary" onclick="finishDesktop()">Add location</button>`;
+  } else {
+    body=`<div class="modal-body" style="text-align:center;padding-top:22px">
+      <div class="done-icon">${CHECK}</div>
+      <h3 style="font-size:17px">Desktop runner connected</h3>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:6px;max-width:380px;margin-left:auto;margin-right:auto">${dsDraft.name} is now a private location (${dsDraft.scope==='personal'?'Personal':'Workspace'}). You can select it when running a test.</p>
+    </div>`;
+    foot=`<button class="btn" onclick="closeModal();setTab('private')">Done</button><button class="btn primary" onclick="closeModal();showDetail(dsNewId)">View location</button>`;
+  }
+  const head = dsStep==='done'
+    ? `<div class="modal-head" style="border:none;justify-content:flex-end;padding-bottom:0"><button class="mh-close" onclick="closeModal()">&times;</button></div>`
+    : modalHeader('Connect a desktop runner','modalOptions()');
+  modalContent.innerHTML = head + (dsStep==='done'?'':dsStepper()) + body + `<div class="modal-foot">${foot}</div>`;
+}
+
+function finishDesktop(){
+  dsNewId='dr-'+Date.now();
+  LOCATIONS.push({id:dsNewId,name:dsDraft.name,kind:'private',cat:'desktop',runner:'desktop',scope:dsDraft.scope,zone:dsDraft.zone,status:'online',version:'v7.30.0',owner:dsDraft.scope==='personal'?'julien.kapptivate':'',host:dsDraft.host,uuid:(crypto.randomUUID?crypto.randomUUID():'a1b2c3d4-gen'),caps:dsDraft.caps.join(' · '),devices:[]});
+  dsStep='done';
+  modalDesktop();
+}
+
+/* ---- Connect hardware wizard ---- */
+let hwStep=1, hwNewId=null;
+const hwDraft={type:'cellular',connected:false,name:'',zone:'Guinee/Conakry'};
+const HW_TYPES=[['cellular','SIM'],['smartphone','Smartphone'],['web','Web'],['passive','Passive']];
+const TYPEICON={
+  cellular:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 6h6M9 10h6"/></svg>',
+  smartphone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>',
+  web:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>',
+  passive:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>'
+};
+function openHardware(){hwStep=1;hwDraft.connected=false;hwDraft.type='cellular';hwDraft.name='';modalHardware();}
+function hwStepper(){
+  const steps=['Type','Pair','Configure']; const cur=hwStep==='done'?4:hwStep;
+  return `<div class="stepper">${steps.map((s,i)=>{const n=i+1,cls=cur>n?'done':(cur===n?'active':'');return `<div class="step ${cls}"><span class="num">${cur>n?'✓':n}</span>${s}</div>${i<2?'<span class="step-line"></span>':''}`;}).join('')}</div>`;
+}
+function modalHardware(){
+  modalEl.classList.remove('hidden');
+  let body='',foot='';
+  if(hwStep===1){
+    body=`<div class="modal-body">
+      <p class="modal-intro">What kind of robot are you connecting? This sets its capability.</p>
+      <div class="hw-types">${HW_TYPES.map(t=>`<div class="opt-tile ${hwDraft.type===t[0]?'sel':''}" onclick="hwDraft.type='${t[0]}';modalHardware()">${TYPEICON[t[0]]}<span>${t[1]}</span></div>`).join('')}</div>
+    </div>`;
+    foot=`<button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="hwStep=2;modalHardware()">Next</button>`;
+  } else if(hwStep===2){
+    if(!hwDraft.connected) setTimeout(()=>{if(hwStep===2&&!hwDraft.connected){hwDraft.connected=true;modalHardware();}},1700);
+    body=`<div class="modal-body">
+      <p class="modal-intro">Power on the robot, connect it to the network, and enter this enrollment code in its setup screen:</p>
+      <div class="codebox">KAP-7C1D-2E9F <button onclick="this.textContent='Copied ✓'">Copy</button></div>
+      ${hwDraft.connected?`<div class="connected">${CHECK} Robot detected on the network</div>`:`<div class="wait"><span class="spin"></span>Waiting for the robot to connect...</div>`}
+    </div>`;
+    foot=`<button class="btn" onclick="hwStep=1;modalHardware()">Back</button><button class="btn primary" ${hwDraft.connected?'':'disabled'} onclick="hwStep=3;modalHardware()">Next</button>`;
+  } else if(hwStep===3){
+    body=`<div class="modal-body">
+      <div class="field"><label>Name</label><input value="${hwDraft.name}" placeholder="e.g. ogn-4g-05" oninput="hwDraft.name=this.value"></div>
+      <div class="field"><label>Capability</label><input value="${catLabel(hwDraft.type)}" disabled></div>
+      <div class="field"><label>Zone</label><input value="${hwDraft.zone}" oninput="hwDraft.zone=this.value"></div>
+    </div>`;
+    foot=`<button class="btn" onclick="hwStep=2;modalHardware()">Back</button><button class="btn primary" onclick="finishHardware()">Connect</button>`;
+  } else {
+    body=`<div class="modal-body" style="text-align:center;padding-top:22px">
+      <div class="done-icon">${CHECK}</div>
+      <h3 style="font-size:17px">Robot connected</h3>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:6px;max-width:380px;margin-left:auto;margin-right:auto">${hwDraft.name||'New robot'} is now available under ${catLabel(hwDraft.type)}.</p>
+    </div>`;
+    foot=`<button class="btn" onclick="closeModal();setView('hardware')">Done</button><button class="btn primary" onclick="closeModal();showDetail(hwNewId)">View</button>`;
+  }
+  const head = hwStep==='done'
+    ? `<div class="modal-head" style="border:none;justify-content:flex-end;padding-bottom:0"><button class="mh-close" onclick="closeModal()">&times;</button></div>`
+    : `<div class="modal-head"><div class="mh-title"><h3>Connect a robot</h3></div><button class="mh-close" onclick="closeModal()">&times;</button></div>`;
+  modalContent.innerHTML = head + (hwStep==='done'?'':hwStepper()) + body + `<div class="modal-foot">${foot}</div>`;
+}
+function finishHardware(){
+  hwNewId='hw-'+Date.now();
+  LOCATIONS.push({id:hwNewId,name:hwDraft.name||('new-'+hwDraft.type),kind:'private',cat:hwDraft.type,runner:'appliance',scope:'workspace',zone:hwDraft.zone,status:'online',version:'v1.0.0',host:hwDraft.name||('new-'+hwDraft.type),uuid:(crypto.randomUUID?crypto.randomUUID():'hw-gen'),caps:catLabel(hwDraft.type),devices:[]});
+  hwStep='done'; modalHardware();
+}
+modalEl.addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+
+if(!hasHardware()){ ['nav-hardware','nav-devices'].forEach(id=>{const n=document.getElementById(id); if(n) n.style.display='none';}); }
+render();
+</script>
+</body>
+</html>
