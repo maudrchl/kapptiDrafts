@@ -39,7 +39,12 @@ const files = fs
       status: meta[f] || "",
     };
   })
-  .sort((a, b) => b.mtime - a.mtime);
+  .sort((a, b) => {
+    const aDeployed = normalizeStatus(a.status) === "deploye" ? 1 : 0;
+    const bDeployed = normalizeStatus(b.status) === "deploye" ? 1 : 0;
+    if (aDeployed !== bDeployed) return aDeployed - bDeployed;
+    return b.mtime - a.mtime;
+  });
 
 const rows = files
   .map((f, i) => {
