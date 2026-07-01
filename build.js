@@ -7,6 +7,7 @@ const meta = JSON.parse(fs.readFileSync(path.join(dir, "protos.json"), "utf8"));
 
 const statusConfig = {
   "en cours design": { color: "#9a6700", bg: "#fff8e1" },
+  "en cours dev":    { color: "#cf4e17", bg: "#fff1e6" },
   "a valider":       { color: "#0969da", bg: "#e8f0fe" },
   "valide":          { color: "#1a7f37", bg: "#e6f4ea" },
   "deploye":         { color: "#6e40c9", bg: "#f0ebfe" },
