@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kapptivate — Workspace Settings · AI Usage</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #ED7846;
+    --primary-dark: #D26334;
+    --teal: #15433E;
+    --teal-2: #1C4A47;
+    --white: #FFFFFF;
+    --grey: #FAFAFB;
+    --grey-2: #F4F4F5;
+    --grey-3: #EFEFF1;
+
+    --text-primary: #24292F;
+    --text-secondary: #667085;
+    --text-tertiary: #98A2B3;
+
+    --success: #1FAE7E;
+    --success-light: #E6F7F0;
+    --warning: #F2B338;
+    --warning-light: #FEF6E6;
+    --warning-text: #8A6206;
+    --error: #E0372E;
+    --error-light: #FDECEB;
+    --error-text: #8A1E18;
+    --blue: #2E90FA;
+    --blue-light: #EFF8FF;
+    --blue-text: #1A5BA8;
+    --purple: #7C3AED;
+    --purple-light: #F4F0FE;
+    --chart-bar: #2E7D74;
+    --cache: #A3D9D0;
+
+    --border: #E4E4E7;
+    --border-strong: #D0D5DD;
+
+    --shadow-s: 0 1px 2px #1018280D;
+    --shadow-md: 0 4px 8px -2px rgba(16,24,40,0.08), 0 2px 4px -2px rgba(16,24,40,0.04);
+    --shadow-lg: 0 12px 32px -8px rgba(16,24,40,0.18), 0 4px 8px -2px rgba(16,24,40,0.06);
+
+    --r-md: 6px; --r-lg: 8px; --r-xl: 12px; --r-full: 999px;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Geist',-apple-system,sans-serif; background:var(--grey); color:var(--text-primary); font-size:14px; overflow:hidden; }
+  .ic { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+
+  /* ===== TOPBAR ===== */
+  .topbar { height:60px; background:var(--teal); display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; }
+  .brand { display:flex; align-items:center; gap:8px; color:#fff; font-weight:600; font-size:16px; letter-spacing:-0.01em; }
+  .brand-mark { width:18px; height:18px; color:var(--primary); }
+  .topbar-x { position:absolute; right:16px; top:50%; transform:translateY(-50%); width:30px; height:30px; border-radius:6px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.7); cursor:pointer; }
+  .topbar-x:hover { background:rgba(255,255,255,0.1); color:#fff; }
+
+  /* ===== BODY ===== */
+  .body { display:flex; height:calc(100vh - 60px); }
+
+  /* nav */
+  .nav { width:272px; background:var(--white); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; }
+  .nav-scroll { flex:1; overflow-y:auto; padding:16px 14px; }
+  .ws-card { display:flex; align-items:center; gap:10px; padding:9px 10px; border:1px solid var(--border); border-radius:var(--r-lg); margin-bottom:18px; }
+  .ws-avatar { width:30px; height:30px; border-radius:7px; background:#FDEAD9; display:flex; align-items:center; justify-content:center; color:var(--primary); }
+  .ws-name { font-size:13.5px; font-weight:600; }
+  .ws-label { font-size:11.5px; color:var(--text-tertiary); }
+  .nav-section { padding:14px 10px 6px; font-size:11px; color:var(--text-tertiary); letter-spacing:0.05em; text-transform:uppercase; font-weight:600; }
+  .nav-item { display:flex; align-items:center; gap:11px; padding:8px 10px; border-radius:var(--r-md); color:var(--text-secondary); font-size:13.5px; cursor:pointer; margin-bottom:1px; border-left:3px solid transparent; }
+  .nav-item:hover { background:var(--grey-2); color:var(--text-primary); }
+  .nav-item .ic { color:var(--text-tertiary); }
+  .nav-item.active { background:var(--grey-2); color:var(--text-primary); border-left-color:var(--primary); font-weight:500; }
+  .nav-item.active .ic { color:var(--primary); }
+  .nav-foot { padding:14px 18px; font-size:11px; color:var(--text-tertiary); line-height:1.7; border-top:1px solid var(--border); }
+
+  /* content */
+  .content { flex:1; overflow-y:auto; }
+  .content-head { display:flex; align-items:center; justify-content:space-between; padding:22px 32px 18px; position:sticky; top:0; background:var(--grey); z-index:5; }
+  .ch-title { font-size:21px; font-weight:600; letter-spacing:-0.01em; }
+  .ch-sub { font-size:13px; color:var(--text-secondary); margin-top:3px; }
+  .ch-actions { display:flex; gap:10px; align-items:center; }
+  .btn { border:1px solid var(--border); background:var(--white); padding:8px 14px; border-radius:var(--r-md); font-size:13px; font-weight:500; cursor:pointer; font-family:inherit; color:var(--text-primary); display:flex; gap:7px; align-items:center; }
+  .btn:hover { border-color:var(--border-strong); }
+  .btn.primary { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .btn.primary:hover { background:var(--primary-dark); border-color:var(--primary-dark); }
+  .btn .ic { width:15px; height:15px; }
+  .content-body { padding:0 32px 90px; max-width:1180px; }
+
+  /* banners */
+  .banner { display:none; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:var(--r-lg); margin-bottom:18px; border:1px solid transparent; font-size:13.5px; line-height:1.5; }
+  .banner.show { display:flex; }
+  .banner .ic { width:18px; height:18px; margin-top:1px; }
+  .b-title { font-weight:600; margin-bottom:2px; }
+  .banner.warn { background:var(--warning-light); border-color:rgba(242,179,56,0.4); color:var(--warning-text); }
+  .banner.err { background:var(--error-light); border-color:rgba(224,55,46,0.35); color:var(--error-text); }
+  .banner.info { background:var(--blue-light); border-color:rgba(46,144,250,0.3); color:var(--blue-text); }
+  .b-cta { margin-left:auto; flex-shrink:0; }
+
+  /* card */
+  .card { background:var(--white); border:1px solid var(--border); border-radius:var(--r-xl); padding:16px 22px 18px; margin-bottom:18px; box-shadow:var(--shadow-s); }
+  .card-title { font-size:14px; font-weight:600; }
+  .card-sub { font-size:12px; color:var(--text-secondary); margin-top:2px; }
+  .card-hr { height:1px; background:var(--border); margin:12px -22px 16px; }
+  .card-head { display:flex; justify-content:space-between; align-items:flex-start; }
+
+  /* budget */
+  .budget-top { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; }
+  .b-label { font-size:12.5px; color:var(--text-secondary); }
+  .b-amount { font-size:36px; font-weight:700; letter-spacing:-0.02em; margin-top:3px; }
+  .b-amount small { font-size:18px; color:var(--text-tertiary); font-weight:600; }
+  .b-mode { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-secondary); background:var(--grey-2); padding:7px 12px; border-radius:var(--r-full); }
+  .b-mode b { color:var(--text-primary); }
+
+  .gauge-track { position:relative; height:16px; background:var(--grey-2); border-radius:var(--r-full); }
+  .gauge-fill { height:100%; width:0; border-radius:var(--r-full); background:var(--success); transition:width 0.7s var(--ease), background 0.4s; }
+  .gauge-over { position:absolute; top:0; right:0; height:100%; width:0; background:repeating-linear-gradient(45deg,#fff 0,#fff 3px,transparent 3px,transparent 7px),var(--error); border-radius:0 var(--r-full) var(--r-full) 0; transition:width 0.35s var(--ease); }
+  .gauge-marker { position:absolute; top:-6px; bottom:-6px; width:2px; background:var(--text-secondary); opacity:0.4; }
+  .gauge-marker span { position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--text-secondary); white-space:nowrap; font-weight:600; }
+  .gauge-legend { display:flex; justify-content:space-between; margin-top:13px; font-size:12.5px; color:var(--text-secondary); }
+  .gauge-legend b { color:var(--text-primary); }
+
+  /* kpis */
+  .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; margin-top:22px; }
+  .kpi { background:var(--white); padding:16px 18px; }
+  .kpi-label { font-size:12px; color:var(--text-secondary); display:flex; align-items:center; gap:7px; }
+  .kpi-label .ic { width:14px; height:14px; color:var(--text-tertiary); }
+  .kpi-value { font-size:22px; font-weight:700; margin:8px 0 5px; letter-spacing:-0.01em; }
+  .kpi-trend { font-size:12px; font-weight:500; display:flex; align-items:center; gap:5px; }
+  .kpi-trend .ic { width:13px; height:13px; }
+  .kpi-trend.up { color:var(--error); }
+  .kpi-trend.down { color:var(--success); }
+  .kpi-trend.flat { color:var(--text-tertiary); }
+  .chip { font-size:11px; font-weight:600; padding:3px 8px; border-radius:var(--r-full); }
+  .chip.green { background:var(--success-light); color:var(--success); }
+
+  /* grid */
+  .grid-2 { display:grid; grid-template-columns:1.55fr 1fr; gap:18px; }
+
+  /* chart */
+  .seg { display:flex; background:var(--grey-2); border-radius:var(--r-md); padding:3px; }
+  .seg button { border:none; background:none; font-family:inherit; font-size:12px; font-weight:500; color:var(--text-secondary); padding:5px 11px; border-radius:4px; cursor:pointer; }
+  .seg button.active { background:#fff; color:var(--text-primary); box-shadow:var(--shadow-s); }
+  .chart { width:100%; height:210px; }
+  .chart-bar { transition:all .5s var(--ease); cursor:pointer; }
+  .chart-bar:hover { opacity:0.85; }
+  .chart-x,.chart-y { font-size:10.5px; fill:var(--text-tertiary); }
+  .chart-grid { stroke:var(--border); stroke-width:1; stroke-dasharray:2 3; }
+  .chart-budget-line { stroke:var(--error); stroke-width:1.5; stroke-dasharray:4 3; }
+  .chart-legend { display:flex; gap:18px; font-size:12px; color:var(--text-secondary); margin-top:12px; align-items:center; flex-wrap:wrap; }
+  .lg-dot { width:9px; height:9px; border-radius:2px; display:inline-block; margin-right:6px; vertical-align:middle; }
+
+  /* breakdown */
+  .bd-row { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
+  .card-hr + .bd-row { padding-top:0; }
+  .bd-row:last-child { border-bottom:none; padding-bottom:0; }
+  .bd-ico { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .bd-ico .ic { width:17px; height:17px; }
+  .bd-name { font-size:13.5px; font-weight:500; }
+  .bd-meta { font-size:11.5px; color:var(--text-tertiary); margin-top:1px; }
+  .bd-cost { margin-left:auto; text-align:right; }
+  .bd-amount { font-size:14px; font-weight:600; }
+  .bd-pct { font-size:11.5px; color:var(--text-secondary); }
+
+  /* table */
+  .tbl { width:100%; border-collapse:collapse; }
+  .tbl th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-tertiary); font-weight:600; padding:0 12px 11px; border-bottom:1px solid var(--border); }
+  .tbl th.num,.tbl td.num { text-align:right; }
+  .tbl td { padding:13px 12px; border-bottom:1px solid var(--border); font-size:13px; }
+  .tbl tr:last-child td { border-bottom:none; }
+  .tbl tbody tr:hover td { background:var(--grey); }
+  .tag { font-size:11px; font-weight:500; padding:3px 9px; border-radius:var(--r-full); background:var(--grey-2); color:var(--text-secondary); }
+  .mono { font-variant-numeric:tabular-nums; }
+  .save { color:var(--success); font-weight:600; }
+
+  /* policy radios */
+  .opt { display:flex; gap:13px; align-items:flex-start; padding:15px; border:1px solid var(--border); border-radius:var(--r-lg); cursor:pointer; margin-bottom:12px; transition:all .2s; }
+  .opt.sel { border-color:var(--primary); border-width:1.5px; background:rgba(237,120,70,0.04); padding:14.5px; }
+  .opt-radio { width:18px; height:18px; border-radius:50%; border:2px solid var(--border-strong); flex-shrink:0; margin-top:1px; position:relative; }
+  .opt.sel .opt-radio { border-color:var(--primary); }
+  .opt.sel .opt-radio::after { content:''; position:absolute; inset:3px; border-radius:50%; background:var(--primary); }
+  .opt-name { font-weight:600; font-size:13.5px; display:flex; align-items:center; gap:8px; }
+  .opt-desc { font-size:12.5px; color:var(--text-secondary); margin-top:4px; line-height:1.45; }
+  .policy-foot { display:flex; gap:10px; align-items:center; padding-top:14px; margin-top:2px; border-top:1px solid var(--border); }
+
+  /* drawer */
+  .scrim { position:fixed; inset:0; background:rgba(16,24,40,0.4); opacity:0; pointer-events:none; transition:opacity .3s var(--ease); z-index:900; }
+  .scrim.open { opacity:1; pointer-events:auto; }
+  .drawer { position:fixed; top:0; right:0; bottom:0; width:440px; max-width:92vw; background:var(--white); box-shadow:-12px 0 40px -8px rgba(16,24,40,0.18); transform:translateX(100%); transition:transform .32s var(--ease); z-index:950; display:flex; flex-direction:column; }
+  .drawer.open { transform:translateX(0); }
+  .drawer-head { display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid var(--border); flex-shrink:0; }
+  .drawer-title { font-size:17px; font-weight:600; }
+  .drawer-sub { font-size:12.5px; color:var(--text-secondary); margin-top:2px; }
+  .drawer-close { width:30px; height:30px; border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; }
+  .drawer-close:hover { background:var(--grey-2); color:var(--text-primary); }
+  .drawer-body { flex:1; overflow-y:auto; padding:22px 24px; }
+  .drawer-foot { display:flex; justify-content:flex-end; gap:10px; padding:16px 24px; border-top:1px solid var(--border); flex-shrink:0; }
+  .field { margin-bottom:24px; }
+  .field-label { font-size:13px; font-weight:600; margin-bottom:8px; }
+  .field-hint { font-size:12px; color:var(--text-secondary); margin-bottom:10px; line-height:1.45; }
+  .input-money { display:flex; align-items:center; border:1px solid var(--border); border-radius:var(--r-md); padding:0 12px; height:40px; }
+  .input-money:focus-within { border-color:var(--primary); box-shadow:0 0 0 3px rgba(237,120,70,0.12); }
+  .input-money span { color:var(--text-tertiary); font-size:15px; }
+  .input-money input { border:none; outline:none; font-family:inherit; font-size:15px; font-weight:500; width:100%; padding:0 6px; color:var(--text-primary); }
+  .select { position:relative; }
+  .select select { -webkit-appearance:none; appearance:none; width:100%; height:40px; border:1px solid var(--border); border-radius:var(--r-md); padding:0 36px 0 12px; font-family:inherit; font-size:14px; color:var(--text-primary); background:var(--white); cursor:pointer; }
+  .select select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(237,120,70,0.12); }
+  .select .ic { position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-tertiary); pointer-events:none; }
+
+  /* gear fab */
+  .fab { position:fixed; bottom:18px; right:18px; width:38px; height:38px; border-radius:8px; background:var(--white); border:1px solid var(--border); box-shadow:var(--shadow-md); display:flex; align-items:center; justify-content:center; color:var(--text-secondary); }
+
+  /* demo bar */
+  .demo-bar { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:var(--text-primary); color:#fff; padding:9px 10px 9px 16px; border-radius:var(--r-full); display:flex; align-items:center; gap:14px; box-shadow:var(--shadow-lg); z-index:1000; font-size:13px; }
+  .demo-grp { display:flex; align-items:center; gap:8px; }
+  .demo-lbl { opacity:0.55; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; }
+  .demo-sep { width:1px; height:22px; background:rgba(255,255,255,0.15); }
+  .demo-seg { display:flex; background:rgba(255,255,255,0.1); border-radius:var(--r-full); padding:3px; }
+  .demo-seg button { border:none; background:none; color:rgba(255,255,255,0.7); font-family:inherit; font-size:12px; font-weight:500; padding:5px 12px; border-radius:var(--r-full); cursor:pointer; }
+  .demo-seg button.active { background:var(--primary); color:#fff; }
+  .demo-seg button.active.warn { background:var(--warning); color:#3D2A0A; }
+  .demo-seg button.active.err { background:var(--error); color:#fff; }
+</style>
+</head>
+<body>
+
+<!-- ICON SPRITE -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-flower" viewBox="0 0 24 24"><path d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 12a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM12 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM12 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 16V8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 7.5 12 12.5l8.7-5M12 22V12.5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="i-shieldcheck" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.5 12.5 21 2M16 7l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1"/><path d="M21 12h-5a2 2 0 0 0 0 4h5z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14 21 3"/></symbol>
+  <symbol id="i-coins" viewBox="0 0 24 24"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18M7 6h1v4M16.71 13.88l.7.71-2.82 2.82"/></symbol>
+  <symbol id="i-hash" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></symbol>
+  <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></symbol>
+  <symbol id="i-trenddown" viewBox="0 0 24 24"><path d="M23 18l-9.5-9.5-5 5L1 6"/><path d="M17 18h6v-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/></symbol>
+  <symbol id="i-beaker" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.7-.7-.7-2.7z"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.5 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.2A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5z"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+</svg>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand"><svg class="ic brand-mark"><use href="#i-flower"/></svg> kapptivate</div>
+  <div class="topbar-x"><svg class="ic"><use href="#i-x"/></svg></div>
+</div>
+
+<div class="body">
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-scroll">
+      <div class="ws-card">
+        <div class="ws-avatar"><svg class="ic"><use href="#i-flower"/></svg></div>
+        <div><div class="ws-name">kapptivate</div><div class="ws-label">Workspace</div></div>
+      </div>
+      <div class="nav-section">My account</div>
+      <div class="nav-item"><svg class="ic"><use href="#i-sliders"/></svg> Preferences</div>
+      <div class="nav-item"><svg class="ic"><use href="#i-user"/></svg> Profile</div>
+      <div class="nav-section">Workspace</div>
+      <div class="nav-item"><svg class="ic"><use href="#i-box"/></svg> Products</div>
+      <div class="nav-item"><svg class="ic"><use href="#i-users"/></svg> Users</div>
+      <div class="nav-item"><svg class="ic"><use href="#i-users"/></svg> Teams</div>
+      <div class="nav-item"><svg class="ic"><use href="#i-shield"/></svg> Roles</div>
+      <div class="nav-section">Administration</div>
+      <div class="nav-item active"><svg class="ic"><use href="#i-wallet"/></svg> AI Usage</div>
+      <div class="nav-item"><svg class="ic"><use href="#i-bell"/></svg> Notifications</div>
+      <div class="nav-item"><svg class="ic"><use href="#i-key"/></svg> API Keys</div>
+      <div class="nav-item"><svg class="ic"><use href="#i-shieldcheck"/></svg> Security policies</div>
+      <div class="nav-item"><svg class="ic"><use href="#i-list"/></svg> Event log</div>
+      <div class="nav-section">Help</div>
+      <div class="nav-item"><svg class="ic"><use href="#i-book"/></svg> Documentation <svg class="ic" style="width:13px;height:13px;margin-left:-4px"><use href="#i-ext"/></svg></div>
+    </div>
+    <div class="nav-foot">V: 8.85.0-hotfix.1<br>GUI: 15.53.0-hotfix.1</div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div class="content-head">
+      <div>
+        <div class="ch-title">AI Usage</div>
+        <div class="ch-sub">Token consumption against your plan allowance, with overage billing</div>
+      </div>
+      <div class="ch-actions">
+        <button class="btn"><svg class="ic"><use href="#i-download"/></svg> Export</button>
+        <button class="btn primary" id="manage-btn">Manage budget</button>
+      </div>
+    </div>
+
+    <div class="content-body">
+
+      <!-- BANNERS -->
+      <div class="banner warn" id="banner-warn">
+        <svg class="ic"><use href="#i-warn"/></svg>
+        <div><div class="b-title">85% of your monthly tokens used</div>
+        At the current rate, your <b>60M</b> included tokens will run out around <b>May 27</b>. AI actions keep working; admins have been notified.</div>
+        <button class="btn b-cta" style="background:#fff;border-color:rgba(242,179,56,0.5)">Add tokens</button>
+      </div>
+      <div class="banner warn" id="banner-overage">
+        <svg class="ic"><use href="#i-warn"/></svg>
+        <div><div class="b-title">Monthly allowance used up — overage billing active</div>
+        All <b>60M</b> included tokens are used. Extra usage keeps running and is billed as overage (<b>1.2M tokens · €38</b> so far this month). Resets on <b>Jun 1</b>.</div>
+        <button class="btn b-cta" style="background:#fff;border-color:rgba(242,179,56,0.5)">Manage plan</button>
+      </div>
+      <div class="banner err" id="banner-blocked">
+        <svg class="ic"><use href="#i-ban"/></svg>
+        <div><div class="b-title">Monthly allowance used up — new AI actions blocked</div>
+        All <b>60M</b> included tokens are used and the hard limit blocks further actions. No overage is charged. Resumes on <b>Jun 1</b> or after adding tokens.</div>
+        <button class="btn primary b-cta">Add tokens</button>
+      </div>
+      <div class="banner info" id="banner-anticip">
+        <svg class="ic"><use href="#i-shieldcheck"/></svg>
+        <div><div class="b-title">Hard limit active</div>
+        Each action is estimated <b>before it runs</b> and blocked if it would exceed the remaining tokens. No overage, but +120&nbsp;ms average latency and approximate estimates (token cache unknown in advance).</div>
+      </div>
+
+      <!-- BUDGET CARD -->
+      <div class="card">
+        <div class="budget-top">
+          <div>
+            <div class="b-label">Tokens used this month</div>
+            <div class="b-amount" id="b-amount">51M <small>/ 60M included</small></div>
+          </div>
+          <div class="b-mode"><span>Budget policy</span> <b id="mode-name">Soft limit</b></div>
+        </div>
+        <div class="gauge-track">
+          <div class="gauge-fill" id="gauge-fill"></div>
+          <div class="gauge-over" id="gauge-over"></div>
+          <div class="gauge-marker" style="left:85%"><span>Alert 85%</span></div>
+        </div>
+        <div class="gauge-legend">
+          <span id="g-pct"><b>85%</b> of monthly tokens used</span>
+          <span id="g-remain"><b>9M</b> tokens left · renews on Jun 1</span>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi">
+            <div class="kpi-label"><svg class="ic"><use href="#i-hash"/></svg> Tokens used</div>
+            <div class="kpi-value" id="kpi-used">51M</div>
+            <div class="kpi-trend up"><svg class="ic"><use href="#i-trend"/></svg> 12% vs April</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label"><svg class="ic"><use href="#i-wallet"/></svg> Plan allowance</div>
+            <div class="kpi-value">60M</div>
+            <div class="kpi-trend flat">Starter plan · per month</div>
+          </div>
+          <div class="kpi" title="Many AI calls reuse the same context (product info, instructions, test specs). That shared part is served from cache at a deep discount instead of being re-billed. This is the volume you saved this month thanks to caching.">
+            <div class="kpi-label"><svg class="ic"><use href="#i-database"/></svg> Cache savings</div>
+            <div class="kpi-value">11.5M</div>
+            <div class="kpi-trend"><span class="chip green">24% of tokens cached</span></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label"><svg class="ic"><use href="#i-trend"/></svg> End-of-month forecast</div>
+            <div class="kpi-value" id="kpi-proj">61M</div>
+            <div class="kpi-trend up" id="kpi-proj-trend"><svg class="ic"><use href="#i-trend"/></svg> 1.7% over plan</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHART + BREAKDOWN -->
+      <div class="grid-2">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head">
+            <div><div class="card-title">Daily consumption</div><div class="card-sub" id="chart-sub">Tokens per day vs daily allowance</div></div>
+            <div class="seg" id="seg-unit"><button data-unit="tokens" class="active">Tokens</button><button data-unit="cost">Cost</button></div>
+          </div>
+          <div class="card-hr"></div>
+          <svg class="chart" viewBox="0 0 640 210" id="chart"></svg>
+          <div class="chart-legend" id="chart-legend"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head"><div><div class="card-title">By feature</div><div class="card-sub">Token breakdown</div></div></div>
+          <div class="card-hr"></div>
+          <div class="bd-row">
+            <div class="bd-ico" style="background:var(--blue-light);color:var(--blue)"><svg class="ic"><use href="#i-search"/></svg></div>
+            <div><div class="bd-name">Incident analysis (RCA)</div><div class="bd-meta">308 actions · ~66K tokens/action</div></div>
+            <div class="bd-cost"><div class="bd-amount">20.5M</div><div class="bd-pct">43% · €735</div></div>
+          </div>
+          <div class="bd-row">
+            <div class="bd-ico" style="background:var(--warning-light);color:#B8860B"><svg class="ic"><use href="#i-wrench"/></svg></div>
+            <div><div class="bd-name">Test auto-repair</div><div class="bd-meta">540 actions · ~31K tokens/action</div></div>
+            <div class="bd-cost"><div class="bd-amount">16.8M</div><div class="bd-pct">31% · €525</div></div>
+          </div>
+          <div class="bd-row">
+            <div class="bd-ico" style="background:var(--purple-light);color:var(--purple)"><svg class="ic"><use href="#i-sparkles"/></svg></div>
+            <div><div class="bd-name">Assistant &amp; quick actions</div><div class="bd-meta">6,240 actions · ~1.7K tokens/action</div></div>
+            <div class="bd-cost"><div class="bd-amount">10.9M</div><div class="bd-pct">26% · €455</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:18px"></div>
+
+      <!-- RECENT ACTIONS (full width) -->
+      <div class="card" style="margin-bottom:0">
+        <div class="card-head"><div><div class="card-title">Recent AI actions</div><div class="card-sub" id="recent-sub">Cost charged after each action runs (soft limit)</div></div></div>
+        <div class="card-hr"></div>
+        <table class="tbl">
+          <thead><tr><th>Action</th><th>User</th><th>Time</th><th class="num">Tokens</th><th class="num">Cache</th><th class="num">Cost</th></tr></thead>
+          <tbody>
+            <tr><td>RCA · <span class="tag">INC-2041</span></td><td>Maud</td><td>10:42</td><td class="num mono">132K</td><td class="num mono save">−24%</td><td class="num mono">€4.10</td></tr>
+            <tr><td>Auto-repair · <span class="tag">SMS OTP</span></td><td>System</td><td>10:31</td><td class="num mono">88K</td><td class="num mono save">−18%</td><td class="num mono">€2.85</td></tr>
+            <tr><td>Generate description · <span class="tag">Monitor "API latency"</span></td><td>Léa</td><td>10:18</td><td class="num mono">6K</td><td class="num mono">—</td><td class="num mono">€0.12</td></tr>
+            <tr><td>Summarize · <span class="tag">INC-2039</span></td><td>Guillaume</td><td>09:58</td><td class="num mono">18K</td><td class="num mono save">−9%</td><td class="num mono">€0.41</td></tr>
+            <tr><td>Suggest name · <span class="tag">Checkout step</span></td><td>Léa</td><td>09:44</td><td class="num mono">3K</td><td class="num mono">—</td><td class="num mono">€0.07</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MANAGE BUDGET DRAWER -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div><div class="drawer-title">Manage budget</div><div class="drawer-sub">Monthly AI budget for this workspace</div></div>
+    <div class="drawer-close" id="drawer-close"><svg class="ic"><use href="#i-x"/></svg></div>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <div class="field-label">Monthly budget</div>
+      <div class="field-hint">Total credit available for AI actions each month. Renews on the 1st.</div>
+      <div class="input-money"><span>€</span><input type="text" value="2,000" inputmode="numeric"></div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Budget policy</div>
+      <div class="field-hint">What happens when the credit runs out.</div>
+      <div class="opt sel" id="opt-post">
+        <div class="opt-radio"></div>
+        <div><div class="opt-name">Soft limit <span class="tag" style="background:var(--success-light);color:var(--success)">recommended</span></div>
+        <div class="opt-desc">Action runs immediately, cost is counted afterward. Smooth, but tolerates small overages at the very end of the budget.</div></div>
+      </div>
+      <div class="opt" id="opt-ant">
+        <div class="opt-radio"></div>
+        <div><div class="opt-name">Hard limit</div>
+        <div class="opt-desc">Cost is estimated before the action runs and blocked if it would exceed the budget. No overage, but slower and based on an estimate.</div></div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:0">
+      <div class="field-label">Alert threshold</div>
+      <div class="field-hint">Notify admins and show a banner when usage reaches this level.</div>
+      <div class="select">
+        <select><option>75%</option><option selected>85%</option><option>90%</option><option>95%</option></select>
+        <svg class="ic"><use href="#i-chev"/></svg>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn" id="drawer-cancel">Cancel</button>
+    <button class="btn primary" id="drawer-save">Save changes</button>
+  </div>
+</aside>
+
+<div class="fab"><svg class="ic"><use href="#i-gear"/></svg></div>
+
+<!-- DEMO BAR -->
+<div class="demo-bar">
+  <div class="demo-grp">
+    <span class="demo-lbl">Budget state</span>
+    <div class="demo-seg" id="seg-state">
+      <button class="active" data-state="normal">Normal</button>
+      <button data-state="warn">85% threshold</button>
+      <button data-state="over">Exceeded</button>
+    </div>
+  </div>
+  <div class="demo-sep"></div>
+  <div class="demo-grp">
+    <span class="demo-lbl">Policy</span>
+    <div class="demo-seg" id="seg-mode">
+      <button class="active" data-mode="post">Soft limit</button>
+      <button data-mode="ant">Hard limit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // chart (switchable: tokens / cost)
+  const days=[42,55,48,61,58,66,72,69,64,71,78,74,68,82,77,63,70,88,80,75,84,91,86,79,90,72,64];
+  const cache=days.map(v=>v*(0.18+Math.random()*0.12));
+  const W=640,H=210,pl=42,pr=8,pt=12,pb=24,maxV=100,budgetLine=64.5;
+  const innerW=W-pl-pr,innerH=H-pt-pb,bw=innerW/days.length;
+  const y=v=>pt+innerH-(v/maxV)*innerH;
+  const units={
+    tokens:{ ylabel:g=>(g*0.03).toFixed(2)+'M', tip:v=>(v*0.03).toFixed(2)+'M', line:'Daily allowance (~1.9M)', billed:'Billed against plan', sub:'Tokens per day vs daily allowance' },
+    cost:{ ylabel:g=>'€'+g, tip:v=>'€'+v.toFixed(0), line:'Daily budget (€64.5)', billed:'Billed cost', sub:'Cost per day vs daily budget' },
+  };
+  const stateFactor={normal:0.72,warn:1.0,over:1.12};
+  let curUnit='tokens';
+  function renderChart(){
+    const u=units[curUnit], f=stateFactor[cur];
+    let s=`<line class="chart-grid" x1="${pl}" y1="${y(0)}" x2="${W-pr}" y2="${y(0)}"/>`;
+    [25,50,75,100].forEach(g=>{ s+=`<line class="chart-grid" x1="${pl}" y1="${y(g)}" x2="${W-pr}" y2="${y(g)}"/><text class="chart-y" x="${pl-6}" y="${y(g)+3}" text-anchor="end">${u.ylabel(g)}</text>`; });
+    const topRound=(x,yy,w,h,r)=>{r=Math.min(r,h);return `M${x} ${yy+h} L${x} ${yy+r} Q${x} ${yy} ${x+r} ${yy} L${x+w-r} ${yy} Q${x+w} ${yy} ${x+w} ${yy+r} L${x+w} ${yy+h} Z`;};
+    days.forEach((d,i)=>{
+      const v=Math.min(d*f,100), c=Math.min(cache[i]*f,v);
+      const x=pl+i*bw+bw*0.18,w=bw*0.64;
+      // full bar = total, rounded top only; cache share overlaid at the bottom (lighter, flat seam)
+      s+=`<path class="chart-bar" d="${topRound(x,y(v),w,y(0)-y(v),3)}" fill="var(--chart-bar)"><title>Day ${i+1}: ${u.tip(v)} total · ${u.tip(v-c)} billed</title></path>`;
+      s+=`<rect class="chart-bar" x="${x}" y="${y(c)}" width="${w}" height="${y(0)-y(c)}" fill="var(--cache)"><title>Day ${i+1}: ${u.tip(c)} from cache</title></rect>`;
+      if(i%4===0) s+=`<text class="chart-x" x="${x+w/2}" y="${H-8}" text-anchor="middle">${i+1}</text>`;
+    });
+    s+=`<line class="chart-budget-line" x1="${pl}" y1="${y(budgetLine)}" x2="${W-pr}" y2="${y(budgetLine)}"/>`;
+    document.getElementById('chart').innerHTML=s;
+    document.getElementById('chart-sub').textContent=u.sub;
+    document.getElementById('chart-legend').innerHTML=
+      `<span><span class="lg-dot" style="background:var(--chart-bar)"></span>${u.billed}</span>`+
+      `<span><span class="lg-dot" style="background:var(--cache)"></span>Served from cache (free)</span>`+
+      `<span><span class="lg-dot" style="background:var(--error)"></span>${u.line}</span>`;
+  }
+  document.querySelectorAll('#seg-unit button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#seg-unit button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); curUnit=b.dataset.unit; renderChart();
+  });
+
+  // state machine
+  const fill=document.getElementById('gauge-fill'), over=document.getElementById('gauge-over');
+  const states={
+    normal:{pct:55,color:'var(--success)',overPct:0,used:'33M <small>/ 60M included</small>',usedKpi:'33M',gpct:'<b>55%</b> of monthly tokens used',remain:'<b>27M</b> tokens left · renews on Jun 1',proj:'59M',projT:['down','i-trenddown','1% under plan']},
+    warn:{pct:85,color:'var(--warning)',overPct:0,used:'51M <small>/ 60M included</small>',usedKpi:'51M',gpct:'<b>85%</b> of monthly tokens used',remain:'<b>9M</b> tokens left · renews on Jun 1',proj:'61M',projT:['up','i-trend','1.7% over plan']},
+    over:{pct:100,color:'var(--error)',overPct:2,used:'61.2M <small>/ 60M included</small>',usedKpi:'61.2M',gpct:'<b>102%</b> of monthly tokens used',remain:'<b>1.2M</b> over plan · billed as overage',proj:'61.2M',projT:['up','i-trend','2% over plan']},
+  };
+  let cur='warn', mode='post';
+  function render(){
+    const st=states[cur];
+    let used=st.used,usedKpi=st.usedKpi,gpct=st.gpct,remain=st.remain,proj=st.proj,projT=st.projT,fillW=st.pct,showOver=(cur==='over'&&mode==='post');
+    // hard limit caps exactly at the allowance — no overage possible
+    if(cur==='over'&&mode==='ant'){
+      used='60M <small>/ 60M included</small>'; usedKpi='60M';
+      gpct='<b>100%</b> of monthly tokens used'; remain='<b>0</b> tokens left · actions blocked';
+      proj='60M'; projT=['flat','i-trend','capped at plan']; fillW=100;
+    }
+    fill.style.width=fillW+'%'; fill.style.background=st.color;
+    over.style.width=showOver?'10%':'0';
+    over.style.display=showOver?'block':'none';
+    document.getElementById('b-amount').innerHTML=used;
+    document.getElementById('kpi-used').textContent=usedKpi;
+    document.getElementById('g-pct').innerHTML=gpct;
+    document.getElementById('g-remain').innerHTML=remain;
+    document.getElementById('kpi-proj').textContent=proj;
+    const t=document.getElementById('kpi-proj-trend');
+    t.className='kpi-trend '+projT[0];
+    t.innerHTML=`<svg class="ic"><use href="#${projT[1]}"/></svg> ${projT[2]}`;
+    document.getElementById('banner-warn').classList.toggle('show',cur==='warn');
+    document.getElementById('banner-overage').classList.toggle('show',cur==='over'&&mode==='post');
+    document.getElementById('banner-blocked').classList.toggle('show',cur==='over'&&mode==='ant');
+    document.getElementById('banner-anticip').classList.toggle('show',mode==='ant'&&cur!=='over');
+    document.getElementById('mode-name').textContent=mode==='post'?'Soft limit':'Hard limit';
+    document.getElementById('recent-sub').textContent = mode==='post'
+      ? 'Tokens counted after each action runs (soft limit)'
+      : 'Tokens estimated before each action runs (hard limit)';
+    document.getElementById('opt-post').classList.toggle('sel',mode==='post');
+    document.getElementById('opt-ant').classList.toggle('sel',mode==='ant');
+    document.querySelectorAll('#seg-mode button').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));
+    renderChart();
+  }
+  document.querySelectorAll('#seg-state button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#seg-state button').forEach(x=>x.className='');
+    b.className='active '+(b.dataset.state==='warn'?'warn':b.dataset.state==='over'?'err':'');
+    cur=b.dataset.state; render();
+  });
+  document.querySelectorAll('#seg-mode button').forEach(b=>b.onclick=()=>{ mode=b.dataset.mode; render(); });
+
+  // drawer: policy radios sync with displayed mode
+  document.getElementById('opt-post').onclick=()=>{ mode='post'; render(); };
+  document.getElementById('opt-ant').onclick=()=>{ mode='ant'; render(); };
+
+  // drawer open/close
+  const scrim=document.getElementById('scrim'), drawer=document.getElementById('drawer');
+  const openDrawer=()=>{ scrim.classList.add('open'); drawer.classList.add('open'); };
+  const closeDrawer=()=>{ scrim.classList.remove('open'); drawer.classList.remove('open'); };
+  document.getElementById('manage-btn').onclick=openDrawer;
+  document.getElementById('drawer-close').onclick=closeDrawer;
+  document.getElementById('drawer-cancel').onclick=closeDrawer;
+  document.getElementById('drawer-save').onclick=closeDrawer;
+  scrim.onclick=closeDrawer;
+  // init demo to "warn" active visual
+  document.querySelector('#seg-state button[data-state="warn"]').className='active warn';
+  document.querySelector('#seg-state button[data-state="normal"]').className='';
+  render();
+</script>
+</body>
+</html>
