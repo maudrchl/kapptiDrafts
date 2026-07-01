@@ -1,5 +1,5 @@
 {
-  "name": "protos-html",
+  "name": "kapptidrafts",
   "private": true,
   "scripts": {
     "build": "node build.js"

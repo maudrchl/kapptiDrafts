@@ -62,7 +62,7 @@ const html = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>protos/</title>
+  <title>kapptiDrafts</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -134,7 +134,7 @@ const html = `<!DOCTYPE html>
   </style>
 </head>
 <body>
-  <div class="header"><a href="/">protos/</a> <span>index</span></div>
+  <div class="header"><a href="/">kapptiDrafts</a> <span>/index</span></div>
   <div class="meta">${files.length} file${files.length !== 1 ? "s" : ""}</div>
   <input type="search" id="search" placeholder="search..." autofocus>
   <table>
