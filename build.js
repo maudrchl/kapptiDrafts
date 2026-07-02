@@ -22,44 +22,104 @@ function getStatusStyle(status) {
   return statusConfig[key] || { color: "#666", bg: "#f0f0f0" };
 }
 
-const files = fs
-  .readdirSync(folder)
-  .filter((f) => f.endsWith(".html"))
-  .map((f) => {
-    const stats = fs.statSync(path.join(folder, f));
+function prettyName(f) {
+  return f
+    .replace(/\.html$/, "")
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// Scan collections (subdirs) and root files
+const collections = [];
+let totalFiles = 0;
+
+const entries = fs.readdirSync(folder, { withFileTypes: true });
+
+// Root-level HTML files (no collection)
+const rootFiles = entries
+  .filter((e) => e.isFile() && e.name.endsWith(".html"))
+  .map((e) => {
+    const stats = fs.statSync(path.join(folder, e.name));
     const sizeKb = Math.round(stats.size / 1024);
     return {
-      file: f,
-      name: f
-        .replace(/\.html$/, "")
-        .replace(/[-_]/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase()),
+      file: e.name,
+      href: `folder/${e.name}`,
+      name: prettyName(e.name),
       mtime: stats.mtime,
       size: sizeKb < 1 ? "<1 KB" : `${sizeKb} KB`,
-      status: meta[f] || "",
+      status: meta[e.name] || "",
     };
-  })
-  .sort((a, b) => {
-    const aDeployed = normalizeStatus(a.status) === "deploye" ? 1 : 0;
-    const bDeployed = normalizeStatus(b.status) === "deploye" ? 1 : 0;
-    if (aDeployed !== bDeployed) return aDeployed - bDeployed;
-    return b.mtime - a.mtime;
   });
 
-const rows = files
-  .map((f, i) => {
-    const style = f.status ? getStatusStyle(f.status) : null;
-    const badge = style
-      ? `<span class="badge" style="color:${style.color};background:${style.bg}">${f.status}</span>`
-      : `<span class="badge none">--</span>`;
-    return `    <tr onclick="window.location='folder/${f.file}'">
-      <td class="idx">${i + 1}</td>
+if (rootFiles.length) {
+  rootFiles.sort((a, b) => {
+    const aD = normalizeStatus(a.status) === "deploye" ? 1 : 0;
+    const bD = normalizeStatus(b.status) === "deploye" ? 1 : 0;
+    if (aD !== bD) return aD - bD;
+    return b.mtime - a.mtime;
+  });
+  collections.push({ name: null, files: rootFiles });
+  totalFiles += rootFiles.length;
+}
+
+// Subdirectories = collections
+const dirs = entries.filter((e) => e.isDirectory()).sort((a, b) => a.name.localeCompare(b.name));
+for (const d of dirs) {
+  const subPath = path.join(folder, d.name);
+  const htmlFiles = fs
+    .readdirSync(subPath)
+    .filter((f) => f.endsWith(".html"))
+    .map((f) => {
+      const stats = fs.statSync(path.join(subPath, f));
+      const sizeKb = Math.round(stats.size / 1024);
+      const metaKey = `${d.name}/${f}`;
+      return {
+        file: f,
+        href: `folder/${d.name}/${f}`,
+        name: prettyName(f),
+        mtime: stats.mtime,
+        size: sizeKb < 1 ? "<1 KB" : `${sizeKb} KB`,
+        status: meta[metaKey] || meta[f] || "",
+      };
+    })
+    .sort((a, b) => {
+      const aD = normalizeStatus(a.status) === "deploye" ? 1 : 0;
+      const bD = normalizeStatus(b.status) === "deploye" ? 1 : 0;
+      if (aD !== bD) return aD - bD;
+      return b.mtime - a.mtime;
+    });
+
+  if (htmlFiles.length) {
+    collections.push({ name: prettyName(d.name), files: htmlFiles });
+    totalFiles += htmlFiles.length;
+  }
+}
+
+// Build HTML sections
+let idx = 0;
+const sections = collections
+  .map((col) => {
+    const heading = col.name
+      ? `\n    <tr class="collection-header"><td colspan="6">${col.name}</td></tr>`
+      : "";
+    const rows = col.files
+      .map((f) => {
+        idx++;
+        const style = f.status ? getStatusStyle(f.status) : null;
+        const badge = style
+          ? `<span class="badge" style="color:${style.color};background:${style.bg}">${f.status}</span>`
+          : `<span class="badge none">--</span>`;
+        return `    <tr onclick="window.location='${f.href}'">
+      <td class="idx">${idx}</td>
       <td class="name">${f.name}</td>
       <td class="status">${badge}</td>
       <td class="file">${f.file}</td>
       <td class="size">${f.size}</td>
       <td class="date">${f.mtime.toISOString().slice(0, 10)}</td>
     </tr>`;
+      })
+      .join("\n");
+    return heading + "\n" + rows;
   })
   .join("\n");
 
@@ -106,7 +166,18 @@ const html = `<!DOCTYPE html>
       letter-spacing: 0.05em;
     }
     thead th:first-child { width: 2rem; }
+    .collection-header td {
+      padding: 1.25rem 0 0.375rem 0;
+      font-size: 11px;
+      font-weight: 600;
+      color: #1a1a1a;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #e8e8e8;
+    }
     tbody tr { border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+    tbody tr.collection-header { cursor: default; }
+    tbody tr.collection-header:hover { background: none; }
     tbody tr:hover { background: #f8f8f8; }
     td { padding: 0.5rem 1rem 0.5rem 0; }
     .idx { color: #ccc; width: 2rem; }
@@ -142,7 +213,7 @@ const html = `<!DOCTYPE html>
 </head>
 <body>
   <div class="header"><a href="/">kapptiDrafts</a> <span>/index</span></div>
-  <div class="meta">${files.length} file${files.length !== 1 ? "s" : ""}</div>
+  <div class="meta">${totalFiles} file${totalFiles !== 1 ? "s" : ""}${collections.filter((c) => c.name).length ? " / " + collections.filter((c) => c.name).length + " collection" + (collections.filter((c) => c.name).length !== 1 ? "s" : "") : ""}</div>
   <input type="search" id="search" placeholder="search..." autofocus>
   <table>
     <thead>
@@ -156,14 +227,28 @@ const html = `<!DOCTYPE html>
       </tr>
     </thead>
     <tbody>
-${files.length ? rows : '    <tr><td colspan="6" class="empty">no prototypes yet</td></tr>'}
+${totalFiles ? sections : '    <tr><td colspan="6" class="empty">no prototypes yet</td></tr>'}
     </tbody>
   </table>
   <script>
     document.getElementById("search").addEventListener("input", function(e) {
       const q = e.target.value.toLowerCase();
       document.querySelectorAll("tbody tr").forEach(function(row) {
+        if (row.classList.contains("collection-header")) {
+          row.style.display = "";
+          return;
+        }
         row.style.display = row.textContent.toLowerCase().includes(q) ? "" : "none";
+      });
+      // Hide collection headers with no visible rows
+      document.querySelectorAll("tr.collection-header").forEach(function(header) {
+        let next = header.nextElementSibling;
+        let hasVisible = false;
+        while (next && !next.classList.contains("collection-header")) {
+          if (next.style.display !== "none") hasVisible = true;
+          next = next.nextElementSibling;
+        }
+        header.style.display = hasVisible ? "" : "none";
       });
     });
   </script>
@@ -171,4 +256,4 @@ ${files.length ? rows : '    <tr><td colspan="6" class="empty">no prototypes yet
 </html>`;
 
 fs.writeFileSync(path.join(dir, "index.html"), html);
-console.log(`index.html generated (${files.length} files)`);
+console.log(`index.html generated (${totalFiles} files, ${collections.filter((c) => c.name).length} collections)`);
