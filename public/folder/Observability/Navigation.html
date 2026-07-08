@@ -33,6 +33,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
   width:300px;min-width:300px;background:#fff;border-right:1px solid var(--border);
   display:flex;flex-direction:column;overflow-y:auto;
 }
+/* ── proto frame (matches React ProtoFrame) ── */
+.proto-ring{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 0 4px rgba(28,74,71,0.12);z-index:2147483646}
+.proto-crumb{position:fixed;top:12px;left:12px;z-index:2147483647;display:flex;align-items:center;gap:8px;padding:5px 10px;font-size:11px;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#475467;background:rgba(255,255,255,0.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid #ececf0;border-radius:8px;box-shadow:0 2px 8px rgba(16,24,40,0.10);text-decoration:none}
+.proto-crumb:hover{background:rgba(255,255,255,0.95)}
+.proto-crumb .arrow{display:inline-flex;color:#98a2b3}
+.proto-crumb .arrow svg{width:13px;height:13px}
+.proto-crumb img{height:13px;width:auto;display:block}
+.proto-crumb .sep{color:#c0c4cc}
+.proto-crumb .ptitle{font-weight:600;color:#1a1a1a}
+
 .picker-head{padding:24px 24px 0;flex-shrink:0}
 .picker-head h1{font-size:17px;font-weight:700;margin-bottom:2px}
 .picker-head p{font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:20px}
@@ -61,10 +71,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .pi-desc{font-size:11px;color:var(--text-muted);line-height:1.4;margin-top:1px}
 
 /* ── right display ── */
-.display{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:40px}
+.display{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:32px}
 
 /* ── SIDEBAR — exact same as Locations proto ── */
-.sidebar{width:223px;background:var(--sidebar);flex-shrink:0;display:flex;flex-direction:column;padding:14px 12px;overflow-y:auto;min-height:580px}
+.sidebar{width:223px;background:var(--sidebar);flex-shrink:0;display:flex;flex-direction:column;padding:14px 12px;overflow-y:auto}
 .brand{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 4px}
 .brand .logo{display:flex;align-items:center;gap:8px;color:var(--sidebar-white);font-weight:700;font-size:16px}
 .collapse{color:var(--sidebar-label)}
@@ -83,7 +93,32 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .spacer{flex:1}
 .help-btn{width:32px;height:32px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);color:var(--sidebar-text);display:flex;align-items:center;justify-content:center;margin-top:12px;font-size:14px;font-weight:500}
 
-/* ── product switcher (patterns 2a, 3b) ── */
+/* ── ws+product combo (option 3) ── */
+.ws-combo{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.15);border-radius:6px;margin-bottom:16px}
+.ws-combo .ws-row{display:flex;align-items:center;gap:8px;padding:8px}
+.ws-combo .combo-sep{height:1px;background:rgba(255,255,255,0.12);margin:0}
+.ws-combo .prod-row{display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer}
+.ws-combo .prod-icon{width:32px;height:32px;border-radius:4px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:var(--sidebar-white);flex-shrink:0}
+.ws-combo .prod-icon svg{width:16px;height:16px}
+.ws-combo .prod-name{color:var(--sidebar-white);font-weight:500;font-size:14px;line-height:1.2}
+.ws-combo .prod-sub{color:var(--sidebar-white);opacity:.7;font-size:9px;line-height:1.2;margin-top:1px}
+.ws-combo .chevron{margin-left:auto;color:var(--sidebar-label)}
+.ws-combo .chevron svg{width:15px;height:15px;transition:transform .2s}
+.ws-combo.open .chevron svg{transform:rotate(180deg)}
+
+/* dropdown menu */
+.dd-menu{display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);background:#1a3f3c;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:4px;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,0.25)}
+.ws-combo.open .dd-menu{display:block}
+.ws-combo{position:relative}
+.dd-opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;width:100%;text-align:left;font-family:inherit;color:var(--sidebar-white)}
+.dd-opt:hover{background:rgba(255,255,255,0.06)}
+.dd-opt.active{background:var(--sidebar-active)}
+.dd-opt .dd-icon{width:28px;height:28px;border-radius:4px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dd-opt .dd-icon svg{width:14px;height:14px}
+.dd-opt .dd-name{font-size:13px;font-weight:500;line-height:1.2}
+.dd-opt .dd-desc{font-size:10px;opacity:.6;line-height:1.3;margin-top:1px}
+
+/* ── product switcher standalone (legacy) ── */
 .product-switcher{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px;margin-bottom:8px;cursor:pointer}
 .product-switcher .prod-icon{width:32px;height:32px;border-radius:4px;background:rgba(237,120,70,.12);display:flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0}
 .product-switcher .prod-icon svg{width:16px;height:16px}
@@ -98,9 +133,46 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .prod-seg-btn.active{background:var(--sidebar-active);color:var(--sidebar-white)}
 .prod-seg-btn svg{width:12px;height:12px}
 
+/* ── collapsible groups (option 2) ── */
+.nav-group-head{
+  display:flex;align-items:center;justify-content:space-between;
+  color:var(--sidebar-label);font-size:9px;font-weight:600;letter-spacing:.45px;text-transform:uppercase;
+  padding:4px 8px 8px;width:100%;cursor:pointer;font-family:inherit;
+}
+.nav-group-head svg{width:12px;height:12px;transition:transform .2s}
+.nav-group-head.collapsed svg{transform:rotate(-90deg)}
+.nav-group-body.collapsed{display:none}
+
+/* mode stack — both modes in same grid cell, height = tallest */
+.mode-stack{display:grid}
+.mode-stack>div{grid-area:1/1}
+.mode-stack>.hidden{visibility:hidden;pointer-events:none}
+
 /* panels */
 .sb-panel{display:none}
-.sb-panel.visible{display:flex}
+.sb-panel.visible{display:flex;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);border:1px solid var(--border);aspect-ratio:16/10;height:calc(100vh - 90px);max-height:760px}
+
+/* ── wireframe content area ── */
+.wf{flex:1;background:var(--content-bg);display:flex;flex-direction:column;overflow-y:auto}
+.wf-topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;background:#fff;border-bottom:1px solid var(--border)}
+.wf-topbar-left{display:flex;flex-direction:column;gap:6px}
+.wf-h1{width:180px;height:14px;background:#d0d3d9;border-radius:4px}
+.wf-sub{width:120px;height:9px;background:#e2e4e8;border-radius:3px}
+.wf-topbar-right{display:flex;gap:8px}
+.wf-btn{width:72px;height:30px;background:#e8e9ec;border-radius:6px}
+.wf-btn.accent{background:#d0d3d9;width:88px}
+.wf-body{flex:1;padding:24px 28px;display:flex;flex-direction:column;gap:16px}
+.wf-kpis{display:flex;gap:12px}
+.wf-kpi{flex:1;background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.wf-kpi-label{width:50px;height:7px;background:#e2e4e8;border-radius:3px}
+.wf-kpi-val{width:70px;height:16px;background:#d0d3d9;border-radius:4px}
+.wf-table{flex:1;min-height:180px;background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.wf-table-head{height:36px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:40px;padding:0 16px}
+.wf-table-th{height:7px;background:#d8dae0;border-radius:3px}
+.wf-table-row{height:40px;border-bottom:1px solid #f0f0f3;display:flex;align-items:center;gap:40px;padding:0 16px}
+.wf-table-td{height:8px;background:#ebebee;border-radius:3px}
+.wf-row{display:flex;gap:12px}
+.wf-card{flex:1;height:100px;background:#fff;border:1px solid var(--border);border-radius:8px}
 </style>
 </head>
 <body>
@@ -108,6 +180,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 <div class="shell">
 
 <!-- ═══════ LEFT: PATTERN PICKER ═══════ -->
+<div class="proto-ring" aria-hidden></div>
+<a class="proto-crumb" href="/">
+  <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+  <img src="/kapptidrafts-logo.svg" alt="kapptidrafts">
+  <span class="sep">/</span>
+  <span class="ptitle">Observability Navigation</span>
+</a>
+
 <div class="picker">
   <div class="picker-head">
     <h1>Observability Nav</h1>
@@ -115,38 +195,26 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
   </div>
 
   <div class="picker-group">
-    <div class="picker-group-label">1 · Nav + Observability</div>
+    <div class="picker-group-label">1 · Segmented Run / Explore</div>
     <button class="picker-item active" onclick="show('1a',this)">
-      <span class="pi-num">1a</span>
-      <div class="pi-text"><div class="pi-title">Section dédiée</div><div class="pi-desc">Bloc OBSERVABILITY à plat, après Overview</div></div>
-    </button>
-    <button class="picker-item" onclick="show('1b',this)">
-      <span class="pi-num">1b</span>
-      <div class="pi-text"><div class="pi-title">Entrée dépliable</div><div class="pi-desc">Observability en produit sous By product</div></div>
+      <span class="pi-num">1</span>
+      <div class="pi-text"><div class="pi-title">Segmented Run / Explore</div><div class="pi-desc">Tabs Run | Explore en haut, switch le contenu</div></div>
     </button>
   </div>
 
   <div class="picker-group">
-    <div class="picker-group-label">2 · Produit à part entière (switcher)</div>
+    <div class="picker-group-label">2 · Catégories dépliables</div>
     <button class="picker-item" onclick="show('2a',this)">
-      <span class="pi-num">2a</span>
-      <div class="pi-text"><div class="pi-title">Menu déroulant</div><div class="pi-desc">Dropdown product switcher</div></div>
-    </button>
-    <button class="picker-item" onclick="show('2b',this)">
-      <span class="pi-num">2b</span>
-      <div class="pi-text"><div class="pi-title">Segmented</div><div class="pi-desc">Rocket App | Observability côte à côte</div></div>
+      <span class="pi-num">2</span>
+      <div class="pi-text"><div class="pi-title">Collapse par catégorie</div><div class="pi-desc">Overview, Run, Observability, Equipments dépliables</div></div>
     </button>
   </div>
 
   <div class="picker-group">
-    <div class="picker-group-label">3 · Nommage Run ↔ Observability</div>
-    <button class="picker-item" onclick="show('3a',this)">
-      <span class="pi-num">3a</span>
-      <div class="pi-text"><div class="pi-title">Segmented Run / Obs</div><div class="pi-desc">Tabs Run | Observability</div></div>
-    </button>
+    <div class="picker-group-label">3 · Dropdown switcher</div>
     <button class="picker-item" onclick="show('3b',this)">
-      <span class="pi-num">3b</span>
-      <div class="pi-text"><div class="pi-title">Menu déroulant Run</div><div class="pi-desc">Dropdown switcher avec « Run » actif</div></div>
+      <span class="pi-num">3</span>
+      <div class="pi-text"><div class="pi-title">Dropdown</div><div class="pi-desc">Switcher en menu, façon Claude</div></div>
     </button>
   </div>
 </div>
@@ -154,10 +222,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 <!-- ═══════ RIGHT: SIDEBAR DISPLAY ═══════ -->
 <div class="display">
   <div class="sb-panel visible" id="panel-1a"><aside class="sidebar" id="sb-1a"></aside></div>
-  <div class="sb-panel" id="panel-1b"><aside class="sidebar" id="sb-1b"></aside></div>
   <div class="sb-panel" id="panel-2a"><aside class="sidebar" id="sb-2a"></aside></div>
-  <div class="sb-panel" id="panel-2b"><aside class="sidebar" id="sb-2b"></aside></div>
-  <div class="sb-panel" id="panel-3a"><aside class="sidebar" id="sb-3a"></aside></div>
   <div class="sb-panel" id="panel-3b"><aside class="sidebar" id="sb-3b"></aside></div>
 </div>
 </div>
@@ -223,108 +288,117 @@ const footer = `<div class="spacer"></div>${sep}<button class="help-btn">?</butt
 
 /* ═══════ BUILD SIDEBARS ═══════ */
 
-// 1a: Section dédiée OBSERVABILITY
+// 1: Segmented Run / Explore
+const runContent1a = `
+  ${overviewSection}
+  ${sep}
+  <div class="nav-label">Run</div>
+  ${rocketProductItems}
+  ${sep}
+  ${equipSection}`
+const exploreContent1a = `
+  <div class="nav-label">Explore</div>
+  ${obsItems}`
+
 document.getElementById('sb-1a').innerHTML = `
-  ${brand}${sep}${ws}
-  ${overviewSection}
-  ${sep}
-  <div class="nav-label">Observability</div>
-  ${obsItems}
-  ${sep}
-  <div class="nav-label">By product</div>
-  ${boxed(I.grid,'Julio')}
-  ${rocketProductItems}
-  ${sep}
-  ${equipSection}
+  ${brand}${sep}
+  <div class="prod-seg" id="pseg-1a">
+    <button class="prod-seg-btn active" onclick="switchSeg('1a','run')">${I.zap} Run</button>
+    <button class="prod-seg-btn" onclick="switchSeg('1a','obs')">${I.eye} Explore</button>
+  </div>
+  ${ws}
+  <div class="mode-stack">
+    <div id="p1a-run">${runContent1a}</div>
+    <div id="p1a-explore" class="hidden">${exploreContent1a}</div>
+  </div>
   ${footer}`
 
-// 1b: Entrée dépliable (Observability comme produit sous By product)
-document.getElementById('sb-1b').innerHTML = `
-  ${brand}${sep}${ws}
-  ${overviewSection}
-  ${sep}
-  <div class="nav-label">By product</div>
-  ${boxed(I.grid,'Julio')}
-  ${rocketProductItems}
-  ${boxed(I.eye,'Observability')}
-  ${obsItems}
-  ${sep}
-  ${equipSection}
-  ${footer}`
+// 2: Catégories dépliables
+const grp = (label, items, closed) => `
+  <div class="nav-group">
+    <button class="nav-group-head${closed?' collapsed':''}" onclick="toggleGroup(this)">${label}${I.chev}</button>
+    <div class="nav-group-body${closed?' collapsed':''}">${items}</div>
+  </div>`
 
-// 2a: Dropdown product switcher
 document.getElementById('sb-2a').innerHTML = `
-  ${brand}${sep}
-  <div class="product-switcher" onclick="switchDropdown('2a')">
-    <div class="prod-icon" id="p2a-icon">${I.grid}</div>
-    <div><div class="prod-name" id="p2a-name">Julio</div><div class="prod-sub">Produit actif</div></div>
-    <div class="chevron">${I.chev}</div>
-  </div>
-  ${ws}
-  ${overviewSection}
+  ${brand}${sep}${ws}
+  ${grp('Overview', `${ni(I.screen,'Realtime status',true)}${ni(I.bell,'Incidents')}${ni(I.chart,'Analytics')}`)}
   ${sep}
-  <div id="p2a-section">
-    <div class="nav-label">Julio</div>
-    ${rocketProductItems}
-  </div>
+  ${grp('Run', rocketProductItems, true)}
   ${sep}
-  ${equipSection}
+  ${grp('Observability', obsItems, true)}
+  ${sep}
+  ${grp('Equipments', `${ni(I.pin,'Locations')}${ni(I.globe,'Browser presets')}${ni(I.phone,'Devices lab')}`, true)}
   ${footer}`
 
-// 2b: Segmented product
-document.getElementById('sb-2b').innerHTML = `
-  ${brand}${sep}
-  <div class="prod-seg" id="pseg-2b">
-    <button class="prod-seg-btn active" onclick="switchSeg('2b','app')">${I.grid} Julio</button>
-    <button class="prod-seg-btn" onclick="switchSeg('2b','obs')">${I.eye} Observability</button>
-  </div>
-  ${ws}
+// 3: Dropdown Run — ws+product combo, full content switch like option 1
+const runContent3b = `
   ${overviewSection}
   ${sep}
-  <div id="p2b-section">
-    <div class="nav-label">Julio</div>
-    ${rocketProductItems}
-  </div>
+  <div class="nav-label">Run</div>
+  ${rocketProductItems}
   ${sep}
-  ${equipSection}
-  ${footer}`
+  ${equipSection}`
+const exploreContent3b = `
+  <div class="nav-label">Explore</div>
+  ${obsItems}`
 
-// 3a: Segmented Run/Observability
-document.getElementById('sb-3a').innerHTML = `
-  ${brand}${sep}
-  <div class="prod-seg" id="pseg-3a">
-    <button class="prod-seg-btn active" onclick="switchSeg('3a','run')">${I.zap} Run</button>
-    <button class="prod-seg-btn" onclick="switchSeg('3a','obs')">${I.eye} Observability</button>
-  </div>
-  ${ws}
-  ${overviewSection}
-  ${sep}
-  <div id="p3a-section">
-    <div class="nav-label">Run</div>
-    ${rocketProductItems}
-  </div>
-  ${sep}
-  ${equipSection}
-  ${footer}`
-
-// 3b: Dropdown Run
 document.getElementById('sb-3b').innerHTML = `
   ${brand}${sep}
-  <div class="product-switcher" onclick="switchDropdown('3b')">
-    <div class="prod-icon" id="p3b-icon">${I.zap}</div>
-    <div><div class="prod-name" id="p3b-name">Run</div><div class="prod-sub">Produit actif</div></div>
-    <div class="chevron">${I.chev}</div>
+  <div class="ws-combo" id="ws-combo-3b">
+    <div class="ws-row"><div class="avatar" style="width:32px;height:32px;border-radius:4px;background:#f6ede2;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🐙</div><div><div style="color:var(--sidebar-white);font-weight:500;font-size:14px;line-height:1.2">kapptivate</div><div style="color:var(--sidebar-white);opacity:.7;font-size:9px;line-height:1.2;margin-top:1px">Workspace</div></div></div>
+    <div class="combo-sep"></div>
+    <div class="prod-row" onclick="toggleDd3b(event)">
+      <div class="prod-icon" id="p3b-icon">${I.zap}</div>
+      <div><div class="prod-name" id="p3b-name">Run</div><div class="prod-sub" id="p3b-sub">Test & monitor</div></div>
+      <div class="chevron">${I.chev}</div>
+    </div>
+    <div class="dd-menu">
+      <button class="dd-opt active" id="dd-opt-run" onclick="selectDd3b('run')">
+        <div class="dd-icon">${I.zap}</div>
+        <div><div class="dd-name">Run</div><div class="dd-desc">Test & monitor</div></div>
+      </button>
+      <button class="dd-opt" id="dd-opt-explore" onclick="selectDd3b('obs')">
+        <div class="dd-icon">${I.eye}</div>
+        <div><div class="dd-name">Explore</div><div class="dd-desc">Logs, traces & observabilité</div></div>
+      </button>
+    </div>
   </div>
-  ${ws}
-  ${overviewSection}
-  ${sep}
-  <div id="p3b-section">
-    <div class="nav-label">Run</div>
-    ${rocketProductItems}
+  <div class="mode-stack">
+    <div id="p3b-run">${runContent3b}</div>
+    <div id="p3b-explore" class="hidden">${exploreContent3b}</div>
   </div>
-  ${sep}
-  ${equipSection}
   ${footer}`
+
+/* ═══════ WIREFRAME ═══════ */
+const wireframe = `<div class="wf">
+  <div class="wf-topbar">
+    <div class="wf-topbar-left"><div class="wf-h1"></div><div class="wf-sub"></div></div>
+    <div class="wf-topbar-right"><div class="wf-btn"></div><div class="wf-btn accent"></div></div>
+  </div>
+  <div class="wf-body">
+    <div class="wf-kpis">
+      <div class="wf-kpi"><div class="wf-kpi-label"></div><div class="wf-kpi-val"></div></div>
+      <div class="wf-kpi"><div class="wf-kpi-label"></div><div class="wf-kpi-val"></div></div>
+      <div class="wf-kpi"><div class="wf-kpi-label"></div><div class="wf-kpi-val"></div></div>
+    </div>
+    <div class="wf-table">
+      <div class="wf-table-head">
+        <div class="wf-table-th" style="width:100px"></div>
+        <div class="wf-table-th" style="width:70px"></div>
+        <div class="wf-table-th" style="width:55px"></div>
+        <div class="wf-table-th" style="width:45px"></div>
+      </div>
+      <div class="wf-table-row"><div class="wf-table-td" style="width:110px"></div><div class="wf-table-td" style="width:60px"></div><div class="wf-table-td" style="width:50px"></div><div class="wf-table-td" style="width:40px"></div></div>
+      <div class="wf-table-row"><div class="wf-table-td" style="width:90px"></div><div class="wf-table-td" style="width:75px"></div><div class="wf-table-td" style="width:45px"></div><div class="wf-table-td" style="width:50px"></div></div>
+      <div class="wf-table-row"><div class="wf-table-td" style="width:105px"></div><div class="wf-table-td" style="width:55px"></div><div class="wf-table-td" style="width:60px"></div><div class="wf-table-td" style="width:35px"></div></div>
+      <div class="wf-table-row"><div class="wf-table-td" style="width:80px"></div><div class="wf-table-td" style="width:65px"></div><div class="wf-table-td" style="width:50px"></div><div class="wf-table-td" style="width:45px"></div></div>
+    </div>
+    <div class="wf-row"><div class="wf-card"></div><div class="wf-card"></div></div>
+  </div>
+</div>`
+
+document.querySelectorAll('.sb-panel').forEach(p => p.insertAdjacentHTML('beforeend', wireframe))
 
 /* ═══════ INTERACTIONS ═══════ */
 
@@ -335,43 +409,44 @@ function show(id, btn) {
   btn.classList.add('active')
 }
 
-// Dropdown product switcher (2a, 3b)
-const dropdownState = { '2a': 'app', '3b': 'run' }
-function switchDropdown(id) {
-  if (id === '2a') {
-    dropdownState['2a'] = dropdownState['2a'] === 'app' ? 'obs' : 'app'
-    const isApp = dropdownState['2a'] === 'app'
-    document.getElementById('p2a-name').textContent = isApp ? 'Julio' : 'Observability'
-    document.getElementById('p2a-icon').innerHTML = isApp ? I.grid : I.eye
-    document.getElementById('p2a-section').innerHTML = isApp
-      ? `<div class="nav-label">Julio</div>${rocketProductItems}`
-      : `<div class="nav-label">Observability</div>${obsItems}`
-  } else {
-    dropdownState['3b'] = dropdownState['3b'] === 'run' ? 'obs' : 'run'
-    const isRun = dropdownState['3b'] === 'run'
-    document.getElementById('p3b-name').textContent = isRun ? 'Run' : 'Observability'
-    document.getElementById('p3b-icon').innerHTML = isRun ? I.zap : I.eye
-    document.getElementById('p3b-section').innerHTML = isRun
-      ? `<div class="nav-label">Run</div>${rocketProductItems}`
-      : `<div class="nav-label">Observability</div>${obsItems}`
-  }
+// Collapse toggle (option 2)
+function toggleGroup(el) {
+  el.classList.toggle('collapsed')
+  el.nextElementSibling.classList.toggle('collapsed')
 }
+
+// Dropdown product switcher (3b)
+let dd3bMode = 'run'
+const combo3b = () => document.getElementById('ws-combo-3b')
+
+function toggleDd3b(e) {
+  e.stopPropagation()
+  combo3b().classList.toggle('open')
+}
+
+function selectDd3b(mode) {
+  dd3bMode = mode
+  const isRun = mode === 'run'
+  document.getElementById('p3b-name').textContent = isRun ? 'Run' : 'Explore'
+  document.getElementById('p3b-sub').textContent = isRun ? 'Test & monitor' : 'Logs, traces & observabilité'
+  document.getElementById('p3b-icon').innerHTML = isRun ? I.zap : I.eye
+  document.getElementById('dd-opt-run').classList.toggle('active', isRun)
+  document.getElementById('dd-opt-explore').classList.toggle('active', !isRun)
+  document.getElementById('p3b-run').classList.toggle('hidden', !isRun)
+  document.getElementById('p3b-explore').classList.toggle('hidden', isRun)
+  combo3b().classList.remove('open')
+}
+
+document.addEventListener('click', () => combo3b()?.classList.remove('open'))
 
 // Segmented product switcher (2b, 3a)
 function switchSeg(id, prod) {
   document.querySelectorAll(`#pseg-${id} .prod-seg-btn`).forEach((b,i) => {
-    const first = (id==='2b' && prod==='app') || (id==='3a' && prod==='run')
-    b.classList.toggle('active', first ? i===0 : i===1)
+    b.classList.toggle('active', prod==='run' ? i===0 : i===1)
   })
-  if (id === '2b') {
-    document.getElementById('p2b-section').innerHTML = prod === 'app'
-      ? `<div class="nav-label">Julio</div>${rocketProductItems}`
-      : `<div class="nav-label">Observability</div>${obsItems}`
-  } else {
-    document.getElementById('p3a-section').innerHTML = prod === 'run'
-      ? `<div class="nav-label">Run</div>${rocketProductItems}`
-      : `<div class="nav-label">Observability</div>${obsItems}`
-  }
+  const isRun = prod === 'run'
+  document.getElementById('p1a-run').classList.toggle('hidden', !isRun)
+  document.getElementById('p1a-explore').classList.toggle('hidden', isRun)
 }
 
 // Nav item click → active (scoped to sidebar)

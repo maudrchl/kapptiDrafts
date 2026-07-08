@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Segmented } from '@kapptivate/ui-kit'
+import { Card, Segmented } from '@kapptivate/ui-kit'
 import styles from './ai-usage.module.scss'
 import type { BudgetState } from './constants'
 import { CHART_DAYS, CHART_CACHE, STATE_FACTOR } from './constants'
@@ -63,23 +63,22 @@ const ConsumptionChart = ({ budgetState }: Props) => {
   const gridLines = [25, 50, 75, 100]
 
   return (
-    <div className={styles.card} style={{ marginBottom: 0 }}>
-      <div className={styles.cardHead}>
-        <div>
-          <div className={styles.cardTitle}>Daily consumption</div>
-          <div className={styles.cardSub}>{u.sub}</div>
-        </div>
-        <Segmented
-          size="small"
-          options={[
-            { label: 'Tokens', value: 'tokens' },
-            { label: 'Cost', value: 'cost' },
-          ]}
-          value={unit}
-          onChange={(val) => setUnit(val as ChartUnit)}
-        />
-      </div>
-      <div className={styles.cardHr} />
+    <Card className={styles.uiCard}>
+      <Card.Content
+        title="Daily consumption"
+        description={u.sub}
+        asideContent={
+          <Segmented
+            size="small"
+            options={[
+              { label: 'Tokens', value: 'tokens' },
+              { label: 'Cost', value: 'cost' },
+            ]}
+            value={unit}
+            onChange={(val) => setUnit(val as ChartUnit)}
+          />
+        }
+      >
 
       <svg className={styles.chart} viewBox={`0 0 ${W} ${H}`}>
         {/* Grid */}
@@ -186,7 +185,8 @@ const ConsumptionChart = ({ budgetState }: Props) => {
           {u.line}
         </span>
       </div>
-    </div>
+      </Card.Content>
+    </Card>
   )
 }
 

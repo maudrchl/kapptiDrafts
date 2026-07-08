@@ -1,4 +1,4 @@
-import { IconSearch, IconWrench, IconSparkle } from '@kapptivate/ui-kit'
+import { Card, IconSearch, IconWrench, IconSparkle } from '@kapptivate/ui-kit'
 import styles from './ai-usage.module.scss'
 import { FEATURES } from './constants'
 
@@ -10,15 +10,8 @@ const ICONS: Record<string, typeof IconSearch> = {
 
 const FeatureBreakdown = () => {
   return (
-    <div className={styles.card} style={{ marginBottom: 0 }}>
-      <div className={styles.cardHead}>
-        <div>
-          <div className={styles.cardTitle}>By feature</div>
-          <div className={styles.cardSub}>Token breakdown</div>
-        </div>
-      </div>
-      <div className={styles.cardHr} />
-
+    <Card className={styles.uiCard}>
+      <Card.Content title="By feature" description="Token breakdown">
       {FEATURES.map((f) => {
         const Icon = ICONS[f.icon] ?? IconSearch
         return (
@@ -40,7 +33,8 @@ const FeatureBreakdown = () => {
           </div>
         )
       })}
-    </div>
+      </Card.Content>
+    </Card>
   )
 }
 

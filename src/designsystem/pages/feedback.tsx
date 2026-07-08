@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import {
   Banner,
   Alert,
@@ -10,15 +10,65 @@ import {
   Loader,
   Button,
   Text,
+  ExternalLink,
   IconFolder,
   IconHelpCircle,
 } from '@kapptivate/ui-kit'
 import { Page, Demo, Stack } from '../primitives'
 
+/** Un bloc de guideline : exemple vivant + « quand l'utiliser » + astuce. */
+const GuidelineBlock = ({
+  variant,
+  heading,
+  when,
+  example,
+  tip,
+}: {
+  variant: 'danger' | 'warning' | 'secondary' | 'success'
+  heading: string
+  when: string[]
+  example: string
+  tip?: ReactNode
+}) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <Text weight="semibold">{heading}</Text>
+    <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {when.map((w) => (
+        <li key={w}>
+          <Text size="s" color="secondary">
+            {w}
+          </Text>
+        </li>
+      ))}
+    </ul>
+    {tip && (
+      <Text size="s" color="secondary">
+        {tip}
+      </Text>
+    )}
+    <Banner variant={variant} description={example} />
+  </div>
+)
+
+const GUIDE_ROWS: [string, string][] = [
+  [
+    'An ongoing incident may impact your experience with kapptivate. Our team is actively working to fix it.',
+    'Un incident pouvant perturber votre expérience sur kapptivate est en cours. Nous sommes mobilisées pour le résoudre au plus vite.',
+  ],
+  [
+    'Due to the year-end holidays, platform support will be exceptionally limited from December 25 to 28.',
+    'En raison des fêtes de fin d’année, le support de la plateforme sera exceptionnellement limité du 25 au 28 décembre.',
+  ],
+  [
+    'Your kapptivate licence has expired. Please contact our sales team to renew it.',
+    'Votre licence kapptivate a expiré. Merci de contacter notre équipe commerciale pour la renouveler au plus vite.',
+  ],
+]
+
 export const BannerPage = () => (
   <Page
     title="Banner"
-    description="Contextual information bar. Seven semantic variants."
+    description="Contextual information bar shown at the top of the interface. Keep messages short, action-oriented, and pick the color by message type."
     importCode={"import { Banner } from '@kapptivate/ui-kit'"}
   >
     <Demo title="Variants" column>
@@ -26,6 +76,7 @@ export const BannerPage = () => (
         <Banner variant="primary" description="Informational message." />
         <Banner variant="success" description="Operation succeeded." />
         <Banner variant="warning" description="Quota almost reached." />
+        <Banner variant="danger" description="Immediate action required." />
         <Banner variant="error" description="Something went wrong." />
       </Stack>
     </Demo>
@@ -36,8 +87,129 @@ export const BannerPage = () => (
         subDescription="Renew it before the 30th to avoid an outage."
       />
     </Demo>
+
+    <Demo
+      title="When to use each variant"
+      description="Pick the color by the type of message. Never mix multiple message types in one banner."
+      column
+    >
+      <Stack>
+        <GuidelineBlock
+          variant="danger"
+          heading="🔴 Danger — the user must take immediate action to avoid being blocked"
+          when={[
+            'License expiration or renewal required',
+            'Payment issues',
+            'Critical configuration missing',
+          ]}
+          tip="✅ Always include clear instructions on how to act (link or contact email)."
+          example="Your license has expired. Contact us at sales@kapptivate.com to renew it."
+        />
+        <GuidelineBlock
+          variant="warning"
+          heading="🟠 Warning — a problem that affects the user but needs no action from them"
+          when={[
+            'Service degradation / production incident on our side',
+            'Agent or monitor update required',
+            'Temporary feature limitation',
+          ]}
+          example="We’re currently experiencing performance issues. Our team is investigating."
+        />
+        <GuidelineBlock
+          variant="secondary"
+          heading="⚪️ Info — neutral or general information, no action required"
+          when={[
+            'Scheduled maintenance',
+            'Release announcements',
+            'Contextual updates',
+          ]}
+          example="Scheduled maintenance is planned on September 15 from 10–11 PM UTC."
+        />
+        <GuidelineBlock
+          variant="success"
+          heading="🟢 Success — a positive outcome at the environment or account level"
+          when={[
+            'Major setup or configuration completed',
+            'Milestones reached (first monitor created, X tests executed…)',
+            'Environment health fully restored after an incident',
+          ]}
+          example="Service is fully restored. Everything is back to normal."
+        />
+      </Stack>
+    </Demo>
+
+    <Demo title="Tone & style" column>
+      <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {[
+          'Keep messages short and direct — one sentence if possible.',
+          'Start with the key information.',
+          'Add a clear call-to-action if needed (e.g. “Update your agent →”).',
+          'Avoid technical jargon — use simple, user-friendly language.',
+          'Don’t mix multiple message types in one banner.',
+        ].map((r) => (
+          <li key={r}>
+            <Text size="s" color="secondary">
+              {r}
+            </Text>
+          </li>
+        ))}
+      </ul>
+    </Demo>
+
+    <Demo title="Message examples (EN / FR)" column>
+      <table
+        style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          fontSize: 13,
+          border: '1px solid var(--color-border)',
+          borderRadius: 8,
+          overflow: 'hidden',
+        }}
+      >
+        <thead>
+          <tr>
+            <th style={thStyle}>EN</th>
+            <th style={thStyle}>FR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {GUIDE_ROWS.map(([en, fr]) => (
+            <tr key={en}>
+              <td style={tdStyle}>{en}</td>
+              <td style={tdStyle}>{fr}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <Text size="s" color="secondary">
+        Source :{' '}
+        <ExternalLink href="https://app.notion.com/p/kapptivate/Banners-Guidelines-2621c6485ddc80b6830cf7660fbde878">
+          Banners Guidelines (Notion)
+        </ExternalLink>
+      </Text>
+    </Demo>
   </Page>
 )
+
+const thStyle: CSSProperties = {
+  textAlign: 'left',
+  padding: '10px 12px',
+  fontSize: 11,
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  color: 'var(--color-text-secondary)',
+  background: 'var(--color-surface-grey, #fafafb)',
+  borderBottom: '1px solid var(--color-border)',
+}
+
+const tdStyle: CSSProperties = {
+  padding: '12px',
+  borderBottom: '1px solid var(--color-border)',
+  verticalAlign: 'top',
+  color: 'var(--color-text-primary)',
+  lineHeight: 1.5,
+}
 
 export const AlertPage = () => {
   const [open, setOpen] = useState(false)

@@ -1,4 +1,4 @@
-import { Table, Tag } from '@kapptivate/ui-kit'
+import { Card, Table, Tag } from '@kapptivate/ui-kit'
 import styles from './ai-usage.module.scss'
 import type { PolicyMode } from './constants'
 import { RECENT_ACTIONS } from './constants'
@@ -54,22 +54,19 @@ const RecentActionsTable = ({ policyMode }: Props) => {
       : 'Tokens estimated before each action runs (hard limit)'
 
   return (
-    <div className={styles.card} style={{ marginBottom: 0 }}>
-      <div className={styles.cardHead}>
-        <div>
-          <div className={styles.cardTitle}>Recent AI actions</div>
-          <div className={styles.cardSub}>{subtitle}</div>
+    <Card className={styles.uiCard}>
+      <Card.Content title="Recent AI actions" description={subtitle}>
+        <div className={styles.tableWrap}>
+          <Table
+            rowKey="key"
+            columns={columns}
+            data={RECENT_ACTIONS}
+            outerBorders={false}
+            showHeader
+          />
         </div>
-      </div>
-      <div className={styles.cardHr} />
-      <Table
-        rowKey="key"
-        columns={columns}
-        data={RECENT_ACTIONS}
-        outerBorders={false}
-        showHeader
-      />
-    </div>
+      </Card.Content>
+    </Card>
   )
 }
 

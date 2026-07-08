@@ -271,6 +271,13 @@ h1.title {
   margin-left: 7px;
 }
 
+/* Compteur de l'onglet actif : orange (comme le mock).
+   `ant-tabs-tab-active` = classe posée par antd (via le Tabs ui-kit). */
+:global(.ant-tabs-tab-active) .tabCount {
+  background: #fbe9df;
+  color: $primary;
+}
+
 /* ===================== FILTERS ===================== */
 .filters {
   display: flex;

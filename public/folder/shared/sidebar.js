@@ -1,7 +1,6 @@
 /* ======================================================
    shared/sidebar.js — Composant sidebar partage
-   Source unique pour les 3 protos :
-     - Public & private locations
+   Source unique pour les protos legacy :
      - Run queue
      - Root Cause Analysis
    ====================================================== */
