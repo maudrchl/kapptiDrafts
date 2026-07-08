@@ -158,6 +158,7 @@ const IndexPage = () => {
       key: 'status',
       dataIndex: 'status',
       width: 300,
+      defaultSortOrder: 'ascend' as const,
       sorter: (a: CatalogEntry, b: CatalogEntry) =>
         STATUS_ORDER.indexOf(statusOf(a.slug, a.status)) -
         STATUS_ORDER.indexOf(statusOf(b.slug, b.status)),
