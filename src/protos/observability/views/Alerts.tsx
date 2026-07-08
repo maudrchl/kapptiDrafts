@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button } from 'ui-kit'
+import { Button } from '@kapptivate/ui-kit'
 import { Bell, Plus } from 'lucide-react'
 import styles from '../observability.module.scss'
 import {

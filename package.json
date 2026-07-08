@@ -10,6 +10,7 @@
     "build:legacy": "node build.js"
   },
   "dependencies": {
+    "@kapptivate/ui-kit": "1.46.0",
     "antd": "5.16.4",
     "dayjs": "1.11.13",
     "formik": "2.4.5",

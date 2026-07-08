@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react'
-import type { ProtoStatus } from './registry'
+import { STATUS_ORDER, type ProtoStatus } from './registry'
 
 /**
  * Overrides de statut éditables depuis l'interface, persistés en localStorage
@@ -58,8 +58,12 @@ export function useStatusOverrides() {
     () => snapshot,
   )
   const statusOf = useCallback(
-    (slug: string, fallback: ProtoStatus): ProtoStatus =>
-      overrides[slug] ?? fallback,
+    (slug: string, fallback: ProtoStatus): ProtoStatus => {
+      const override = overrides[slug]
+      // Ignore les overrides obsolètes/invalides (ex: statut renommé) pour
+      // ne jamais retomber sur une couleur/label indéfini.
+      return override && STATUS_ORDER.includes(override) ? override : fallback
+    },
     [overrides],
   )
   return { statusOf, setStatus: setOverride }

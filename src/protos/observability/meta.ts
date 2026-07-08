@@ -1,4 +1,4 @@
-import { IconActivity } from 'ui-kit'
+import { IconActivity } from '@kapptivate/ui-kit'
 import type { ProtoMeta } from '../registry'
 
 const meta: ProtoMeta = {

@@ -1,4 +1,4 @@
-import { Drawer, Button, Input, Select, Tag } from 'ui-kit'
+import { Drawer, Button, Input, Select, Tag } from '@kapptivate/ui-kit'
 import styles from './ai-usage.module.scss'
 import type { PolicyMode } from './constants'
 

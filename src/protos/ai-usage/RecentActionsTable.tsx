@@ -1,4 +1,4 @@
-import { Table, Tag } from 'ui-kit'
+import { Table, Tag } from '@kapptivate/ui-kit'
 import styles from './ai-usage.module.scss'
 import type { PolicyMode } from './constants'
 import { RECENT_ACTIONS } from './constants'

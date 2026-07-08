@@ -1,4 +1,4 @@
-import { IconSearch, IconWrench, IconSparkle } from 'ui-kit'
+import { IconSearch, IconWrench, IconSparkle } from '@kapptivate/ui-kit'
 import styles from './ai-usage.module.scss'
 import { FEATURES } from './constants'
 

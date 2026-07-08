@@ -15,7 +15,7 @@ import {
   IconSearchX,
   IconCode,
   IconFileType,
-} from 'ui-kit'
+} from '@kapptivate/ui-kit'
 import logo from '../assets/kapptidrafts-logo.svg'
 import {
   catalog,
@@ -172,7 +172,7 @@ const IndexPage = () => {
             <Select
               size="s"
               value={status}
-              onChange={(_e, v) => setStatus(p.slug, v as ProtoStatus)}
+              onChange={(v) => setStatus(p.slug, v as ProtoStatus)}
               options={STATUS_OPTIONS}
               minWidth="160px"
             />
@@ -196,9 +196,9 @@ const IndexPage = () => {
         <Button
           color="secondary"
           icon={IconLayoutGrid}
-          onClick={() => navigate('/gallery')}
+          onClick={() => navigate('/design-system')}
         >
-          Galerie de composants
+          Design System
         </Button>
       </header>
 

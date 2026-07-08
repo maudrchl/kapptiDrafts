@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import type { ComponentType, LazyExoticComponent } from 'react'
-import { IconMapPin, IconListStart, IconActivity, IconComponent, IconNavigation } from 'ui-kit'
+import { IconListStart, IconActivity, IconComponent, IconNavigation } from '@kapptivate/ui-kit'
 import IconBrush from './BrushIcon'
 
 export type ProtoIcon = ComponentType<{ size?: number; color?: string }>
@@ -86,14 +86,6 @@ export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
     description: 'Explorations de branding — lockups, palette & composants',
     icon: IconBrush,
     href: '/folder/Exploration UI.html',
-  },
-  {
-    slug: 'public-private-locations',
-    title: 'Public & Private Locations',
-    status: 'en cours design',
-    description: 'Gestion des localisations publiques et privées',
-    icon: IconMapPin,
-    href: '/folder/Public & private locations V2.html',
   },
   {
     slug: 'run-queue',

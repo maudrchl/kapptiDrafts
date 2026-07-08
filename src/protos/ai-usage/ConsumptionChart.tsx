@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Segmented } from 'ui-kit'
+import { Segmented } from '@kapptivate/ui-kit'
 import styles from './ai-usage.module.scss'
 import type { BudgetState } from './constants'
 import { CHART_DAYS, CHART_CACHE, STATE_FACTOR } from './constants'

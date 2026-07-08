@@ -1,4 +1,4 @@
-import { IconSparkle } from 'ui-kit'
+import { IconSparkle } from '@kapptivate/ui-kit'
 import type { ProtoMeta } from '../registry'
 
 const meta: ProtoMeta = {

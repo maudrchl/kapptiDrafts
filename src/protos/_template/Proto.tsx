@@ -1,4 +1,4 @@
-import { Title, Text, Button, Banner, IconSparkle } from 'ui-kit'
+import { Title, Text, Button, Banner, IconSparkle } from '@kapptivate/ui-kit'
 
 /**
  * Point de départ d'un proto. Copie le dossier `_template`, renomme-le

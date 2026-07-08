@@ -1,4 +1,4 @@
-import { Button, Banner } from 'ui-kit'
+import { Button, Banner } from '@kapptivate/ui-kit'
 import {
   Activity,
   Bell,

@@ -1,85 +1,67 @@
-import {
-  IconSlidersHorizontal,
-  IconUser2,
-  IconBox,
-  IconUsers2,
-  IconShield,
-  IconBell,
-  IconKeyRound,
-  IconList,
-  IconBookOpen,
-  IconExternalLink,
-} from 'ui-kit'
-import { Wallet, ShieldCheck } from 'lucide-react'
+import { ManagementSidebar } from '@kapptivate/ui-kit'
 import styles from './ai-usage.module.scss'
 
-const NAV_ITEMS = [
-  { section: 'My account' },
-  { label: 'Preferences', icon: IconSlidersHorizontal },
-  { label: 'Profile', icon: IconUser2 },
-  { section: 'Workspace' },
-  { label: 'Products', icon: IconBox },
-  { label: 'Users', icon: IconUsers2 },
-  { label: 'Teams', icon: IconUsers2 },
-  { label: 'Roles', icon: IconShield },
-  { section: 'Administration' },
-  { label: 'AI Usage', icon: Wallet, active: true },
-  { label: 'Notifications', icon: IconBell },
-  { label: 'API Keys', icon: IconKeyRound },
-  { label: 'Security policies', icon: ShieldCheck },
-  { label: 'Event log', icon: IconList },
-  { section: 'Help' },
-  { label: 'Documentation', icon: IconBookOpen, external: true },
-] as const
-
-const SettingsSidebar = () => {
-  return (
-    <nav className={styles.nav}>
-      <div className={styles.navScroll}>
-        <div className={styles.wsCard}>
-          <div className={styles.wsAvatar}>
-            <Wallet size={14} />
-          </div>
-          <div>
-            <div className={styles.wsName}>kapptivate</div>
-            <div className={styles.wsLabel}>Workspace</div>
-          </div>
-        </div>
-
-        {NAV_ITEMS.map((item, i) => {
-          if ('section' in item) {
-            return (
-              <div key={i} className={styles.navSection}>
-                {item.section}
-              </div>
-            )
-          }
-          const Icon = item.icon
-          return (
-            <div
-              key={i}
-              className={
-                'active' in item && item.active
-                  ? styles.navItemActive
-                  : styles.navItem
-              }
-            >
-              <Icon size={16} />
-              {item.label}
-              {'external' in item && item.external && (
-                <IconExternalLink size={13} style={{ marginLeft: -4 }} />
-              )}
-            </div>
-          )
-        })}
-      </div>
-      <div className={styles.navFoot}>
+/**
+ * Sidebar d'administration = vrai composant ui-kit `ManagementSidebar`
+ * (compound API : ManagementSidebar.Section + ManagementSidebar.Item).
+ *
+ * Note : le composant réel ne gère ni icône ni prop `active`.
+ * L'item actif est marqué via une classe ancêtre `.active`
+ * (cf. `:global(.active) &` dans item.module.scss du ui-kit).
+ */
+const SettingsSidebar = () => (
+  <ManagementSidebar
+    footer={
+      <div
+        style={{
+          padding: '12px 12px',
+          fontSize: 11,
+          lineHeight: 1.6,
+          color: 'var(--color-text-third, #98a2b3)',
+        }}
+      >
         V: 8.85.0-hotfix.1
         <br />
         GUI: 15.53.0-hotfix.1
       </div>
-    </nav>
-  )
-}
+    }
+  >
+    <div className={styles.wsCard}>
+      <div className={styles.wsAvatar}>k</div>
+      <div>
+        <div className={styles.wsName}>kapptivate</div>
+        <div className={styles.wsLabel}>Workspace</div>
+      </div>
+    </div>
+
+    <ManagementSidebar.Section title="My account">
+      <ManagementSidebar.Item label="Preferences" />
+      <ManagementSidebar.Item label="Profile" />
+    </ManagementSidebar.Section>
+
+    <ManagementSidebar.Section title="Workspace">
+      <ManagementSidebar.Item label="Products" />
+      <ManagementSidebar.Item label="Users" />
+      <ManagementSidebar.Item label="Teams" />
+      <ManagementSidebar.Item label="Roles" />
+      <ManagementSidebar.Item label="Settings" />
+    </ManagementSidebar.Section>
+
+    <ManagementSidebar.Section title="Administration">
+      <div className="active">
+        <ManagementSidebar.Item label="AI Usage" />
+      </div>
+      <ManagementSidebar.Item label="Notifications" />
+      <ManagementSidebar.Item label="CI/CD" />
+      <ManagementSidebar.Item label="API Keys" />
+      <ManagementSidebar.Item label="Security policies" />
+      <ManagementSidebar.Item label="Event log" />
+    </ManagementSidebar.Section>
+
+    <ManagementSidebar.Section title="Help">
+      <ManagementSidebar.Item label="Documentation" external />
+    </ManagementSidebar.Section>
+  </ManagementSidebar>
+)
 
 export default SettingsSidebar

@@ -1,0 +1,209 @@
+/* Mini design-system doc-site — chrome & layout.
+   On s'appuie sur les tokens ui-kit (--color-*) pour suivre le thème. */
+
+.ds {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: flex-start;
+}
+
+/* ---- Sidebar ---- */
+.dsSidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 264px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--color-border-grey, #e4e4e7);
+  background: var(--color-surface-grey, #fafafb);
+  padding: 20px 12px 40px;
+}
+.dsBrand {
+  display: flex;
+  align-items: center;
+  padding: 4px 10px 18px;
+}
+.dsBrandLogo {
+  height: 24px;
+  width: auto;
+  max-width: 100%;
+  display: block;
+}
+.dsBack {
+  padding: 0 4px 10px;
+}
+.dsSearch {
+  padding: 0 6px 14px;
+}
+.dsNavGroup {
+  margin-top: 14px;
+}
+.dsNavGroupLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-third, #b2b7c2);
+  padding: 6px 10px;
+}
+.dsNavLink {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: var(--color-text-secondary, #667085);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.dsNavLink:hover {
+  background: var(--color-grey-200, #f5f5f8);
+  color: var(--color-text-primary, #24292f);
+}
+.dsNavLink.active {
+  background: var(--color-primary-light, #fef4f0);
+  color: var(--color-primary-hover, #d26334);
+  font-weight: 600;
+}
+.dsNavLink.active .dsNavIcon {
+  color: var(--color-primary-hover, #d26334);
+}
+.dsNavIcon {
+  display: inline-flex;
+  color: var(--color-text-third, #b2b7c2);
+  flex-shrink: 0;
+}
+
+/* ---- Content ---- */
+.dsContent {
+  flex: 1;
+  min-width: 0;
+  padding: 44px 56px 96px;
+  max-width: 1040px;
+}
+.dsPageHead {
+  margin-bottom: 8px;
+}
+.dsPageDesc {
+  margin-top: 8px;
+  max-width: 640px;
+}
+
+/* ---- Demo section ---- */
+.dsSection {
+  margin-top: 44px;
+}
+.dsSectionHead {
+  margin-bottom: 14px;
+}
+.dsSurface {
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-radius: 12px;
+  background: var(--color-surface-white, #fff);
+  padding: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+.dsSurfaceColumn {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* ---- Layout helpers ---- */
+.dsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.dsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* ---- Code snippet ---- */
+.dsCode {
+  position: relative;
+  margin-top: 12px;
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-radius: 10px;
+  background: #0b0f18;
+  overflow: hidden;
+}
+.dsCode pre {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #e6e6ea;
+}
+.dsCodeCopy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cfcfd6;
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.dsCodeCopy:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ---- Swatch grid (colors) ---- */
+.dsSwatchGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+.dsSwatch {
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.dsSwatchColor {
+  height: 64px;
+}
+.dsSwatchMeta {
+  padding: 8px 10px;
+  background: var(--color-surface-white, #fff);
+}
+
+/* ---- Icon grid ---- */
+.dsIconGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+.dsIconCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-radius: 10px;
+  text-align: center;
+  color: var(--color-text-primary, #24292f);
+}
+.dsIconLabel {
+  font-size: 10.5px;
+  color: var(--color-text-secondary, #667085);
+  word-break: break-word;
+  line-height: 1.3;
+}

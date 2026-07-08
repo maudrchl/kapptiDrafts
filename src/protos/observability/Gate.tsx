@@ -1,4 +1,4 @@
-import { Button } from 'ui-kit'
+import { Button } from '@kapptivate/ui-kit'
 import { PlugZap, Radar } from 'lucide-react'
 import { Empty } from './components'
 import { OTLP_ENDPOINT, type TenantState, type ViewKey } from './constants'

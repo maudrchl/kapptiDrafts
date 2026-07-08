@@ -1,4 +1,4 @@
-import { IconTrendingUp, IconTrendingDown } from 'ui-kit'
+import { IconTrendingUp, IconTrendingDown } from '@kapptivate/ui-kit'
 import { Hash, Wallet, Database } from 'lucide-react'
 import styles from './ai-usage.module.scss'
 import type { BudgetState, PolicyMode, StateConfig } from './constants'
