@@ -115,13 +115,13 @@ const CodeDrawer = ({
   }
 
   return (
-    <Drawer open={open} onClose={onClose} title="Code source" width={780}>
+    <Drawer open={open} onClose={onClose} title="Source code" width={780}>
       {!files ? (
         <div style={styles.center}>
           <Loader size="medium" />
         </div>
       ) : files.length === 0 ? (
-        <Text color="secondary">Aucune source trouvée pour ce proto.</Text>
+        <Text color="secondary">No source found for this proto.</Text>
       ) : (
         <div style={styles.wrap}>
           <div style={styles.toolbar}>
@@ -139,7 +139,7 @@ const CodeDrawer = ({
               icon={copied ? IconCheck : IconCopy}
               onClick={copy}
             >
-              {copied ? 'Copié' : 'Copier le code'}
+              {copied ? 'Copied' : 'Copy code'}
             </Button>
           </div>
           <div style={styles.pathBar}>
@@ -152,7 +152,7 @@ const CodeDrawer = ({
               icon={copiedPath ? IconCheck : IconCopy}
               onClick={copyPath}
             >
-              {copiedPath ? 'Copié' : 'Copier le chemin'}
+              {copiedPath ? 'Copied' : 'Copy path'}
             </Button>
           </div>
           <div style={styles.codeScroll}>
@@ -189,6 +189,7 @@ const styles: Record<string, CSSProperties> = {
     overflow: 'auto',
     borderRadius: 10,
     border: '1px solid #2d2d2d',
+    background: '#2d2d2d',
   },
   pre: {
     margin: 0,

@@ -31,7 +31,10 @@ const ProtoFrame = ({
 
       {/* Fil d'Ariane */}
       <div style={styles.crumb}>
-        <Link to="/" style={styles.home} title="Retour à l'index">
+        <Link to="/" style={styles.home} title="Back to index">
+          <span style={styles.arrow}>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </span>
           <img src={logo} alt="kapptiDrafts" style={styles.logo} />
         </Link>
         <span style={styles.sep}>/</span>
@@ -43,7 +46,7 @@ const ProtoFrame = ({
         type="button"
         style={styles.codeBtn}
         onClick={() => setCodeOpen(true)}
-        title="Voir le code source de ce proto"
+        title="View this proto's source code"
       >
         <IconCode size={13} />
         <span>Code</span>
@@ -82,7 +85,8 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 8,
     boxShadow: '0 2px 8px rgba(16,24,40,0.10)',
   },
-  home: { display: 'inline-flex', alignItems: 'center' },
+  home: { display: 'inline-flex', alignItems: 'center', gap: 4 },
+  arrow: { display: 'inline-flex', color: '#98a2b3' },
   logo: { height: 13, width: 'auto', display: 'block' },
   sep: { color: '#c0c4cc' },
   title: { fontWeight: 600, color: '#1a1a1a' },
