@@ -1,8 +1,7 @@
 import {
-  Activity,
   Bell,
+  CheckCircle2,
   ChevronRight,
-  CircleCheck,
   Globe,
   LayoutGrid,
   LineChart,
@@ -11,7 +10,7 @@ import {
   MonitorDot,
   PanelLeftClose,
   Radar,
-  TabletSmartphone,
+  Smartphone,
   Zap,
 } from 'lucide-react'
 import styles from './locations.module.scss'
@@ -73,7 +72,7 @@ const MainSidebar = () => (
       Tests
     </button>
     <button className={styles.navItem}>
-      <CircleCheck size={14} />
+      <CheckCircle2 size={14} />
       Executions
     </button>
     <button className={styles.navItem}>
@@ -92,7 +91,7 @@ const MainSidebar = () => (
       Browser presets
     </button>
     <button className={styles.navItem}>
-      <TabletSmartphone size={14} />
+      <Smartphone size={14} />
       Devices lab
     </button>
 

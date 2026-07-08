@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ui-kit": {
+      "type": "http",
+      "url": "https://staging--660e9bb0f908c2fb60a0fa85.chromatic.com/mcp",
+      "headers": {
+        "client-id": "cdf3737dff9d485485968e50b63fd8b4"
+      }
+    }
+  }
+}
