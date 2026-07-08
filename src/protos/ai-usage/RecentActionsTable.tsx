@@ -54,7 +54,7 @@ const RecentActionsTable = ({ policyMode }: Props) => {
       : 'Tokens estimated before each action runs (hard limit)'
 
   return (
-    <Card className={styles.uiCard}>
+    <Card className={styles.uiCardAuto}>
       <Card.Content title="Recent AI actions" description={subtitle}>
         <div className={styles.tableWrap}>
           <Table

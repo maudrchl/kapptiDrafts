@@ -407,6 +407,10 @@
 
 /* ===== ui-kit Card override ===== */
 .uiCard {
+  margin-bottom: 0;
+}
+
+.uiCardAuto {
   height: auto !important;
   margin-bottom: 0;
 }
