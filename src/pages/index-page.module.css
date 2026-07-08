@@ -1,0 +1,5 @@
+/* La <table> antd se dimensionne à son contenu par défaut : on la force à
+   occuper toute la largeur du wrapper (déjà en 100%). */
+.tableWrap table {
+  width: 100% !important;
+}

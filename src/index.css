@@ -1,0 +1,14 @@
+/* Reset global minimal pour l'app de protos (les .html legacy ont le leur). */
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+}
+#root {
+  width: 100%;
+  min-height: 100vh;
+}

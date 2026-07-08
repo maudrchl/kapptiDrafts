@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kapptivate — Exploration UI · Branding</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal: #1C4A47;
+    --teal-900: #15433E;
+    --sage: #7B9F7F;
+    --coral: #ED7846;
+    --coral-dark: #D26334;
+    --cream: #FFF4D3;
+
+    --ink: #24292F;
+    --slate: #667085;
+    --mist: #98A2B3;
+    --grey: #FAFAFB;
+    --grey-2: #F4F4F5;
+    --border: #E4E4E7;
+    --border-strong: #D0D5DD;
+    --white: #FFFFFF;
+
+    /* Accent piloté par le sélecteur de thème (section Composants) */
+    --accent: var(--coral);
+    --accent-ink: #1C4A47;
+
+    --shadow-s: 0 1px 2px #1018280D;
+    --shadow-md: 0 4px 8px -2px rgba(16,24,40,0.08), 0 2px 4px -2px rgba(16,24,40,0.04);
+    --shadow-lg: 0 18px 48px -12px rgba(16,24,40,0.20);
+    --r-md: 6px; --r-lg: 8px; --r-xl: 12px; --r-2xl: 18px; --r-full: 999px;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Geist',-apple-system,sans-serif; background:var(--grey); color:var(--ink); font-size:14px; -webkit-font-smoothing:antialiased; }
+  .ic { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+
+  /* ===== TOPBAR ===== */
+  .topbar { height:60px; background:var(--teal); display:flex; align-items:center; justify-content:center; position:relative; }
+  .brand { display:flex; align-items:center; gap:9px; color:#fff; font-weight:600; font-size:16px; letter-spacing:-0.01em; }
+  .brand-mark { width:20px; height:20px; color:var(--coral); }
+  .topbar-tag { position:absolute; right:20px; top:50%; transform:translateY(-50%); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(255,244,211,0.6); font-weight:600; }
+
+  /* ===== HERO ===== */
+  .wrap { max-width:1120px; margin:0 auto; padding:0 32px; }
+  .hero { padding:64px 0 32px; }
+  .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--coral); }
+  .hero h1 { font-size:38px; font-weight:700; letter-spacing:-0.02em; margin:10px 0 12px; }
+  .hero p { font-size:15.5px; color:var(--slate); max-width:620px; line-height:1.6; }
+  .hero-meta { display:flex; gap:22px; margin-top:24px; flex-wrap:wrap; }
+  .hero-meta div { font-size:12.5px; color:var(--slate); }
+  .hero-meta b { display:block; color:var(--ink); font-size:20px; font-weight:700; letter-spacing:-0.01em; }
+
+  section.block { padding:36px 0; border-top:1px solid var(--border); }
+  .block-head { margin-bottom:22px; }
+  .block-head h2 { font-size:13px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink); }
+  .block-head p { font-size:13.5px; color:var(--slate); margin-top:6px; max-width:560px; line-height:1.55; }
+
+  /* ===== LOCKUPS ===== */
+  .lockups { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; }
+  .lockup { border:1px solid var(--border); border-radius:var(--r-2xl); overflow:hidden; background:var(--white); box-shadow:var(--shadow-s); transition:box-shadow .3s var(--ease), transform .3s var(--ease); }
+  .lockup:hover { box-shadow:var(--shadow-lg); transform:translateY(-2px); }
+  .lockup-art { background:var(--logo-bg); aspect-ratio:16/7; display:flex; align-items:center; justify-content:center; padding:44px 56px; }
+  .lockup-svg { width:62%; height:auto; max-height:100%; }
+  .lockup figcaption { padding:16px 18px 18px; }
+  .lockup-name { font-size:15px; font-weight:600; }
+  .lockup-role { font-size:12.5px; color:var(--slate); margin:3px 0 12px; line-height:1.45; }
+  .swatch-row { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip-hex { display:inline-flex; align-items:center; gap:6px; font-family:'Geist',sans-serif; font-size:11px; font-weight:500; color:var(--slate); background:var(--grey-2); border:1px solid var(--border); border-radius:var(--r-full); padding:4px 9px 4px 6px; cursor:pointer; transition:all .15s; }
+  .chip-hex:hover { border-color:var(--border-strong); color:var(--ink); }
+  .chip-hex .dot { width:11px; height:11px; border-radius:50%; box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12); }
+
+  /* ===== PALETTE ===== */
+  .palette { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+  .swatch { text-align:left; border:none; background:none; cursor:pointer; padding:0; font-family:inherit; }
+  .swatch-fill { display:block; height:88px; border-radius:var(--r-lg); box-shadow:inset 0 0 0 1px rgba(16,24,40,0.08); transition:transform .2s var(--ease); }
+  .swatch:hover .swatch-fill { transform:scale(1.03); }
+  .swatch-meta { display:block; margin-top:9px; }
+  .swatch-name { display:block; font-size:13px; font-weight:600; }
+  .swatch-hex { display:block; font-size:12px; color:var(--slate); font-variant-numeric:tabular-nums; }
+  .swatch-note { display:block; font-size:11px; color:var(--mist); margin-top:2px; }
+
+  /* ===== TYPO ===== */
+  .type-list { display:flex; flex-direction:column; gap:2px; }
+  .type-row { display:flex; align-items:baseline; gap:20px; padding:14px 0; border-bottom:1px solid var(--border); }
+  .type-row:last-child { border-bottom:none; }
+  .type-tag { font-size:11px; color:var(--mist); width:120px; flex-shrink:0; font-variant-numeric:tabular-nums; }
+  .type-sample { color:var(--ink); }
+
+  /* ===== COMPONENTS (themable) ===== */
+  .theme-switch { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:22px; }
+  .theme-switch .lbl { font-size:12px; color:var(--slate); }
+  .theme-row { display:flex; gap:6px; background:var(--grey-2); border:1px solid var(--border); border-radius:var(--r-full); padding:4px; }
+  .theme-btn { display:flex; align-items:center; gap:7px; font-family:inherit; font-size:12.5px; font-weight:500; color:var(--slate); background:none; border:none; border-radius:var(--r-full); padding:6px 12px; cursor:pointer; transition:all .2s; }
+  .theme-btn span { width:12px; height:12px; border-radius:50%; box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12); }
+  .theme-btn.active { background:var(--white); color:var(--ink); box-shadow:var(--shadow-s); }
+
+  .preview { display:grid; grid-template-columns:1.4fr 1fr; gap:18px; }
+  .card { background:var(--white); border:1px solid var(--border); border-radius:var(--r-xl); padding:20px 22px; box-shadow:var(--shadow-s); }
+  .card + .card { margin-top:18px; }
+  .card-title { font-size:13px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--mist); margin-bottom:16px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .stack { display:flex; flex-direction:column; gap:12px; }
+
+  .btn { font-family:inherit; font-size:13.5px; font-weight:500; padding:9px 16px; border-radius:var(--r-md); cursor:pointer; border:1px solid transparent; display:inline-flex; align-items:center; gap:8px; transition:all .18s var(--ease); }
+  .btn.primary { background:var(--accent); color:#fff; }
+  .btn.primary:hover { filter:brightness(0.93); }
+  .btn.secondary { background:var(--white); border-color:var(--border-strong); color:var(--ink); }
+  .btn.secondary:hover { border-color:var(--slate); }
+  .btn.ghost { background:transparent; color:var(--accent); }
+  .btn.ghost:hover { background:color-mix(in srgb, var(--accent) 10%, transparent); }
+
+  .tags { display:flex; gap:8px; flex-wrap:wrap; }
+  .tag { font-size:12px; font-weight:500; padding:4px 11px; border-radius:var(--r-full); }
+  .tag.solid { background:var(--accent); color:#fff; }
+  .tag.soft { background:color-mix(in srgb, var(--accent) 14%, transparent); color:var(--accent-ink); }
+  .tag.outline { border:1px solid var(--accent); color:var(--accent); }
+  .tag.neutral { background:var(--grey-2); color:var(--slate); }
+
+  .field { display:flex; flex-direction:column; gap:6px; }
+  .field label { font-size:12.5px; font-weight:500; color:var(--ink); }
+  .field input { font-family:inherit; font-size:13.5px; padding:9px 12px; border:1px solid var(--border-strong); border-radius:var(--r-md); outline:none; color:var(--ink); background:var(--white); transition:border-color .15s, box-shadow .15s; }
+  .field input:focus { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .field input::placeholder { color:var(--mist); }
+
+  .toggle { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+  .toggle .t-txt { font-size:13.5px; }
+  .toggle .t-sub { font-size:12px; color:var(--slate); margin-top:2px; }
+  .switch { width:40px; height:23px; border-radius:var(--r-full); background:var(--accent); position:relative; cursor:pointer; flex-shrink:0; transition:background .2s; }
+  .switch::after { content:""; position:absolute; top:2.5px; left:2.5px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:var(--shadow-s); transition:transform .2s var(--ease); }
+  .switch.off { background:var(--border-strong); }
+  .switch.off::after { transform:translateX(-17px); }
+
+  .gauge { height:10px; background:var(--grey-2); border-radius:var(--r-full); overflow:hidden; }
+  .gauge > span { display:block; height:100%; width:68%; background:var(--accent); border-radius:var(--r-full); }
+  .metric { font-size:34px; font-weight:700; letter-spacing:-0.02em; }
+  .metric small { font-size:15px; color:var(--mist); font-weight:600; }
+  .metric-label { font-size:12.5px; color:var(--slate); margin-bottom:4px; }
+  .trend { display:inline-flex; align-items:center; gap:5px; font-size:12.5px; font-weight:500; color:var(--sage); margin-top:8px; }
+
+  /* mini app preview */
+  .mini { border:1px solid var(--border); border-radius:var(--r-xl); overflow:hidden; box-shadow:var(--shadow-s); }
+  .mini-top { background:var(--teal); height:38px; display:flex; align-items:center; padding:0 14px; gap:8px; }
+  .mini-top .brand { font-size:13px; }
+  .mini-top .brand-mark { width:15px; height:15px; }
+  .mini-body { padding:16px; background:var(--white); }
+  .mini-cta { background:var(--accent); color:#fff; font-size:12.5px; font-weight:500; padding:8px 12px; border-radius:var(--r-md); display:inline-block; }
+
+  .foot { padding:40px 0 60px; color:var(--mist); font-size:12px; text-align:center; border-top:1px solid var(--border); }
+  .foot code { background:var(--grey-2); padding:2px 6px; border-radius:4px; color:var(--slate); }
+
+  /* toast */
+  .toast { position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--teal); color:var(--cream); font-size:13px; font-weight:500; padding:10px 18px; border-radius:var(--r-full); box-shadow:var(--shadow-lg); opacity:0; pointer-events:none; transition:all .28s var(--ease); }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (max-width:820px) {
+    .lockups, .preview { grid-template-columns:1fr; }
+    .palette { grid-template-columns:repeat(2,1fr); }
+    .hero h1 { font-size:30px; }
+  }
+</style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="ktm-logo">
+        <rect x="3019" y="340" width="1020" height="310" fill="var(--logo-bg)"/>
+        <path d="M3275.32 546V372.516H3305.58V469.872C3311.11 466.456 3316.4 462.715 3321.44 458.648C3326.48 454.419 3331.12 450.027 3335.35 445.472C3339.58 440.917 3343.32 436.363 3346.57 431.808C3349.83 427.091 3352.51 422.617 3354.62 418.388H3390C3387.4 424.732 3383.99 430.995 3379.76 437.176C3375.53 443.357 3370.57 449.051 3364.87 454.256C3359.34 459.461 3353.08 464.016 3346.08 467.92C3339.09 471.661 3331.61 474.264 3323.64 475.728V479.144C3333.72 477.68 3342.18 478.168 3349.01 480.608C3355.84 483.048 3361.62 486.708 3366.34 491.588C3371.05 496.468 3374.96 502.161 3378.05 508.668C3381.3 515.012 3384.31 521.519 3387.08 528.188L3393.42 546H3359.5L3355.6 534.288C3352.51 526.155 3349.26 518.997 3345.84 512.816C3342.59 506.472 3338.44 501.592 3333.4 498.176C3328.52 494.597 3322.17 492.808 3314.36 492.808H3305.58V546H3275.32Z" fill="var(--logo-fg)"/>
+        <path d="M3430.56 549.172C3423.56 549.172 3417.3 547.871 3411.77 545.268C3406.24 542.503 3401.85 538.436 3398.59 533.068C3395.5 527.7 3393.96 521.031 3393.96 513.06C3393.96 506.391 3395.18 500.697 3397.62 495.98C3400.22 491.263 3404.04 487.44 3409.08 484.512C3414.13 481.421 3420.39 478.9 3427.87 476.948C3435.35 474.833 3444.14 473.044 3454.22 471.58C3459.75 470.767 3464.23 469.953 3467.64 469.14C3471.22 468.327 3473.83 467.107 3475.45 465.48C3477.08 463.691 3477.89 461.088 3477.89 457.672C3477.89 452.629 3476.1 448.319 3472.52 444.74C3469.11 440.999 3463.5 439.128 3455.69 439.128C3450.97 439.128 3446.42 439.941 3442.02 441.568C3437.79 443.195 3434.13 445.797 3431.04 449.376C3427.95 452.792 3425.84 457.347 3424.7 463.04L3397.13 454.5C3398.92 447.993 3401.52 442.381 3404.94 437.664C3408.35 432.784 3412.58 428.636 3417.62 425.22C3422.67 421.804 3428.44 419.283 3434.95 417.656C3441.45 416.029 3448.61 415.216 3456.42 415.216C3468.29 415.216 3478.05 417.168 3485.7 421.072C3493.35 424.813 3499.04 430.751 3502.78 438.884C3506.52 446.855 3508.39 457.184 3508.39 469.872V493.784C3508.39 499.315 3508.47 505.089 3508.64 511.108C3508.96 516.964 3509.29 522.901 3509.61 528.92C3510.1 534.776 3510.67 540.469 3511.32 546H3483.75C3483.1 541.445 3482.53 536.565 3482.04 531.36C3481.55 526.155 3481.15 520.868 3480.82 515.5H3476.92C3474.64 521.681 3471.39 527.375 3467.16 532.58C3462.93 537.623 3457.72 541.689 3451.54 544.78C3445.52 547.708 3438.53 549.172 3430.56 549.172ZM3442.76 526.48C3446.01 526.48 3449.26 525.911 3452.52 524.772C3455.93 523.633 3459.27 521.925 3462.52 519.648C3465.77 517.371 3468.78 514.605 3471.55 511.352C3474.31 507.936 3476.67 503.951 3478.62 499.396L3478.14 477.68L3483.99 478.656C3481.23 480.933 3477.81 482.723 3473.74 484.024C3469.68 485.325 3465.37 486.301 3460.81 486.952C3456.42 487.603 3451.95 488.416 3447.39 489.392C3443 490.205 3439.01 491.344 3435.44 492.808C3431.86 494.109 3429.01 496.061 3426.9 498.664C3424.78 501.104 3423.72 504.52 3423.72 508.912C3423.72 514.443 3425.51 518.753 3429.09 521.844C3432.67 524.935 3437.23 526.48 3442.76 526.48Z" fill="var(--logo-fg)"/>
+        <path d="M3526.98 586.504V418.388H3552.84L3552.6 453.036L3556.75 453.28C3558.37 445.147 3560.98 438.233 3564.55 432.54C3568.3 426.847 3573.01 422.536 3578.71 419.608C3584.4 416.68 3591.15 415.216 3598.96 415.216C3610.34 415.216 3620.02 418.063 3627.99 423.756C3635.96 429.287 3641.98 437.176 3646.05 447.424C3650.28 457.509 3652.39 469.303 3652.39 482.804C3652.39 495.492 3650.44 506.879 3646.54 516.964C3642.8 526.887 3637.02 534.776 3629.21 540.632C3621.57 546.325 3612.05 549.172 3600.67 549.172C3592.37 549.172 3585.38 547.545 3579.68 544.292C3573.99 541.039 3569.35 536.565 3565.77 530.872C3562.2 525.179 3559.27 518.591 3556.99 511.108H3552.6C3553.57 515.5 3554.39 520.055 3555.04 524.772C3555.85 529.327 3556.5 533.881 3556.99 538.436C3557.48 542.828 3557.72 547.057 3557.72 551.124V586.504H3526.98ZM3590.66 524.04C3597.01 524.04 3602.37 522.332 3606.77 518.916C3611.16 515.337 3614.49 510.457 3616.77 504.276C3619.05 497.932 3620.19 490.693 3620.19 482.56C3620.19 474.101 3618.97 466.781 3616.53 460.6C3614.25 454.419 3610.83 449.62 3606.28 446.204C3601.72 442.788 3596.36 441.08 3590.17 441.08C3584.81 441.08 3580.09 442.3 3576.02 444.74C3571.96 447.18 3568.54 450.433 3565.77 454.5C3563.01 458.404 3560.98 462.633 3559.67 467.188C3558.37 471.743 3557.72 476.216 3557.72 480.608V484.756C3557.72 488.009 3558.13 491.425 3558.94 495.004C3559.92 498.42 3561.3 501.917 3563.09 505.496C3564.88 508.912 3567.08 512.084 3569.68 515.012C3572.28 517.777 3575.37 519.973 3578.95 521.6C3582.53 523.227 3586.43 524.04 3590.66 524.04Z" fill="var(--logo-fg)"/>
+        <path d="M3665.55 586.504V418.388H3691.42L3691.17 453.036L3695.32 453.28C3696.95 445.147 3699.55 438.233 3703.13 432.54C3706.87 426.847 3711.59 422.536 3717.28 419.608C3722.97 416.68 3729.72 415.216 3737.53 415.216C3748.92 415.216 3758.6 418.063 3766.57 423.756C3774.54 429.287 3780.56 437.176 3784.62 447.424C3788.85 457.509 3790.97 469.303 3790.97 482.804C3790.97 495.492 3789.02 506.879 3785.11 516.964C3781.37 526.887 3775.6 534.776 3767.79 540.632C3760.14 546.325 3750.63 549.172 3739.24 549.172C3730.94 549.172 3723.95 547.545 3718.26 544.292C3712.56 541.039 3707.93 536.565 3704.35 530.872C3700.77 525.179 3697.84 518.591 3695.56 511.108H3691.17C3692.15 515.5 3692.96 520.055 3693.61 524.772C3694.43 529.327 3695.08 533.881 3695.56 538.436C3696.05 542.828 3696.3 547.057 3696.3 551.124V586.504H3665.55ZM3729.24 524.04C3735.58 524.04 3740.95 522.332 3745.34 518.916C3749.73 515.337 3753.07 510.457 3755.34 504.276C3757.62 497.932 3758.76 490.693 3758.76 482.56C3758.76 474.101 3757.54 466.781 3755.1 460.6C3752.82 454.419 3749.41 449.62 3744.85 446.204C3740.3 442.788 3734.93 441.08 3728.75 441.08C3723.38 441.08 3718.66 442.3 3714.6 444.74C3710.53 447.18 3707.11 450.433 3704.35 454.5C3701.58 458.404 3699.55 462.633 3698.25 467.188C3696.95 471.743 3696.3 476.216 3696.3 480.608V484.756C3696.3 488.009 3696.7 491.425 3697.52 495.004C3698.49 498.42 3699.88 501.917 3701.66 505.496C3703.45 508.912 3705.65 512.084 3708.25 515.012C3710.86 517.777 3713.95 519.973 3717.52 521.6C3721.1 523.227 3725.01 524.04 3729.24 524.04Z" fill="var(--logo-fg)"/>
+        <path d="M3848.78 548.928C3835.28 548.928 3825.36 545.349 3819.01 538.192C3812.67 530.872 3809.5 519.567 3809.5 504.276V443.032H3790.71L3791.2 418.632H3803.64C3808.36 418.632 3811.85 417.9 3814.13 416.436C3816.41 414.972 3817.79 412.369 3818.28 408.628L3821.21 390.084H3839.02V418.388H3872.69V444.008H3839.02V503.056C3839.02 509.075 3840.4 513.467 3843.17 516.232C3846.1 518.997 3850.41 520.38 3856.1 520.38C3859.19 520.38 3862.2 520.055 3865.13 519.404C3868.22 518.591 3871.06 517.289 3873.67 515.5V544.78C3868.62 546.407 3863.99 547.464 3859.76 547.952C3855.69 548.603 3852.03 548.928 3848.78 548.928Z" fill="var(--logo-fg)"/>
+        <path d="M3884.32 546V418.388H3915.07V546H3884.32Z" fill="var(--logo-fg)"/>
+        <path d="M3059.71 500.454C3064.72 514.231 3073.02 519.585 3085.06 523.064L3087.42 519.418C3089.98 515.313 3090.96 509.63 3091.23 504.457C3091.34 501.626 3091.79 498.672 3095.04 497.49C3098.28 496.308 3101.5 498.181 3102.6 501.205C3102.97 502.213 3103.4 504.087 3103.27 506.164C3103.01 510.696 3101.71 519.668 3097.33 526.085L3090.4 536.342C3082.97 547.292 3079.73 555.45 3082.99 564.411C3088.94 580.764 3104.01 587.328 3117.57 582.395C3123.28 580.316 3130.96 574.224 3135.44 565.617L3147.16 543.464C3149.96 538.26 3151.11 529.216 3150.97 524.318C3150.89 521.303 3151.92 518.9 3154.83 517.84C3157.97 516.698 3161.37 518.378 3162.55 521.626C3163 522.858 3162.97 524.518 3162.94 526.178C3162.91 529.233 3163.12 538.164 3157.29 550.05C3178.45 558.333 3185.38 558.219 3194.23 554.999C3206.89 550.392 3215.47 534.584 3210.13 519.911C3207.52 512.743 3202.92 508.457 3194.1 504.437L3179.05 497.608C3172.94 494.758 3166.95 490.849 3161.33 486.554C3159.94 485.536 3159.02 484.731 3158.36 482.939C3157.26 479.915 3158.94 476.513 3161.86 475.453C3163.98 474.679 3165.92 475.116 3167.65 476.388C3175.05 482.069 3182.41 486.619 3187.98 489.031L3205.68 482.589C3223.38 476.148 3231.5 460.127 3225.18 442.765C3218.82 425.292 3202.3 418.239 3184.6 424.681L3080.1 462.717C3062.4 469.158 3054.17 485.221 3059.71 500.454Z" fill="var(--logo-fg)"/>
+        <circle cx="3115" cy="413" r="46" fill="var(--logo-fg)" stroke="var(--logo-bg)" stroke-width="12"/>
+        <path d="M3884.91 393.125C3888.34 396.375 3893.16 398 3899.38 398C3905.75 398 3910.58 396.375 3913.85 393.125C3917.28 389.672 3919 384.797 3919 378.5C3919 372 3917.36 367.125 3914.09 363.875C3910.82 360.625 3905.92 359 3899.38 359C3893.16 359 3888.34 360.727 3884.91 364.18C3881.64 367.43 3880 372.203 3880 378.5C3880 384.797 3881.64 389.672 3884.91 393.125Z" fill="var(--logo-accent)"/>
+      </g>
+    </defs>
+  </svg>
+
+  <div class="wrap">
+    <header class="hero">
+      <div class="eyebrow">branding exploration</div>
+      <h1>Exploration UI</h1>
+      <p>Déclinaison du système visuel Kapptivate à partir des explorations de branding : quatre combinaisons de couleurs autour du logo, une palette partagée, et leur application aux composants d'interface.</p>
+      <div class="hero-meta">
+        <div><b>4</b> lockups</div>
+        <div><b>10</b> tokens couleur</div>
+        <div><b>1</b> système typographique</div>
+      </div>
+    </header>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>Lockups de marque</h2>
+        <p>Les quatre couples fond / logo / accent issus de l'exploration. Clique sur un code hex pour le copier.</p>
+      </div>
+      <div class="lockups">
+        <figure class="lockup" style="--logo-bg:#1C4A47;--logo-fg:#FFF4D3;--logo-accent:#ED7846">
+          <div class="lockup-art">
+            <svg class="lockup-svg" viewBox="3019 340 1020 310" role="img" aria-label="Logo kapptivate — Deep Teal"><use href="#ktm-logo"/></svg>
+          </div>
+          <figcaption>
+            <div class="lockup-name">Deep Teal</div>
+            <div class="lockup-role">Signature — surfaces sombres, header, focus</div>
+            <div class="swatch-row">
+              <button class="chip-hex" data-copy="#1C4A47"><span class="dot" style="background:#1C4A47"></span>#1C4A47</button>
+              <button class="chip-hex" data-copy="#FFF4D3"><span class="dot" style="background:#FFF4D3"></span>#FFF4D3</button>
+              <button class="chip-hex" data-copy="#ED7846"><span class="dot" style="background:#ED7846"></span>#ED7846</button>
+            </div>
+          </figcaption>
+        </figure>
+        <figure class="lockup" style="--logo-bg:#7B9F7F;--logo-fg:#1C4A47;--logo-accent:#FFF4D3">
+          <div class="lockup-art">
+            <svg class="lockup-svg" viewBox="3019 340 1020 310" role="img" aria-label="Logo kapptivate — Sage"><use href="#ktm-logo"/></svg>
+          </div>
+          <figcaption>
+            <div class="lockup-name">Sage</div>
+            <div class="lockup-role">Calme — sections secondaires, empty states</div>
+            <div class="swatch-row">
+              <button class="chip-hex" data-copy="#7B9F7F"><span class="dot" style="background:#7B9F7F"></span>#7B9F7F</button>
+              <button class="chip-hex" data-copy="#1C4A47"><span class="dot" style="background:#1C4A47"></span>#1C4A47</button>
+              <button class="chip-hex" data-copy="#FFF4D3"><span class="dot" style="background:#FFF4D3"></span>#FFF4D3</button>
+            </div>
+          </figcaption>
+        </figure>
+        <figure class="lockup" style="--logo-bg:#ED7846;--logo-fg:#FFF4D3;--logo-accent:#1C4A47">
+          <div class="lockup-art">
+            <svg class="lockup-svg" viewBox="3019 340 1020 310" role="img" aria-label="Logo kapptivate — Coral"><use href="#ktm-logo"/></svg>
+          </div>
+          <figcaption>
+            <div class="lockup-name">Coral</div>
+            <div class="lockup-role">Énergie — CTA, accents, moments clés</div>
+            <div class="swatch-row">
+              <button class="chip-hex" data-copy="#ED7846"><span class="dot" style="background:#ED7846"></span>#ED7846</button>
+              <button class="chip-hex" data-copy="#FFF4D3"><span class="dot" style="background:#FFF4D3"></span>#FFF4D3</button>
+              <button class="chip-hex" data-copy="#1C4A47"><span class="dot" style="background:#1C4A47"></span>#1C4A47</button>
+            </div>
+          </figcaption>
+        </figure>
+        <figure class="lockup" style="--logo-bg:#FFF4D3;--logo-fg:#1C4A47;--logo-accent:#ED7846">
+          <div class="lockup-art">
+            <svg class="lockup-svg" viewBox="3019 340 1020 310" role="img" aria-label="Logo kapptivate — Cream"><use href="#ktm-logo"/></svg>
+          </div>
+          <figcaption>
+            <div class="lockup-name">Cream</div>
+            <div class="lockup-role">Papier — fonds clairs, contenu long</div>
+            <div class="swatch-row">
+              <button class="chip-hex" data-copy="#FFF4D3"><span class="dot" style="background:#FFF4D3"></span>#FFF4D3</button>
+              <button class="chip-hex" data-copy="#1C4A47"><span class="dot" style="background:#1C4A47"></span>#1C4A47</button>
+              <button class="chip-hex" data-copy="#ED7846"><span class="dot" style="background:#ED7846"></span>#ED7846</button>
+            </div>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>Palette</h2>
+        <p>Tokens de couleur partagés entre les lockups et l'interface. Clique pour copier.</p>
+      </div>
+      <div class="palette">
+        <button class="swatch on-dark" data-copy="#1C4A47">
+          <span class="swatch-fill" style="background:#1C4A47"></span>
+          <span class="swatch-meta">
+            <span class="swatch-name">Deep Teal</span>
+            <span class="swatch-hex">#1C4A47</span>
+            <span class="swatch-note">Primary dark</span>
+          </span>
+        </button>
+        <button class="swatch on-dark" data-copy="#15433E">
+          <span class="swatch-fill" style="background:#15433E"></span>
+          <span class="swatch-meta">
+            <span class="swatch-name">Teal 900</span>
+            <span class="swatch-hex">#15433E</span>
+            <span class="swatch-note">Header / topbar</span>
+          </span>
+        </button>
+        <button class="swatch on-dark" data-copy="#7B9F7F">
+          <span class="swatch-fill" style="background:#7B9F7F"></span>
+          <span class="swatch-meta">
+            <span class="swatch-name">Sage</span>
+            <span class="swatch-hex">#7B9F7F</span>
+            <span class="swatch-note">Secondary</span>
+          </span>
+        </button>
+        <button class="swatch on-dark" data-copy="#ED7846">
+          <span class="swatch-fill" style="background:#ED7846"></span>
+          <span class="swatch-meta">
+            <span class="swatch-name">Coral</span>
+            <span class="swatch-hex">#ED7846</span>
+            <span class="swatch-note">Accent / CTA</span>
+          </span>
+        </button>
+        <button class="swatch on-dark" data-copy="#D26334">
+          <span class="swatch-fill" style="background:#D26334"></span>
+          <span class="swatch-meta">
+            <span class="swatch-name">Coral dark</span>
+            <span class="swatch-hex">#D26334</span>
+            <span class="swatch-note">CTA hover</span>
+          </span>
+        </button>
+        <button class="swatch on-light" data-copy="#FFF4D3">
+          <span class="swatch-fill" style="background:#FFF4D3"></span>
+          <span class="swatch-meta">
+            <span class="swatch-name">Cream</span>
+            <span class="swatch-hex">#FFF4D3</span>
+            <span class="swatch-note">Warm surface</span>
+          </span>
+        </button>
+        <button class="swatch on-dark" data-copy="#24292F">
+          <span class="swatch-fill" style="background:#24292F"></span>
+          <span class="swatch-meta">
+            <span class="swatch-name">Ink</span>
+            <span class="swatch-hex">#24292F</span>
+            <span class="swatch-note">Text primary</span>
+          </span>
+        </button>
+        <button class="swatch on-dark" data-copy="#667085">
+          <span class="swatch-fill" style="background:#667085"></span>
+          <span class="swatch-meta">
+            <span class="swatch-name">Slate</span>
+            <span class="swatch-hex">#667085</span>
+            <span class="swatch-note">Text secondary</span>
+          </span>
+        </button>
+        <button class="swatch on-light" data-copy="#98A2B3">
+          <span class="swatch-fill" style="background:#98A2B3"></span>
+          <span class="swatch-meta">
+            <span class="swatch-name">Mist</span>
+            <span class="swatch-hex">#98A2B3</span>
+            <span class="swatch-note">Text tertiary</span>
+          </span>
+        </button>
+        <button class="swatch on-light" data-copy="#E4E4E7">
+          <span class="swatch-fill" style="background:#E4E4E7"></span>
+          <span class="swatch-meta">
+            <span class="swatch-name">Line</span>
+            <span class="swatch-hex">#E4E4E7</span>
+            <span class="swatch-note">Borders</span>
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>Typographie</h2>
+        <p>Geist — variable, du display au caption.</p>
+      </div>
+      <div class="type-list">
+        <div class="type-row"><span class="type-tag">Display / 38 · 700</span><span class="type-sample" style="font-size:38px;font-weight:700;letter-spacing:-0.02em">Exploration UI</span></div>
+        <div class="type-row"><span class="type-tag">Title / 21 · 600</span><span class="type-sample" style="font-size:21px;font-weight:600;letter-spacing:-0.01em">Analyse de branding</span></div>
+        <div class="type-row"><span class="type-tag">Body / 14 · 400</span><span class="type-sample" style="font-size:14px">Le corps de texte reste lisible sur fond clair comme sur fond crème.</span></div>
+        <div class="type-row"><span class="type-tag">Label / 12 · 600</span><span class="type-sample" style="font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--slate)">Section label</span></div>
+        <div class="type-row"><span class="type-tag">Caption / 11 · 400</span><span class="type-sample" style="font-size:11px;color:var(--mist)">Métadonnée discrète · 12,4M requêtes</span></div>
+      </div>
+    </section>
+
+    <section class="block" id="components">
+      <div class="block-head">
+        <h2>Composants</h2>
+        <p>Les mêmes composants, rejoués avec chacune des couleurs d'accent de la marque.</p>
+      </div>
+      <div class="theme-switch">
+        <span class="lbl">Accent&nbsp;:</span>
+        <div class="theme-row">
+            <button class="theme-btn" data-theme="teal" data-accent="#ED7846" data-brand="#1C4A47" title="Deep Teal"><span style="background:#1C4A47"></span>Deep Teal</button>
+            <button class="theme-btn" data-theme="sage" data-accent="#7B9F7F" data-brand="#7B9F7F" title="Sage"><span style="background:#7B9F7F"></span>Sage</button>
+            <button class="theme-btn active" data-theme="coral" data-accent="#1C4A47" data-brand="#ED7846" title="Coral"><span style="background:#ED7846"></span>Coral</button>
+            <button class="theme-btn" data-theme="cream" data-accent="#ED7846" data-brand="#FFF4D3" title="Cream"><span style="background:#FFF4D3"></span>Cream</button>
+        </div>
+      </div>
+
+      <div class="preview">
+        <div>
+          <div class="card">
+            <div class="card-title">Boutons</div>
+            <div class="row">
+              <button class="btn primary"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Créer</button>
+              <button class="btn secondary">Secondaire</button>
+              <button class="btn ghost">Ghost</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Tags & statuts</div>
+            <div class="tags">
+              <span class="tag solid">Solid</span>
+              <span class="tag soft">Soft</span>
+              <span class="tag outline">Outline</span>
+              <span class="tag neutral">Neutral</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Champs</div>
+            <div class="stack">
+              <div class="field"><label>Nom du projet</label><input placeholder="Exploration UI…"></div>
+              <div class="toggle">
+                <div><div class="t-txt">Notifications</div><div class="t-sub">Recevoir les alertes par email</div></div>
+                <div class="switch" role="switch" aria-checked="true"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="card-title">Métrique</div>
+            <div class="metric-label">Requêtes ce mois</div>
+            <div class="metric">12,4<small>M</small></div>
+            <div class="trend"><svg class="ic" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>+18% vs. mois dernier</div>
+            <div class="gauge" style="margin-top:16px"><span></span></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Aperçu produit</div>
+            <div class="mini">
+              <div class="mini-top">
+                <div class="brand">
+                  <svg class="brand-mark ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2c.5 3.2 2.3 5 5.5 5.5C14.3 8 12.5 9.8 12 13c-.5-3.2-2.3-5-5.5-5.5C9.7 7 11.5 5.2 12 2z"/></svg>
+                  kapptivate
+                </div>
+              </div>
+              <div class="mini-body">
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px">Nouveau monitor</div>
+                <div style="font-size:12px;color:var(--slate);margin-bottom:12px;line-height:1.5">Surveille la disponibilité de tes parcours critiques.</div>
+                <span class="mini-cta">Configurer →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="foot">
+      Exploration UI — dérivée de <code>Group 229.svg</code> · Kapptivate branding
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copié</div>
+
+  <script>
+    // Copy-to-clipboard sur les swatches & chips hex
+    var toast = document.getElementById('toast'), toastT;
+    function copy(hex) {
+      navigator.clipboard && navigator.clipboard.writeText(hex);
+      toast.textContent = hex + ' copié';
+      toast.classList.add('show');
+      clearTimeout(toastT);
+      toastT = setTimeout(function () { toast.classList.remove('show'); }, 1400);
+    }
+    document.querySelectorAll('[data-copy]').forEach(function (el) {
+      el.addEventListener('click', function () { copy(el.dataset.copy); });
+    });
+
+    // Sélecteur d'accent (section Composants)
+    var root = document.documentElement;
+    document.querySelectorAll('.theme-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.theme-btn').forEach(function (x) { x.classList.remove('active'); });
+        b.classList.add('active');
+        root.style.setProperty('--accent', b.dataset.accent);
+        root.style.setProperty('--accent-ink', b.dataset.brand);
+      });
+    });
+
+    // Toggle interactif
+    document.querySelectorAll('.switch').forEach(function (s) {
+      s.addEventListener('click', function () {
+        var on = !s.classList.toggle('off');
+        s.setAttribute('aria-checked', on ? 'true' : 'false');
+      });
+    });
+  </script>
+</body>
+</html>
