@@ -41,16 +41,41 @@ const STATUS_ICON_BG: Record<ProtoStatus, string> = {
   deployed: 'rgba(22,163,74,0.12)',
 }
 
-// Formate une date ISO (YYYY-MM-DD) en libellé court, ex. "8 Jul 2026".
+// Parse une date ISO 'YYYY-MM-DD' en Date locale (évite le décalage UTC).
+const parseISO = (iso?: string): Date | null => {
+  if (!iso) return null
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) {
+    const fallback = iso ? new Date(iso) : null
+    return fallback && !Number.isNaN(fallback.getTime()) ? fallback : null
+  }
+  return new Date(y, m - 1, d)
+}
+
+// Date absolue courte, ex. "8 Jul 2026" (pour le tooltip).
+const absDate = (iso?: string): string => {
+  const d = parseISO(iso)
+  return d
+    ? new Intl.DateTimeFormat('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }).format(d)
+    : ''
+}
+
+// Libellé relatif : Today / Yesterday / N days ago, sinon date absolue.
 const fmtDate = (iso?: string): string => {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(d)
+  const d = parseISO(iso)
+  if (!d) return '—'
+  const dayMs = 86_400_000
+  const midnight = (x: Date) =>
+    new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
+  const diff = Math.round((midnight(new Date()) - midnight(d)) / dayMs)
+  if (diff === 0) return 'Today'
+  if (diff === 1) return 'Yesterday'
+  if (diff > 1 && diff < 7) return `${diff} days ago`
+  return absDate(iso)
 }
 
 const STATUS_OPTIONS = STATUS_ORDER.map((s) => ({ label: s, value: s }))
@@ -158,9 +183,11 @@ const IndexPage = () => {
         (a.updatedAt ?? '').localeCompare(b.updatedAt ?? ''),
       sortIcon: renderSortIcon,
       render: (updatedAt?: string) => (
-        <Text size="s" color="secondary">
-          {fmtDate(updatedAt)}
-        </Text>
+        <span title={absDate(updatedAt)}>
+          <Text size="s" color="secondary">
+            {fmtDate(updatedAt)}
+          </Text>
+        </span>
       ),
     },
     {
