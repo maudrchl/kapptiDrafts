@@ -18,6 +18,7 @@
     "i18next": "23.8.2",
     "lodash": "4.17.21",
     "lucide-react": "^0.263.1",
+    "prismjs": "^1.29.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-i18next": "14.0.5",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@types/lodash": "^4.17.0",
     "@types/node": "^20.19.43",
+    "@types/prismjs": "^1.26.4",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.3.0",

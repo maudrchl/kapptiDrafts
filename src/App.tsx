@@ -18,7 +18,7 @@ const App = () => {
             key={slug}
             path={route}
             element={
-              <ProtoFrame title={title}>
+              <ProtoFrame title={title} slug={slug}>
                 <Component />
               </ProtoFrame>
             }
