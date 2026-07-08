@@ -40,6 +40,8 @@ export type ProtoMeta = {
   description?: string
   /** Icône affichée dans le catalogue (composant ui-kit) */
   icon?: ProtoIcon
+  /** Masque le proto du catalogue et des routes (mettre à true pour le cacher) */
+  hidden?: boolean
 }
 
 export type ProtoEntry = ProtoMeta & {
@@ -119,6 +121,7 @@ export const protos: ProtoEntry[] = Object.entries(metaModules)
   .map(([path, mod]): ProtoEntry | null => {
     const slug = slugFromPath(path)
     if (slug.startsWith('_')) return null
+    if (mod.default.hidden) return null
 
     const loader = compModules[`./${slug}/Proto.tsx`] as CompLoader | undefined
     if (!loader) {
