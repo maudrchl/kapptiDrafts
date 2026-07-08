@@ -175,7 +175,7 @@ const IndexPage = () => {
       ),
     },
     {
-      title: 'last update',
+      title: 'Last update',
       key: 'updatedAt',
       dataIndex: 'updatedAt',
       width: 160,
