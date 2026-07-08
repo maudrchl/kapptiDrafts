@@ -21,10 +21,10 @@ export type ProtoIcon = ComponentType<{ size?: number; color?: string }>
  */
 
 export const STATUS_ORDER = [
-  'en cours design',
-  'en cours dev',
+  'wip design',
+  'wip dev',
   'QA',
-  'déployé',
+  'deployed',
 ] as const
 
 export type ProtoStatus = (typeof STATUS_ORDER)[number]
@@ -42,6 +42,8 @@ export type ProtoMeta = {
   icon?: ProtoIcon
   /** Masque le proto du catalogue et des routes (mettre à true pour le cacher) */
   hidden?: boolean
+  /** Date de dernière mise à jour (ISO, ex. '2026-07-08') */
+  updatedAt?: string
 }
 
 export type ProtoEntry = ProtoMeta & {
@@ -84,7 +86,7 @@ export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
   {
     slug: 'exploration-ui',
     title: 'Exploration UI',
-    status: 'en cours design',
+    status: 'wip design',
     description: 'Explorations de branding — lockups, palette & composants',
     icon: IconBrush,
     href: '/folder/Exploration UI.html',
@@ -92,7 +94,7 @@ export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
   {
     slug: 'run-queue',
     title: 'Run Queue',
-    status: 'déployé',
+    status: 'deployed',
     description: "File d'attente d'exécution des runs",
     icon: IconListStart,
     href: '/folder/Run queue.html',
@@ -100,7 +102,7 @@ export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
   {
     slug: 'root-cause-analysis',
     title: 'Root Cause Analysis',
-    status: 'en cours dev',
+    status: 'wip dev',
     collection: 'Observability',
     description: 'Analyse de cause racine des incidents',
     icon: IconActivity,
@@ -109,7 +111,7 @@ export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
   {
     slug: 'observability-navigation',
     title: 'Observability Navigation',
-    status: 'en cours design',
+    status: 'wip design',
     collection: 'Observability',
     description: 'Patterns de navigation sidebar pour l\'observabilité',
     icon: IconNavigation,
@@ -161,6 +163,7 @@ export const catalog: CatalogEntry[] = [
       collection: p.collection,
       description: p.description,
       icon: p.icon ?? IconComponent,
+      updatedAt: p.updatedAt,
     }),
   ),
   ...legacyProtos.map(
@@ -173,6 +176,7 @@ export const catalog: CatalogEntry[] = [
       collection: p.collection,
       description: p.description,
       icon: p.icon ?? IconComponent,
+      updatedAt: p.updatedAt,
     }),
   ),
 ]

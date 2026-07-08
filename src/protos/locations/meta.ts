@@ -3,7 +3,8 @@ import type { ProtoMeta } from '../registry'
 
 const meta: ProtoMeta = {
   title: 'Public & Private Locations',
-  status: 'en cours design',
+  status: 'wip design',
+  updatedAt: '2026-07-08',
   description:
     'Gestion des localisations publiques (managées) et privées (robots & desktop runners)',
   icon: IconMapPin,

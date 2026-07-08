@@ -27,18 +27,30 @@ import { useStatusOverrides } from '../protos/status'
 import css from './index-page.module.css'
 
 const STATUS_ACCENT: Record<ProtoStatus, string> = {
-  'en cours design': '#d98a00',
-  'en cours dev': '#2563eb',
+  'wip design': '#d98a00',
+  'wip dev': '#2563eb',
   QA: '#7c3aed',
-  déployé: '#16a34a',
+  deployed: '#16a34a',
 }
 
-// Fond de pastille par statut → donne le ressenti actif (coloré) vs déployé (posé)
+// Fond de pastille par statut → donne le ressenti actif (coloré) vs deployed (posé)
 const STATUS_ICON_BG: Record<ProtoStatus, string> = {
-  'en cours design': 'rgba(217,138,0,0.12)',
-  'en cours dev': 'rgba(37,99,235,0.12)',
+  'wip design': 'rgba(217,138,0,0.12)',
+  'wip dev': 'rgba(37,99,235,0.12)',
   QA: 'rgba(124,58,237,0.12)',
-  déployé: 'rgba(22,163,74,0.12)',
+  deployed: 'rgba(22,163,74,0.12)',
+}
+
+// Formate une date ISO (YYYY-MM-DD) en libellé court, ex. "8 Jul 2026".
+const fmtDate = (iso?: string): string => {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(d)
 }
 
 const STATUS_OPTIONS = STATUS_ORDER.map((s) => ({ label: s, value: s }))
@@ -82,7 +94,7 @@ const IndexPage = () => {
     onClick: ({ key }: { key: string }) =>
       setStatusFilter(key as 'all' | ProtoStatus),
     items: [
-      { key: 'all', label: 'Tous les statuts' },
+      { key: 'all', label: 'All statuses' },
       { type: 'divider' as const },
       ...STATUS_ORDER.map((s) => ({ key: s, label: s })),
     ],
@@ -138,9 +150,23 @@ const IndexPage = () => {
       ),
     },
     {
+      title: 'Last update',
+      key: 'updatedAt',
+      dataIndex: 'updatedAt',
+      width: 160,
+      sorter: (a: CatalogEntry, b: CatalogEntry) =>
+        (a.updatedAt ?? '').localeCompare(b.updatedAt ?? ''),
+      sortIcon: renderSortIcon,
+      render: (updatedAt?: string) => (
+        <Text size="s" color="secondary">
+          {fmtDate(updatedAt)}
+        </Text>
+      ),
+    },
+    {
       title: (
         <div style={styles.colHeader}>
-          Statut
+          Status
           {/* Filtre dans le tableau : Dropdown DS sur un FilterIcon.
               stopPropagation pour ne pas déclencher le tri de la colonne. */}
           <span
@@ -189,8 +215,8 @@ const IndexPage = () => {
         <div>
           <img src={logo} alt="kapptiDrafts" style={styles.logo} />
           <Text size="s" color="secondary">
-            {catalog.length} prototype{catalog.length > 1 ? 's' : ''} · maquettes
-            live construites avec le design system
+            {catalog.length} prototype{catalog.length > 1 ? 's' : ''} · live
+            mockups built with the design system
           </Text>
         </div>
         <Button
@@ -208,7 +234,7 @@ const IndexPage = () => {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Rechercher un prototype…"
+            placeholder="Search a prototype…"
             fullwidth
           />
         </div>
@@ -219,8 +245,8 @@ const IndexPage = () => {
           <div style={{ padding: '3rem 0' }}>
             <EmptyState
               icon={<IconSearchX color="var(--color-text-secondary)" />}
-              text="Aucun prototype"
-              description="Aucun résultat pour cette recherche ou ce filtre."
+              text="No prototype"
+              description="No result for this search or filter."
             />
           </div>
         ) : (

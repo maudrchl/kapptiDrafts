@@ -3,7 +3,8 @@ import type { ProtoMeta } from '../registry'
 
 const meta: ProtoMeta = {
   title: 'AI Usage',
-  status: 'en cours dev',
+  status: 'wip dev',
+  updatedAt: '2026-07-08',
   collection: 'AI',
   description:
     'Token consumption against your plan allowance, with overage billing',
