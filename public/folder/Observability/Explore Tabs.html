@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>kapptivate · Explore Tabs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.2.6/400.css" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.2.6/500.css" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.2.6/600.css" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.2.6/700.css" media="print" onload="this.media='all'">
+<style>
+:root{
+  --sidebar:#1c4a47; --sidebar-hover:rgba(255,255,255,0.06); --sidebar-active:#285c59;
+  --sidebar-text:#ffffff; --sidebar-label:rgba(255,255,255,0.6); --sidebar-white:#ffffff; --sidebar-line:rgba(255,255,255,0.12);
+  --accent:#ed7846; --accent-hover:#d9663a;
+  --content-bg:#FAFAFB; --border:#e4e4e7;
+  --text:#24292f; --text-sec:#667085; --text-faint:#94a09a;
+  font-family:'Geist','Geist Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--content-bg);color:var(--text);height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;font-family:inherit}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+
+/* ── proto frame ── */
+.proto-ring{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 0 4px rgba(28,74,71,0.12);z-index:2147483646}
+.proto-crumb{position:fixed;top:12px;left:12px;z-index:2147483647;display:flex;align-items:center;gap:8px;padding:5px 10px;font-size:11px;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#475467;background:rgba(255,255,255,0.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid #ececf0;border-radius:8px;box-shadow:0 2px 8px rgba(16,24,40,0.10);text-decoration:none}
+.proto-crumb:hover{background:rgba(255,255,255,0.95)}
+.proto-crumb .arrow{display:inline-flex;color:#98a2b3}
+.proto-crumb .arrow svg{width:13px;height:13px}
+.proto-crumb img{height:13px;width:auto;display:block}
+.proto-crumb .sep{color:#c0c4cc}
+.proto-crumb .ptitle{font-weight:600;color:#1a1a1a}
+
+/* ── app shell ── */
+.shell{display:flex;height:100vh}
+
+/* ── sidebar ── */
+.sidebar{width:223px;background:var(--sidebar);flex-shrink:0;display:flex;flex-direction:column;padding:14px 12px;overflow-y:auto}
+.brand{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 4px}
+.brand .logo{display:flex;align-items:center;gap:8px;color:var(--sidebar-white);font-weight:700;font-size:16px}
+.collapse{color:var(--sidebar-label)}
+.nav-sep{height:1px;background:var(--sidebar-line);margin:12px -12px}
+.ws{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px;margin-bottom:16px}
+.ws .avatar{width:32px;height:32px;border-radius:4px;background:#f6ede2;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.ws .name{color:var(--sidebar-white);font-weight:500;font-size:14px;line-height:1.2}
+.ws .sub{color:var(--sidebar-white);opacity:.7;font-size:9px;line-height:1.2;margin-top:1px}
+.nav-label{color:var(--sidebar-label);font-size:9px;font-weight:600;letter-spacing:.45px;text-transform:uppercase;padding:0 8px 8px}
+.nav-item{display:flex;align-items:center;gap:12px;color:var(--sidebar-text);font-size:13px;font-weight:500;padding:7px 8px;border-radius:6px;width:100%;text-align:left;margin-bottom:4px;font-family:inherit;transition:background .12s}
+.nav-item svg{width:14px;height:14px;flex-shrink:0}
+.nav-item:hover{background:var(--sidebar-hover)}
+.nav-item.active{background:var(--sidebar-active);color:#fff}
+.spacer{flex:1}
+.help-btn{width:32px;height:32px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);color:var(--sidebar-text);display:flex;align-items:center;justify-content:center;margin-top:12px;font-size:14px;font-weight:500}
+
+/* segmented */
+.prod-seg{display:flex;background:rgba(255,255,255,0.06);border-radius:6px;padding:2px;margin-bottom:8px}
+.prod-seg-btn{flex:1;padding:6px 0;border:none;border-radius:5px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;background:transparent;color:var(--sidebar-label);transition:all .15s}
+.prod-seg-btn.active{background:var(--sidebar-active);color:var(--sidebar-white)}
+.prod-seg-btn svg{width:12px;height:12px}
+
+/* mode stack */
+.mode-stack{display:grid}
+.mode-stack>div{grid-area:1/1}
+.mode-stack>.hidden{visibility:hidden;pointer-events:none}
+
+/* ── content ── */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.content-head{display:flex;align-items:center;justify-content:space-between;padding:24px 32px 20px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0}
+.content-head-left{display:flex;flex-direction:column;gap:4px}
+.content-head h1{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.content-head p{font-size:13px;color:var(--text-sec);line-height:1.4}
+.content-head-right{display:flex;gap:8px;align-items:center}
+.btn{padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text);transition:all .12s}
+.btn:hover{background:#f5f5f7}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:var(--accent-hover)}
+
+.content-body{flex:1;overflow-y:auto;padding:24px 32px 48px}
+
+/* ── page views ── */
+.page-view{display:none}
+.page-view.visible{display:block}
+
+/* ── shared wireframe elements ── */
+.search-bar{display:flex;gap:8px;margin-bottom:20px}
+.search-input{flex:1;height:36px;border:1px solid var(--border);border-radius:6px;padding:0 12px;font-size:13px;font-family:inherit;background:#fff;color:var(--text);outline:none}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:#b0b7c3}
+.filter-btn{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:12px;font-weight:500;font-family:inherit;color:var(--text-sec);display:flex;align-items:center;gap:6px;cursor:pointer}
+.filter-btn:hover{background:#f5f5f7}
+.filter-btn svg{width:14px;height:14px}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px}
+.kpi-label{font-size:11.5px;color:var(--text-sec);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.kpi-label svg{width:13px;height:13px;color:#98a2b3}
+.kpi-value{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.kpi-trend{font-size:11px;color:#98a2b3;margin-top:4px;display:flex;align-items:center;gap:4px}
+.kpi-trend.up{color:#e0372e}
+.kpi-trend.down{color:#1fae7e}
+.kpi-trend svg{width:12px;height:12px}
+
+.table-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border);background:#fafafb}
+.table td{padding:10px 14px;border-bottom:1px solid #f0f0f3;vertical-align:middle}
+.table tr:last-child td{border-bottom:none}
+.table tr:hover td{background:#fafafb}
+
+.tag{display:inline-flex;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;line-height:1.6}
+.tag.green{background:#e6f7f0;color:#1fae7e}
+.tag.red{background:#fde8e8;color:#e0372e}
+.tag.orange{background:#fff3e6;color:#d97706}
+.tag.blue{background:#e8f4fd;color:#2563eb}
+.tag.gray{background:#f0f0f3;color:#667085}
+
+.mono{font-variant-numeric:tabular-nums;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px}
+.text-sec{color:var(--text-sec)}
+.text-faint{color:#98a2b3}
+
+/* ── tabs (for sub-nav within pages) ── */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px}
+.tab{padding:8px 16px;font-size:13px;font-weight:500;color:var(--text-sec);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .12s;font-family:inherit}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+
+/* ── logs specific ── */
+.log-stream{font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;line-height:1.8;background:#1a1a2e;color:#c8d6e5;border-radius:8px;padding:16px;overflow-x:auto;max-height:420px;overflow-y:auto}
+.log-line{display:flex;gap:12px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.log-line:hover{background:rgba(255,255,255,0.03)}
+.log-ts{color:#636e82;flex-shrink:0;width:180px}
+.log-level{flex-shrink:0;width:50px;font-weight:600}
+.log-level.info{color:#22d3ee}
+.log-level.warn{color:#fbbf24}
+.log-level.error{color:#f87171}
+.log-level.debug{color:#a78bfa}
+.log-svc{color:#60a5fa;flex-shrink:0;width:120px}
+.log-msg{color:#e2e8f0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── traces specific ── */
+.trace-row{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all .12s}
+.trace-row:hover{border-color:#d0d5dd;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.trace-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.trace-name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.trace-meta{font-size:11.5px;color:var(--text-sec);display:flex;gap:14px}
+.trace-waterfall{height:20px;background:#f5f5f7;border-radius:4px;position:relative;overflow:hidden}
+.trace-span{position:absolute;height:100%;border-radius:3px;min-width:3px}
+
+/* ── service map ── */
+.svc-map-container{display:grid;grid-template-columns:1fr 280px;gap:20px}
+.svc-map-canvas{background:#fff;border:1px solid var(--border);border-radius:8px;min-height:450px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.svc-map-sidebar{display:flex;flex-direction:column;gap:12px}
+.svc-node{width:72px;height:72px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10px;font-weight:600;position:absolute;border:2px solid;cursor:pointer;transition:transform .15s}
+.svc-node:hover{transform:scale(1.08)}
+.svc-node svg{width:20px;height:20px}
+.svc-edge{position:absolute;pointer-events:none}
+.svc-detail-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px}
+.svc-detail-card h3{font-size:13px;font-weight:600;margin-bottom:8px}
+.svc-detail-row{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid #f0f0f3}
+.svc-detail-row:last-child{border-bottom:none}
+.svc-detail-row .label{color:var(--text-sec)}
+
+/* ── kubernetes ── */
+.k8s-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.k8s-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px}
+.k8s-card h3{font-size:12px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.k8s-card h3 svg{width:14px;height:14px;color:var(--accent)}
+.k8s-bar{height:8px;background:#f0f0f3;border-radius:4px;margin-bottom:6px;overflow:hidden}
+.k8s-bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.k8s-bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--text-sec);margin-bottom:12px}
+.k8s-status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.k8s-status-dot.ok{background:#1fae7e}
+.k8s-status-dot.warn{background:#f2b338}
+.k8s-status-dot.err{background:#e0372e}
+</style>
+</head>
+<body>
+
+<div class="proto-ring" aria-hidden></div>
+<a class="proto-crumb" href="/">
+  <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+  <img src="/kapptidrafts-logo.svg" alt="kapptidrafts">
+  <span class="sep">/</span>
+  <span class="ptitle">Explore Tabs</span>
+</a>
+
+<div class="shell">
+
+<!-- ═══════ SIDEBAR ═══════ -->
+<aside class="sidebar" id="sidebar"></aside>
+
+<!-- ═══════ CONTENT ═══════ -->
+<div class="content">
+  <div class="content-head" id="content-head"></div>
+  <div class="content-body">
+    <div class="page-view visible" id="view-logs"></div>
+    <div class="page-view" id="view-traces"></div>
+    <div class="page-view" id="view-svcmap"></div>
+    <div class="page-view" id="view-k8s"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const LOGO = `<img src="data:image/svg+xml,%3csvg%20width='178'%20height='28'%20viewBox='0%200%20178%2028'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3crect%20width='178'%20height='28'%20fill=''/%3e%3cpath%20d='M46.6496%2022.9253L40.2032%2015.237L45.816%208.59585H40.62L36.0352%2014.3827L33.979%2017.0282H33.8679L33.9513%2014.3276V5.59691C33.9513%204.36156%2032.9498%203.36011%2031.7145%203.36011C30.4791%203.36011%2029.4777%204.36156%2029.4777%205.5969V22.9253H33.7012L37.5913%2018.3233L41.398%2022.9253H46.6496Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M53.9591%208.1825C49.5689%208.1825%2046.7347%209.31233%2046.8736%2013.0325H50.8471C51.0416%2011.8751%2051.8751%2011.4893%2053.7646%2011.4893C55.8208%2011.4893%2056.6822%2011.9578%2056.6822%2013.3356V14.4378H51.6529C47.8739%2014.4378%2046.1234%2015.8708%2046.1234%2018.7642C46.1234%2021.823%2048.0684%2023.3386%2051.2083%2023.3386C53.5979%2023.3386%2056.2654%2022.4568%2057.488%2020.4176L56.9878%2021.4372L57.3768%2022.9253H61.1558V12.8671C61.1558%209.78079%2058.9606%208.1825%2053.9591%208.1825ZM52.8199%2020.0043C51.2638%2020.0043%2050.6803%2019.4256%2050.6803%2018.5438C50.6803%2017.6344%2051.2638%2017.1384%2052.3753%2017.1384H56.6822V18.8193C55.7374%2019.5909%2054.4315%2020.0043%2053.0144%2020.0043H52.8199Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M72.3795%208.21006C70.1566%208.21006%2068.2949%209.09187%2066.8222%2011.5995L67.628%2010.0839L67.5447%208.59585H63.1544V27.7201H67.628V21.1616C68.795%2022.7324%2070.49%2023.3386%2072.3795%2023.3386C76.7141%2023.3386%2079.4928%2019.9767%2079.4928%2015.7606C79.4928%2011.572%2076.7141%208.21006%2072.3795%208.21006ZM71.3236%2019.4531C69.0173%2019.4531%2067.5724%2017.91%2067.5724%2015.7606C67.5724%2013.6111%2069.0173%2012.068%2071.3236%2012.068C73.6298%2012.068%2075.047%2013.6111%2075.047%2015.7606C75.047%2017.91%2073.6298%2019.4531%2071.3236%2019.4531Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M89.9912%208.21006C87.7683%208.21006%2085.9066%209.09187%2084.4339%2011.5995L85.2397%2010.0839L85.1564%208.59585H80.7662V27.7201H85.2397V21.1616C86.4068%2022.7324%2088.1017%2023.3386%2089.9912%2023.3386C94.3259%2023.3386%2097.1045%2019.9767%2097.1045%2015.7606C97.1045%2011.572%2094.3259%208.21006%2089.9912%208.21006ZM88.9353%2019.4531C86.6291%2019.4531%2085.1842%2017.91%2085.1842%2015.7606C85.1842%2013.6111%2086.6291%2012.068%2088.9353%2012.068C91.2416%2012.068%2092.6587%2013.6111%2092.6587%2015.7606C92.6587%2017.91%2091.2416%2019.4531%2088.9353%2019.4531Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M109.055%2012.3711V8.59585H105.026V3.63567H100.552V8.59585H97.3569V12.3711H100.552V17.8549C100.552%2021.1065%20102.108%2023.063%20106.276%2023.063H109.055V19.0949H107.11C105.721%2019.0949%20105.026%2018.5989%20105.026%2017.1384V12.3711H109.055Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M110.536%2022.9253H115.01V8.59585C113.603%209.30728%20111.942%209.30728%20110.536%208.59585V22.9253Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M121.912%2022.9253H126.691L132.86%208.59585H128.22L124.385%2017.9651H124.218L120.412%208.59585H115.771L121.912%2022.9253Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M139.875%208.1825C135.485%208.1825%20132.651%209.31233%20132.79%2013.0325H136.763C136.958%2011.8751%20137.791%2011.4893%20139.681%2011.4893C141.737%2011.4893%20142.598%2011.9578%20142.598%2013.3356V14.4378H137.569C133.79%2014.4378%20132.039%2015.8708%20132.039%2018.7642C132.039%2021.823%20133.984%2023.3386%20137.124%2023.3386C139.514%2023.3386%20142.181%2022.4568%20143.404%2020.4176L142.904%2021.4372L143.293%2022.9253H147.072V12.8671C147.072%209.78079%20144.877%208.1825%20139.875%208.1825ZM138.736%2020.0043C137.18%2020.0043%20136.596%2019.4256%20136.596%2018.5438C136.596%2017.6344%20137.18%2017.1384%20138.291%2017.1384H142.598V18.8193C141.653%2019.5909%20140.348%2020.0043%20138.93%2020.0043H138.736Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M159.449%2012.3711V8.59585H155.42V3.63567H150.946V8.59585H147.751V12.3711H150.946V17.8549C150.946%2021.1065%20152.503%2023.063%20156.67%2023.063H159.449V19.0949H157.504C156.115%2019.0949%20155.42%2018.5989%20155.42%2017.1384V12.3711H159.449Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M164.573%2017.0833H175.855C176.299%2011.4893%20173.187%208.1825%20168.075%208.1825C162.934%208.1825%20160.072%2011.4893%20160.072%2015.7606C160.072%2020.0318%20163.156%2023.3386%20168.325%2023.3386C171.253%2023.3386%20173.608%2022.2729%20174.993%2020.8479C175.985%2019.8266%20174.987%2018.4887%20173.563%2018.4887C172.645%2018.4887%20171.783%2019.0976%20170.949%2019.4815C170.264%2019.7967%20169.383%2019.9492%20168.575%2019.9492C166.352%2019.9492%20164.935%2018.8744%20164.573%2017.0833ZM168.075%2011.4342C169.936%2011.4342%20171.048%2012.2609%20171.464%2014.4103H164.546C164.879%2012.4538%20166.018%2011.4342%20168.075%2011.4342Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M3.23836%2015.5791C3.77117%2017.0253%204.65214%2017.5873%205.93234%2017.9525L6.18218%2017.5697C6.45474%2017.1389%206.55844%2016.5424%206.58749%2015.9993C6.59931%2015.7022%206.64682%2015.3922%206.99197%2015.2681C7.33711%2015.144%207.6791%2015.3405%207.79606%2015.658C7.83505%2015.7638%207.88055%2015.9605%207.86655%2016.1785C7.83964%2016.6542%207.70142%2017.596%207.23525%2018.2696L6.49976%2019.3462C5.71019%2020.4955%205.36527%2021.3519%205.71181%2022.2924C6.34425%2024.009%207.94592%2024.698%209.386%2024.1802C9.99297%2023.9619%2010.8087%2023.3225%2011.2845%2022.4191L12.5304%2020.0938C12.8278%2019.5475%2012.9498%2018.5982%2012.9355%2018.0841C12.9268%2017.7676%2013.036%2017.5153%2013.3454%2017.4041C13.6787%2017.2843%2014.0401%2017.4605%2014.1658%2017.8015C14.2134%2017.9308%2014.2102%2018.1051%2014.207%2018.2793C14.2039%2018.6%2014.2258%2019.5374%2013.6072%2020.7851C15.8549%2021.6545%2016.5918%2021.6426%2017.532%2021.3045C18.8769%2020.8209%2019.7886%2019.1617%2019.2211%2017.6215C18.9439%2016.8691%2018.4547%2016.4192%2017.5175%2015.9972L15.919%2015.2804C15.2697%2014.9813%2014.6333%2014.571%2014.0359%2014.1201C13.8887%2014.0133%2013.7902%2013.9288%2013.7209%2013.7407C13.6039%2013.4233%2013.7824%2013.0662%2014.0918%2012.955C14.3179%2012.8736%2014.5235%2012.9195%2014.7075%2013.0531C15.4933%2013.6494%2016.2758%2014.1269%2016.8677%2014.3801L18.7482%2013.704C20.6286%2013.0279%2021.4916%2011.3462%2020.8202%209.52384C20.1444%207.68974%2018.3891%206.94947%2016.5086%207.62559L5.40457%2011.6181C3.52413%2012.2942%202.64924%2013.9802%203.23836%2015.5791Z'%20fill='%23FFF9D4'/%3e%3cellipse%20cx='8.35869'%20cy='5.28086'%20rx='3.43657'%20ry='3.39487'%20fill='%23FFF9D4'/%3e%3cellipse%20cx='112.738'%20cy='4.55001'%20rx='3.33041'%20ry='3.29'%20fill='%23ED7846'/%3e%3c/svg%3e" alt="kapptivate" style="height:20px;width:auto">`
+const COLLAPSE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg>`
+
+const I = {
+  zap:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>`,
+  chart:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>`,
+  screen: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/></svg>`,
+  bell:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>`,
+  file:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`,
+  book:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+  net:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><path d="M6.5 8a2 2 0 0 0 0 4"/><path d="M17.5 8a2 2 0 0 1 0 4"/><path d="M12 8v8"/><path d="M8 16a4 4 0 0 0 8 0"/></svg>`,
+  wrench: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`,
+  eye:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  live:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H4z"/><path d="M8 20h8M12 16v4"/></svg>`,
+  check:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>`,
+  target: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4 12H2m20 0h-2"/><circle cx="12" cy="12" r="5"/></svg>`,
+  pin:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
+  globe:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>`,
+  phone:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>`,
+  filter: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>`,
+  search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>`,
+  clock:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`,
+  download:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+  play:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
+  box:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`,
+  cpu:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2M15 20v2M2 15h2M20 15h2M9 2v2M9 20v2M2 9h2M20 9h2"/></svg>`,
+  server: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>`,
+  activity:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+  trendUp:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`,
+  trendDn:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>`,
+  alert:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  layers: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`,
+}
+
+const ni = (icon, label, active, id) => `<button class="nav-item${active?' active':''}" data-tab="${id}" onclick="switchTab('${id}',this)">${icon}${label}</button>`
+const brand = `<div class="brand"><div class="logo">${LOGO}</div><span class="collapse">${COLLAPSE}</span></div>`
+const sep = `<div class="nav-sep"></div>`
+const ws = `<div class="ws"><div class="avatar">🐙</div><div><div class="name">kapptivate</div><div class="sub">Workspace</div></div></div>`
+
+const runContent = `
+  <div class="nav-label">Overview</div>
+  ${ni(I.screen,'Realtime status',false,'overview')}
+  ${ni(I.bell,'Incidents',false,'incidents')}
+  ${ni(I.chart,'Analytics',false,'analytics')}
+  ${sep}
+  <div class="nav-label">Run</div>
+  ${ni(I.live,'Live session',false,'live')}
+  ${ni(I.zap,'Tests',false,'tests')}
+  ${ni(I.check,'Executions',false,'exec')}
+  ${ni(I.target,'Monitors',false,'monitors')}
+  ${sep}
+  <div class="nav-label">Equipments</div>
+  ${ni(I.pin,'Locations',false,'locations')}
+  ${ni(I.globe,'Browser presets',false,'browsers')}
+  ${ni(I.phone,'Devices lab',false,'devices')}`
+
+const exploreContent = `
+  <div class="nav-label">Explore</div>
+  ${ni(I.file,'Logs explorer',true,'logs')}
+  ${ni(I.book,'Traces',false,'traces')}
+  ${ni(I.net,'Service map',false,'svcmap')}
+  ${ni(I.wrench,'Kubernetes',false,'k8s')}`
+
+document.getElementById('sidebar').innerHTML = `
+  ${brand}${sep}
+  <div class="prod-seg" id="pseg">
+    <button class="prod-seg-btn" onclick="switchSeg('run')">${I.zap} Run</button>
+    <button class="prod-seg-btn active" onclick="switchSeg('obs')">${I.eye} Explore</button>
+  </div>
+  ${ws}
+  <div class="mode-stack">
+    <div id="mode-run" class="hidden">${runContent}</div>
+    <div id="mode-explore">${exploreContent}</div>
+  </div>
+  <div class="spacer"></div>${sep}<button class="help-btn">?</button>`
+
+/* ═══════ PAGE DATA ═══════ */
+const PAGES = {
+  logs: {
+    title: 'Logs explorer',
+    sub: 'Search, filter and analyze logs across all services in real time',
+    actions: [{label:'Export',primary:false},{label:'Create alert',primary:true}],
+    view: 'view-logs'
+  },
+  traces: {
+    title: 'Traces',
+    sub: 'Distributed tracing — follow requests across your microservices',
+    actions: [{label:'Export',primary:false},{label:'Compare traces',primary:true}],
+    view: 'view-traces'
+  },
+  svcmap: {
+    title: 'Service map',
+    sub: 'Visualize dependencies and traffic flow between your services',
+    actions: [{label:'Refresh',primary:false},{label:'Configure',primary:true}],
+    view: 'view-svcmap'
+  },
+  k8s: {
+    title: 'Kubernetes',
+    sub: 'Cluster health, workloads and resource usage at a glance',
+    actions: [{label:'Export',primary:false},{label:'Connect cluster',primary:true}],
+    view: 'view-k8s'
+  }
+}
+
+function renderHead(page) {
+  const p = PAGES[page]
+  if (!p) return
+  document.getElementById('content-head').innerHTML = `
+    <div class="content-head-left"><h1>${p.title}</h1><p>${p.sub}</p></div>
+    <div class="content-head-right">${p.actions.map(a => `<button class="btn${a.primary?' primary':''}">${a.label}</button>`).join('')}</div>`
+}
+
+/* ═══════ LOGS PAGE ═══════ */
+const LOGS = [
+  {ts:'2026-07-08 14:32:18.443',level:'info',svc:'api-gateway',msg:'POST /api/v2/executions/start 200 — 142ms — user=maud.rochel@kapptivate.com'},
+  {ts:'2026-07-08 14:32:17.891',level:'warn',svc:'runner-eu-west',msg:'Container warmup exceeded 3s threshold — pool=chrome-120 instance=i-7f3a delay=3847ms'},
+  {ts:'2026-07-08 14:32:17.220',level:'error',svc:'screenshot-svc',msg:'Failed to capture screenshot — timeout after 10000ms — test_id=t_4kLm9 step=14'},
+  {ts:'2026-07-08 14:32:16.554',level:'info',svc:'metrics-proxy',msg:'Flushed 2,847 datapoints to storage — batch=b_8xPq — compression_ratio=0.34'},
+  {ts:'2026-07-08 14:32:15.102',level:'debug',svc:'kappticentral',msg:'Cache hit for test config — test_id=t_9nRw2 — ttl_remaining=847s'},
+  {ts:'2026-07-08 14:32:14.330',level:'info',svc:'runner-eu-west',msg:'Execution completed — exec_id=e_3mKp — duration=28.4s — steps=23 — passed=23'},
+  {ts:'2026-07-08 14:32:13.890',level:'warn',svc:'device-server',msg:'Device d_pixel7 battery level below 20% — current=17% — scheduling charge cycle'},
+  {ts:'2026-07-08 14:32:12.110',level:'error',svc:'api-gateway',msg:'Rate limit exceeded for workspace ws_demo — limit=100/min — current=112 — IP=83.142.XX.XX'},
+  {ts:'2026-07-08 14:32:11.776',level:'info',svc:'kappticentral',msg:'Monitor m_8hNw triggered — schedule=every_5m — target=https://app.kapptivate.com/health'},
+  {ts:'2026-07-08 14:32:10.442',level:'info',svc:'runner-us-east',msg:'Execution started — exec_id=e_6pLn — test=Login Flow (Staging) — browser=chrome-120'},
+  {ts:'2026-07-08 14:32:09.120',level:'debug',svc:'metrics-proxy',msg:'Received 412 datapoints from runner-eu-west — queue_depth=1,204'},
+  {ts:'2026-07-08 14:32:08.003',level:'warn',svc:'screenshot-svc',msg:'Retrying screenshot capture — attempt=2/3 — test_id=t_4kLm9 step=14'},
+  {ts:'2026-07-08 14:32:07.551',level:'info',svc:'kappticentral',msg:'Webhook delivered — event=execution.completed — url=https://hooks.slack.com/*** — 200 OK'},
+]
+
+document.getElementById('view-logs').innerHTML = `
+  <div class="search-bar">
+    <input class="search-input" placeholder="Search logs... e.g. level:error service:api-gateway">
+    <button class="filter-btn">${I.filter} Filters</button>
+    <button class="filter-btn">${I.clock} Last 1h</button>
+    <button class="filter-btn">${I.play} Live tail</button>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">${I.file} Total logs</div>
+      <div class="kpi-value">1.2M</div>
+      <div class="kpi-trend up">${I.trendUp} +18% vs yesterday</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">${I.alert} Errors</div>
+      <div class="kpi-value" style="color:#e0372e">847</div>
+      <div class="kpi-trend up">${I.trendUp} +5.2% vs yesterday</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">${I.alert} Warnings</div>
+      <div class="kpi-value" style="color:#d97706">3,241</div>
+      <div class="kpi-trend down">${I.trendDn} -12% vs yesterday</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">${I.server} Services</div>
+      <div class="kpi-value">14</div>
+      <div class="kpi-trend">All reporting</div>
+    </div>
+  </div>
+  <div class="log-stream">${LOGS.map(l => `<div class="log-line"><span class="log-ts">${l.ts}</span><span class="log-level ${l.level}">${l.level.toUpperCase().padEnd(5)}</span><span class="log-svc">${l.svc}</span><span class="log-msg">${l.msg}</span></div>`).join('')}</div>`
+
+/* ═══════ TRACES PAGE ═══════ */
+const TRACES = [
+  {id:'tr_9xKm3',name:'POST /api/v2/executions/start',svc:'api-gateway',dur:'142ms',spans:8,status:'ok',bars:[
+    {left:0,width:100,color:'#2E7D74',label:'api-gateway'},
+    {left:5,width:30,color:'#60a5fa',label:'auth-service'},
+    {left:20,width:65,color:'#f59e0b',label:'runner-eu-west'},
+    {left:25,width:40,color:'#a78bfa',label:'kappticentral'},
+  ]},
+  {id:'tr_3pLn7',name:'GET /api/v2/monitors/m_8hNw/results',svc:'api-gateway',dur:'89ms',spans:5,status:'ok',bars:[
+    {left:0,width:100,color:'#2E7D74',label:'api-gateway'},
+    {left:8,width:55,color:'#a78bfa',label:'kappticentral'},
+    {left:15,width:30,color:'#60a5fa',label:'metrics-proxy'},
+  ]},
+  {id:'tr_7wQp1',name:'POST /api/v2/screenshots/capture',svc:'screenshot-svc',dur:'10.2s',spans:4,status:'error',bars:[
+    {left:0,width:100,color:'#e0372e',label:'screenshot-svc'},
+    {left:2,width:95,color:'#f87171',label:'chrome-pool'},
+  ]},
+  {id:'tr_2nRt5',name:'POST /webhooks/slack/deliver',svc:'kappticentral',dur:'234ms',spans:3,status:'ok',bars:[
+    {left:0,width:100,color:'#a78bfa',label:'kappticentral'},
+    {left:30,width:60,color:'#60a5fa',label:'webhook-worker'},
+  ]},
+  {id:'tr_8hYw4',name:'GET /api/v2/tests/t_9nRw2',svc:'api-gateway',dur:'12ms',spans:2,status:'ok',bars:[
+    {left:0,width:100,color:'#2E7D74',label:'api-gateway'},
+    {left:10,width:40,color:'#a78bfa',label:'kappticentral (cache hit)'},
+  ]},
+  {id:'tr_5mDx9',name:'PUT /api/v2/variables/v_3kLw',svc:'api-gateway',dur:'67ms',spans:4,status:'ok',bars:[
+    {left:0,width:100,color:'#2E7D74',label:'api-gateway'},
+    {left:12,width:50,color:'#a78bfa',label:'kappticentral'},
+    {left:40,width:35,color:'#34d399',label:'vault'},
+  ]},
+]
+
+document.getElementById('view-traces').innerHTML = `
+  <div class="search-bar">
+    <input class="search-input" placeholder="Search traces... e.g. service:api-gateway duration:>100ms">
+    <button class="filter-btn">${I.filter} Filters</button>
+    <button class="filter-btn">${I.clock} Last 1h</button>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">${I.activity} Traces</div>
+      <div class="kpi-value">48.2K</div>
+      <div class="kpi-trend">Last hour</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">${I.clock} Avg duration</div>
+      <div class="kpi-value">127ms</div>
+      <div class="kpi-trend down">${I.trendDn} -8ms vs last hour</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">${I.alert} Error rate</div>
+      <div class="kpi-value" style="color:#e0372e">2.1%</div>
+      <div class="kpi-trend up">${I.trendUp} +0.4% vs last hour</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">${I.layers} P99 latency</div>
+      <div class="kpi-value">890ms</div>
+      <div class="kpi-trend down">${I.trendDn} -120ms vs last hour</div>
+    </div>
+  </div>
+  ${TRACES.map(t => `
+    <div class="trace-row">
+      <div class="trace-head">
+        <div class="trace-name">
+          <span class="tag ${t.status==='error'?'red':'green'}">${t.status==='error'?'Error':'OK'}</span>
+          ${t.name}
+        </div>
+        <div class="trace-meta">
+          <span>${t.spans} spans</span>
+          <span class="mono">${t.dur}</span>
+          <span class="text-faint">${t.id}</span>
+        </div>
+      </div>
+      <div class="trace-waterfall">${t.bars.map(b => `<div class="trace-span" style="left:${b.left}%;width:${b.width}%;background:${b.color};opacity:0.7" title="${b.label}"></div>`).join('')}</div>
+    </div>`).join('')}`
+
+/* ═══════ SERVICE MAP PAGE ═══════ */
+const SERVICES = [
+  {id:'gw',  label:'API Gateway',x:50,y:15,color:'#2E7D74',border:'#2E7D74',icon:I.server,rps:'2.4K',lat:'23ms',err:'0.1%'},
+  {id:'auth',label:'Auth',       x:15,y:40,color:'#60a5fa',border:'#60a5fa',icon:I.layers,rps:'1.8K',lat:'12ms',err:'0%'},
+  {id:'core',label:'Central',    x:50,y:45,color:'#a78bfa',border:'#a78bfa',icon:I.box,   rps:'3.1K',lat:'34ms',err:'0.2%'},
+  {id:'run', label:'Runner',     x:85,y:40,color:'#f59e0b',border:'#f59e0b',icon:I.play,  rps:'890', lat:'142ms',err:'1.4%'},
+  {id:'met', label:'Metrics',    x:25,y:72,color:'#34d399',border:'#34d399',icon:I.chart, rps:'5.2K',lat:'8ms', err:'0%'},
+  {id:'scr', label:'Screenshot', x:75,y:72,color:'#f87171',border:'#f87171',icon:I.screen,rps:'320', lat:'2.1s',err:'3.8%'},
+]
+
+const EDGES = [
+  {from:'gw',to:'auth'},{from:'gw',to:'core'},{from:'gw',to:'run'},
+  {from:'core',to:'met'},{from:'core',to:'run'},{from:'run',to:'scr'},
+]
+
+const mapSvg = (() => {
+  const W = 600, H = 400
+  let lines = ''
+  EDGES.forEach(e => {
+    const f = SERVICES.find(s=>s.id===e.from), t = SERVICES.find(s=>s.id===e.to)
+    const x1 = f.x/100*W, y1 = f.y/100*H, x2 = t.x/100*W, y2 = t.y/100*H
+    lines += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#d0d5dd" stroke-width="1.5" stroke-dasharray="4 3"/>`
+  })
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%;position:absolute;inset:0">${lines}</svg>`
+})()
+
+document.getElementById('view-svcmap').innerHTML = `
+  <div class="search-bar">
+    <input class="search-input" placeholder="Filter services...">
+    <button class="filter-btn">${I.clock} Last 15m</button>
+  </div>
+  <div class="svc-map-container">
+    <div class="svc-map-canvas" id="map-canvas">
+      ${mapSvg}
+      ${SERVICES.map(s => `
+        <div class="svc-node" style="left:calc(${s.x}% - 36px);top:calc(${s.y}% - 36px);background:#fff;border-color:${s.border};color:${s.color}" onclick="selectService('${s.id}')">
+          ${s.icon}
+          <span style="color:var(--text);font-size:9px">${s.label}</span>
+        </div>`).join('')}
+    </div>
+    <div class="svc-map-sidebar">
+      <div class="svc-detail-card" id="svc-detail">
+        <h3>Select a service</h3>
+        <p style="font-size:12px;color:var(--text-sec)">Click a node on the map to see its details</p>
+      </div>
+      <div class="svc-detail-card">
+        <h3>Top errors (last 15m)</h3>
+        <div class="svc-detail-row"><span class="label">screenshot-svc</span><span class="tag red">3.8%</span></div>
+        <div class="svc-detail-row"><span class="label">runner-eu-west</span><span class="tag orange">1.4%</span></div>
+        <div class="svc-detail-row"><span class="label">kappticentral</span><span class="tag orange">0.2%</span></div>
+        <div class="svc-detail-row"><span class="label">api-gateway</span><span class="tag gray">0.1%</span></div>
+      </div>
+      <div class="svc-detail-card">
+        <h3>Traffic summary</h3>
+        <div class="svc-detail-row"><span class="label">Total RPS</span><span style="font-weight:600">13.7K</span></div>
+        <div class="svc-detail-row"><span class="label">Avg latency</span><span style="font-weight:600">42ms</span></div>
+        <div class="svc-detail-row"><span class="label">Active services</span><span style="font-weight:600">14</span></div>
+      </div>
+    </div>
+  </div>`
+
+function selectService(id) {
+  const s = SERVICES.find(x=>x.id===id)
+  if(!s)return
+  document.getElementById('svc-detail').innerHTML = `
+    <h3 style="display:flex;align-items:center;gap:8px"><span style="color:${s.color}">${s.icon}</span>${s.label}</h3>
+    <div class="svc-detail-row"><span class="label">Requests/sec</span><span style="font-weight:600">${s.rps}</span></div>
+    <div class="svc-detail-row"><span class="label">Avg latency</span><span style="font-weight:600">${s.lat}</span></div>
+    <div class="svc-detail-row"><span class="label">Error rate</span><span class="tag ${parseFloat(s.err)>1?'red':parseFloat(s.err)>0?'orange':'green'}">${s.err}</span></div>
+    <div class="svc-detail-row"><span class="label">Status</span><span class="tag ${parseFloat(s.err)>2?'red':'green'}">${parseFloat(s.err)>2?'Degraded':'Healthy'}</span></div>`
+  document.querySelectorAll('.svc-node').forEach(n=>n.style.boxShadow='none')
+  event.currentTarget.style.boxShadow=`0 0 0 3px ${s.color}33`
+}
+
+/* ═══════ KUBERNETES PAGE ═══════ */
+const PODS = [
+  {name:'api-gateway-7f8d9c-x4k2p',ns:'production',status:'Running',cpu:'120m / 500m',mem:'256Mi / 512Mi',restarts:0,age:'4d'},
+  {name:'kappticentral-5b4a3c-m8n1q',ns:'production',status:'Running',cpu:'340m / 1000m',mem:'890Mi / 2Gi',restarts:0,age:'4d'},
+  {name:'runner-eu-west-9e2f1a-j6h3r',ns:'production',status:'Running',cpu:'780m / 2000m',mem:'1.4Gi / 4Gi',restarts:2,age:'2d'},
+  {name:'screenshot-svc-4c7b8d-p2w5t',ns:'production',status:'CrashLoop',cpu:'0m / 500m',mem:'0Mi / 1Gi',restarts:47,age:'6h'},
+  {name:'metrics-proxy-1d6e9f-k7m4s',ns:'production',status:'Running',cpu:'90m / 250m',mem:'180Mi / 512Mi',restarts:0,age:'7d'},
+  {name:'device-server-8a3c2b-n5p7v',ns:'production',status:'Running',cpu:'210m / 500m',mem:'420Mi / 1Gi',restarts:1,age:'3d'},
+  {name:'webhook-worker-6f1d4e-q3r8w',ns:'production',status:'Running',cpu:'45m / 250m',mem:'128Mi / 256Mi',restarts:0,age:'7d'},
+]
+
+document.getElementById('view-k8s').innerHTML = `
+  <div class="search-bar">
+    <input class="search-input" placeholder="Search pods, deployments, services...">
+    <button class="filter-btn">${I.filter} Namespace: production</button>
+    <button class="filter-btn">${I.layers} Cluster: eu-west-1</button>
+  </div>
+  <div class="k8s-grid">
+    <div class="k8s-card">
+      <h3>${I.cpu} CPU usage</h3>
+      <div style="font-size:22px;font-weight:700;margin-bottom:8px">42%</div>
+      <div class="k8s-bar"><div class="k8s-bar-fill" style="width:42%;background:#2E7D74"></div></div>
+      <div class="k8s-bar-label"><span>1.59 cores used</span><span>3.8 cores allocated</span></div>
+    </div>
+    <div class="k8s-card">
+      <h3>${I.server} Memory usage</h3>
+      <div style="font-size:22px;font-weight:700;margin-bottom:8px">61%</div>
+      <div class="k8s-bar"><div class="k8s-bar-fill" style="width:61%;background:#f59e0b"></div></div>
+      <div class="k8s-bar-label"><span>5.2 Gi used</span><span>8.5 Gi allocated</span></div>
+    </div>
+    <div class="k8s-card">
+      <h3>${I.box} Pods</h3>
+      <div style="display:flex;gap:16px;margin-top:4px">
+        <div><div style="font-size:22px;font-weight:700;color:#1fae7e">18</div><div style="font-size:11px;color:var(--text-sec)">Running</div></div>
+        <div><div style="font-size:22px;font-weight:700;color:#e0372e">1</div><div style="font-size:11px;color:var(--text-sec)">CrashLoop</div></div>
+        <div><div style="font-size:22px;font-weight:700;color:#d97706">0</div><div style="font-size:11px;color:var(--text-sec)">Pending</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active">Pods</button>
+    <button class="tab">Deployments</button>
+    <button class="tab">Services</button>
+    <button class="tab">Events</button>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr>
+        <th>Pod</th><th>Status</th><th>CPU</th><th>Memory</th><th>Restarts</th><th>Age</th>
+      </tr></thead>
+      <tbody>${PODS.map(p => `<tr>
+        <td><span class="mono">${p.name}</span></td>
+        <td><span class="k8s-status-dot ${p.status==='Running'?'ok':'err'}"></span>${p.status}</td>
+        <td class="mono">${p.cpu}</td>
+        <td class="mono">${p.mem}</td>
+        <td>${p.restarts > 5 ? `<span style="color:#e0372e;font-weight:600">${p.restarts}</span>` : p.restarts}</td>
+        <td class="text-sec">${p.age}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`
+
+/* ═══════ INTERACTIONS ═══════ */
+
+let currentTab = 'logs'
+
+function switchTab(tab, btn) {
+  if (!PAGES[tab]) return
+  currentTab = tab
+  document.querySelectorAll('.page-view').forEach(v => v.classList.remove('visible'))
+  const view = document.getElementById(PAGES[tab].view)
+  if (view) view.classList.add('visible')
+  document.querySelectorAll('#sidebar .nav-item').forEach(i => i.classList.remove('active'))
+  btn.classList.add('active')
+  renderHead(tab)
+}
+
+function switchSeg(prod) {
+  document.querySelectorAll('#pseg .prod-seg-btn').forEach((b,i) => {
+    b.classList.toggle('active', prod==='run' ? i===0 : i===1)
+  })
+  const isRun = prod === 'run'
+  document.getElementById('mode-run').classList.toggle('hidden', !isRun)
+  document.getElementById('mode-explore').classList.toggle('hidden', isRun)
+}
+
+renderHead('logs')
+</script>
+</body>
+</html>

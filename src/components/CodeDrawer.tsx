@@ -128,7 +128,7 @@ const CodeDrawer = ({
             <div style={{ minWidth: 220 }}>
               <Select
                 value={active}
-                onChange={(v) => setActive(v)}
+                onChange={(_e, v) => setActive(v)}
                 options={files.map((f) => ({ label: f.name, value: f.name }))}
                 fullWidth
               />

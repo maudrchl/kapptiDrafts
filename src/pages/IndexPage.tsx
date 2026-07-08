@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import {
   Text,
   SearchInput,
-  Select,
   Tag,
   Button,
   Table,
@@ -23,7 +22,6 @@ import {
   type CatalogEntry,
   type ProtoStatus,
 } from '../protos/registry'
-import { useStatusOverrides } from '../protos/status'
 import css from './index-page.module.css'
 
 const STATUS_ACCENT: Record<ProtoStatus, string> = {
@@ -78,8 +76,6 @@ const fmtDate = (iso?: string): string => {
   return absDate(iso)
 }
 
-const STATUS_OPTIONS = STATUS_ORDER.map((s) => ({ label: s, value: s }))
-
 // Icône de tri du design system (rendue dans le slot natif de la Table antd)
 const renderSortIcon = ({
   sortOrder,
@@ -89,7 +85,6 @@ const renderSortIcon = ({
 
 const IndexPage = () => {
   const navigate = useNavigate()
-  const { statusOf, setStatus } = useStatusOverrides()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | ProtoStatus>('all')
 
@@ -107,10 +102,10 @@ const IndexPage = () => {
         p.title.toLowerCase().includes(q) ||
         (p.description ?? '').toLowerCase().includes(q)
       const matchStatus =
-        statusFilter === 'all' || statusOf(p.slug, p.status) === statusFilter
+        statusFilter === 'all' || p.status === statusFilter
       return matchQ && matchStatus
     })
-  }, [search, statusFilter, statusOf])
+  }, [search, statusFilter])
 
   // Menu du filtre statut (composant Dropdown du design system)
   const filterMenu = {
@@ -135,7 +130,7 @@ const IndexPage = () => {
       sortIcon: renderSortIcon,
       render: (_: string, p: CatalogEntry) => {
         const Icon = p.icon
-        const status = statusOf(p.slug, p.status)
+        const status = p.status
         return (
           <div style={styles.protoCell}>
             <span
@@ -213,25 +208,15 @@ const IndexPage = () => {
       width: 300,
       defaultSortOrder: 'ascend' as const,
       sorter: (a: CatalogEntry, b: CatalogEntry) =>
-        STATUS_ORDER.indexOf(statusOf(a.slug, a.status)) -
-        STATUS_ORDER.indexOf(statusOf(b.slug, b.status)),
+        STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status),
       sortIcon: renderSortIcon,
-      // Select éditable — stopPropagation pour ne pas déclencher le clic-ligne
-      render: (_: ProtoStatus, p: CatalogEntry) => {
-        const status = statusOf(p.slug, p.status)
-        return (
-          <div style={styles.statusCell} onClick={(e) => e.stopPropagation()}>
-            <span style={{ ...styles.dot, background: STATUS_ACCENT[status] }} />
-            <Select
-              size="s"
-              value={status}
-              onChange={(_e, v) => setStatus(p.slug, v as ProtoStatus)}
-              options={STATUS_OPTIONS}
-              minWidth="160px"
-            />
-          </div>
-        )
-      },
+      // Statut en lecture seule — la source de vérité est le `meta.ts` du proto.
+      render: (_: ProtoStatus, p: CatalogEntry) => (
+        <div style={styles.statusCell}>
+          <span style={{ ...styles.dot, background: STATUS_ACCENT[p.status] }} />
+          <Text size="s">{p.status}</Text>
+        </div>
+      ),
     },
   ]
 

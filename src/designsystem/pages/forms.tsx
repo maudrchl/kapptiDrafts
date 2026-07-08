@@ -84,7 +84,7 @@ export const SelectPage = () => {
           label="Environment"
           placeholder="Choose…"
           value={val}
-          onChange={(v) => setVal(v)}
+          onChange={(_e, v) => setVal(v)}
           options={OPTIONS}
           fullWidth
         />
@@ -102,7 +102,7 @@ export const SelectPage = () => {
           mode="multiple"
           placeholder="Several environments…"
           value={multi}
-          onChange={(v) => setMulti(v)}
+          onChange={(_e, v) => setMulti(v)}
           options={OPTIONS}
           fullWidth
         />
