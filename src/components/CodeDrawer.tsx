@@ -118,7 +118,7 @@ const CodeDrawer = ({
             </div>
             <Button
               color="secondary"
-              size="s"
+              size="m"
               icon={copied ? IconCheck : IconCopy}
               onClick={copy}
             >
