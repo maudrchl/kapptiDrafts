@@ -12,6 +12,7 @@
   "dependencies": {
     "@kapptivate/ui-kit": "1.46.0",
     "antd": "5.16.4",
+    "jose": "^5.9.6",
     "dayjs": "1.11.13",
     "formik": "2.4.5",
     "i18next": "23.8.2",
