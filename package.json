@@ -20,7 +20,7 @@
     "react-dom": "18.2.0",
     "react-i18next": "14.0.5",
     "react-router-dom": "^6.25.1",
-    "ui-kit": "file:../kapptigalaxy/javascript/libs/ui-kit"
+    "ui-kit": "file:./vendor/ui-kit"
   },
   "devDependencies": {
     "@types/lodash": "^4.17.0",
