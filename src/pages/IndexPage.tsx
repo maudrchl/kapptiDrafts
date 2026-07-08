@@ -72,8 +72,8 @@ const fmtDate = (iso?: string): string => {
   const midnight = (x: Date) =>
     new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
   const diff = Math.round((midnight(new Date()) - midnight(d)) / dayMs)
-  if (diff === 0) return 'Today'
-  if (diff === 1) return 'Yesterday'
+  if (diff === 0) return 'today'
+  if (diff === 1) return 'yesterday'
   if (diff > 1 && diff < 7) return `${diff} days ago`
   return absDate(iso)
 }
@@ -175,7 +175,7 @@ const IndexPage = () => {
       ),
     },
     {
-      title: 'Last update',
+      title: 'last update',
       key: 'updatedAt',
       dataIndex: 'updatedAt',
       width: 160,
@@ -225,7 +225,7 @@ const IndexPage = () => {
             <Select
               size="s"
               value={status}
-              onChange={(v) => setStatus(p.slug, v as ProtoStatus)}
+              onChange={(_e, v) => setStatus(p.slug, v as ProtoStatus)}
               options={STATUS_OPTIONS}
               minWidth="160px"
             />
