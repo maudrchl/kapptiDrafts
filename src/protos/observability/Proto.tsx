@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutGrid } from 'lucide-react'
+import { Command } from 'lucide-react'
 import styles from './observability.module.scss'
 import {
   NAV,
@@ -106,19 +106,19 @@ const ObservabilityPage = () => {
   /* ---------- Option 3 : contextuel, dans un produit ---------- */
   return (
     <div className={styles.app}>
-      <MainSidebar active="Julio" />
+      <MainSidebar active="Website" />
       <div className={styles.main}>
         <div className={styles.content}>
           <div className={styles.prodHead}>
-            <div className={styles.prodCrumb}>Products / Julio</div>
+            <div className={styles.prodCrumb}>By product / Website</div>
             <div className={styles.prodTitle}>
               <span className={styles.prodBadge}>
-                <LayoutGrid size={17} />
+                <Command size={17} />
               </span>
-              Julio
+              Website
             </div>
             <div className={styles.prodTabs}>
-              {['Overview', 'Tests', 'Executions', 'Monitors', 'Observability', 'Configurations'].map(
+              {['Overview', 'Tests', 'Executions', 'Monitors', 'Observability', 'Variables'].map(
                 (t) => (
                   <div
                     key={t}

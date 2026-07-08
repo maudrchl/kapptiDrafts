@@ -8,17 +8,16 @@ import {
   Bell,
   PlugZap,
   MonitorDot,
+  Eye,
   BarChart3,
-  LayoutGrid,
+  Command,
   MonitorPlay,
   Zap,
   CheckCircle2,
-  Gauge,
-  SlidersHorizontal,
-  MapPin,
-  Globe,
+  Timer,
+  Braces,
   Smartphone,
-  HardDrive,
+  Bot,
 } from 'lucide-react'
 
 // Les icônes de cette proto viennent toutes de lucide-react (forwardRef) :
@@ -268,7 +267,8 @@ export const MAIN_NAV: MainNavGroup[] = [
   {
     section: 'Overview',
     items: [
-      { label: 'Realtime status', icon: MonitorDot },
+      { label: 'Realtime Status', icon: MonitorDot },
+      { label: 'Overview', icon: Eye },
       { label: 'Incidents', icon: Bell },
       { label: 'Analytics', icon: BarChart3 },
       // Option "top-level" : l'observabilité s'insère ici
@@ -278,21 +278,19 @@ export const MAIN_NAV: MainNavGroup[] = [
   {
     section: 'By product',
     items: [
-      { label: 'Julio', icon: LayoutGrid, chevron: true },
-      { label: 'Live session', icon: MonitorPlay },
+      { label: 'Website', icon: Command, chevron: true },
+      { label: 'Live Session', icon: MonitorPlay },
       { label: 'Tests', icon: Zap },
       { label: 'Executions', icon: CheckCircle2 },
-      { label: 'Monitors', icon: Gauge },
-      { label: 'Configurations', icon: SlidersHorizontal },
+      { label: 'Monitors', icon: Timer },
+      { label: 'Variables', icon: Braces },
     ],
   },
   {
     section: 'Equipments',
     items: [
-      { label: 'Locations', icon: MapPin },
-      { label: 'Browser presets', icon: Globe },
-      { label: 'Devices lab', icon: Smartphone },
-      { label: 'Hardware', icon: HardDrive },
+      { label: 'Devices Lab', icon: Smartphone },
+      { label: 'Agents', icon: Bot },
     ],
   },
 ]
