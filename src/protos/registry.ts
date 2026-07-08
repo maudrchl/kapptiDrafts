@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import type { ComponentType, LazyExoticComponent } from 'react'
-import { IconMapPin, IconListStart, IconActivity, IconComponent } from 'ui-kit'
+import { IconMapPin, IconListStart, IconActivity, IconComponent, IconNavigation } from 'ui-kit'
 import IconBrush from './BrushIcon'
 
 export type ProtoIcon = ComponentType<{ size?: number; color?: string }>
@@ -111,6 +111,15 @@ export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
     description: 'Analyse de cause racine des incidents',
     icon: IconActivity,
     href: '/folder/Observability/Root Cause Analysis.html',
+  },
+  {
+    slug: 'observability-navigation',
+    title: 'Observability Navigation',
+    status: 'en cours design',
+    collection: 'Observability',
+    description: 'Patterns de navigation sidebar pour l\'observabilité',
+    icon: IconNavigation,
+    href: '/folder/Observability/Navigation.html',
   },
 ]
 
