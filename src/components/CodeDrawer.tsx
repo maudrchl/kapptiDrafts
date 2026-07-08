@@ -24,7 +24,14 @@ const rawFiles = import.meta.glob('../protos/**/*.{tsx,ts,scss,css}', {
   import: 'default',
 }) as Record<string, () => Promise<string>>
 
-type ProtoFile = { path: string; name: string; lang: string; code: string }
+type ProtoFile = {
+  path: string
+  /** Chemin relatif au repo, ex. src/protos/ai-usage/Proto.tsx */
+  repoPath: string
+  name: string
+  lang: string
+  code: string
+}
 
 const langOf = (path: string): string => {
   if (path.endsWith('.tsx')) return 'tsx'
@@ -52,6 +59,7 @@ const CodeDrawer = ({
   const [files, setFiles] = useState<ProtoFile[] | null>(null)
   const [active, setActive] = useState<string>()
   const [copied, setCopied] = useState(false)
+  const [copiedPath, setCopiedPath] = useState(false)
 
   useEffect(() => {
     if (!open || files) return
@@ -67,6 +75,7 @@ const CodeDrawer = ({
     Promise.all(
       paths.map(async (path) => ({
         path,
+        repoPath: path.replace('../', 'src/'),
         name: basename(path),
         lang: langOf(path),
         code: await rawFiles[path](),
@@ -97,6 +106,14 @@ const CodeDrawer = ({
     })
   }
 
+  const copyPath = () => {
+    if (!current) return
+    navigator.clipboard?.writeText(current.repoPath).then(() => {
+      setCopiedPath(true)
+      window.setTimeout(() => setCopiedPath(false), 1400)
+    })
+  }
+
   return (
     <Drawer open={open} onClose={onClose} title="Code source" width={780}>
       {!files ? (
@@ -122,7 +139,20 @@ const CodeDrawer = ({
               icon={copied ? IconCheck : IconCopy}
               onClick={copy}
             >
-              {copied ? 'Copié' : 'Copier'}
+              {copied ? 'Copié' : 'Copier le code'}
+            </Button>
+          </div>
+          <div style={styles.pathBar}>
+            <Text size="s" color="secondary" mono>
+              {current?.repoPath}
+            </Text>
+            <Button
+              color="invisible"
+              size="s"
+              icon={copiedPath ? IconCheck : IconCopy}
+              onClick={copyPath}
+            >
+              {copiedPath ? 'Copié' : 'Copier le chemin'}
             </Button>
           </div>
           <div style={styles.codeScroll}>
@@ -143,6 +173,16 @@ const styles: Record<string, CSSProperties> = {
   center: { display: 'flex', justifyContent: 'center', padding: '3rem 0' },
   wrap: { display: 'flex', flexDirection: 'column', gap: 12, height: '100%' },
   toolbar: { display: 'flex', alignItems: 'center', gap: 12 },
+  pathBar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    padding: '6px 10px',
+    background: 'var(--color-surface-grey, #fafafb)',
+    border: '1px solid var(--color-border-grey, #e4e4e7)',
+    borderRadius: 8,
+  },
   codeScroll: {
     flex: 1,
     minHeight: 0,
