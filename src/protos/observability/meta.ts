@@ -9,7 +9,7 @@ const meta: ProtoMeta = {
   description:
     'Rethought navigation: Overview, Explore (logs/traces/metrics), dashboards, services, infra, alerts — with first-run onboarding.',
   icon: IconActivity,
-  hidden: true,
+  hidden: false,
 }
 
 export default meta

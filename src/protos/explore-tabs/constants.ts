@@ -1,10 +1,11 @@
-export type ExploreTab = 'logs' | 'traces' | 'svcmap' | 'k8s'
+export type ExploreTab = 'logs' | 'traces' | 'svcmap' | 'k8s' | 'usage'
 
 export const EXPLORE_TABS: { key: ExploreTab; label: string }[] = [
   { key: 'logs', label: 'Logs explorer' },
   { key: 'traces', label: 'Traces' },
   { key: 'svcmap', label: 'Service map' },
   { key: 'k8s', label: 'Kubernetes' },
+  { key: 'usage', label: 'Usage & ingestion' },
 ]
 
 export const PAGE_META: Record<
@@ -43,7 +44,75 @@ export const PAGE_META: Record<
       { label: 'Connect cluster', primary: true },
     ],
   },
+  usage: {
+    title: 'Usage & ingestion',
+    sub: 'Ingestion volume, quota, retention and OTLP access for this workspace',
+    actions: [
+      { label: 'Read docs', primary: false },
+      { label: 'Adjust quota', primary: true },
+    ],
+  },
 }
+
+/* ─────────────────────────────────────────────
+ *  Usage & ingestion (mock) — vue "Usage & ingestion"
+ * ───────────────────────────────────────────── */
+export const OTLP_ENDPOINT_USAGE = 'https://otlp.eu.kapptivate.com:4317'
+export const OTLP_INTERNAL_ID = '3e8bb916-ff44-5a58-b45d-72ef8b0b76d8'
+export const OTLP_KEY_MASKED =
+  'otlp_sk_live_a91c··················3f9a'
+
+/** Ingéré ce mois-ci (le statut "Critical" dérive de ceci vs le cap, pas d'un chiffre en dur). */
+export const USAGE_INGESTED_GB = 8.6
+export const USAGE_DAY_OF_MONTH = 23
+export const USAGE_DAYS_IN_MONTH = 31
+
+export type SignalKey = 'metrics' | 'logs' | 'traces'
+export type SignalDatum = {
+  key: SignalKey
+  name: string
+  size: string
+  bytes: number
+  color: string
+  meta: string
+  /** part approximative de la consommation journalière, pour le filtre par signal */
+  share: number
+}
+
+export const SIGNALS: SignalDatum[] = [
+  { key: 'metrics', name: 'Metrics', size: '5.8 GB', bytes: 5800, color: '#1fae7e', meta: '25,243,312 data points', share: 0.76 },
+  { key: 'logs', name: 'Logs', size: '999.0 KB', bytes: 0.999, color: '#ed7846', meta: '2,291 log records', share: 0.12 },
+  { key: 'traces', name: 'Traces', size: '847.3 KB', bytes: 0.847, color: '#f2b338', meta: '1,344 spans · 1,018 traces · 17 errors', share: 0.12 },
+]
+
+/** Consommation journalière (GB) — mois courant. */
+export const DAILY_GB = [
+  0.9, 1.4, 1.1, 2.1, 1.7, 0.6, 0.4, 1.9, 2.6, 2.2, 1.5, 1.2, 3.4, 2.9, 1.8, 2.4, 2.7, 3.1, 2.0, 1.6, 2.8, 3.6, 2.3,
+]
+export const DAILY_BUDGET_GB = 3.0
+
+export const RETENTION_LABELS: Record<string, string> = {
+  standard: 'Standard — 15 days',
+  extended: 'Extended — 30 days',
+  long: 'Long-term — 90 days + cold tier',
+}
+
+/* Options du flow de création d'alerte. */
+export const ALERT_SEVERITIES = [
+  { label: 'Critical', value: 'critical' },
+  { label: 'Warning', value: 'warning' },
+  { label: 'Info', value: 'info' },
+]
+export const ALERT_CHANNELS = [
+  { label: 'Email — on-call', value: 'email' },
+  { label: 'Slack — #alerts', value: 'slack' },
+  { label: 'PagerDuty', value: 'pagerduty' },
+]
+export const ALERT_OPERATORS = [
+  { label: 'is above', value: 'gt' },
+  { label: 'is above or equal', value: 'gte' },
+  { label: 'is below', value: 'lt' },
+]
 
 export type LogEntry = {
   key: string

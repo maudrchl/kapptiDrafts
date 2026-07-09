@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { SearchInput, Button, IconArrowLeft } from '@kapptivate/ui-kit'
+import { SearchInput, BackButton } from '@kapptivate/ui-kit'
 import { GROUPS, ALL_PAGES } from './registry'
 import logo from '../assets/kapptidesign-logo.svg'
 import './designsystem.css'
@@ -26,9 +26,7 @@ const DesignSystem = () => {
     <div className="ds">
       <aside className="dsSidebar">
         <div className="dsBack">
-          <Button color="invisible" icon={IconArrowLeft} onClick={() => navigate('/')}>
-            Back to prototypes
-          </Button>
+          <BackButton onClick={() => navigate('/')} size="m" disabled={false} className="">Back</BackButton>
         </div>
 
         <div className="dsBrand">
@@ -41,7 +39,7 @@ const DesignSystem = () => {
             onChange={setQuery}
             placeholder="Search…"
             fullwidth
-            size="s"
+            size="m"
           />
         </div>
 
