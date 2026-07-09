@@ -20,6 +20,8 @@ export type ProtoIcon = ComponentType<{ size?: number; color?: string }>
  * Un dossier préfixé par `_` (ex: `_template`) est ignoré du catalogue.
  */
 
+// Ordre d'affichage par défaut de l'index (tri ascendant de la colonne Status) :
+// de haut en bas → wip design, wip dev, QA, puis deployed tout en bas.
 export const STATUS_ORDER = [
   'wip design',
   'wip dev',

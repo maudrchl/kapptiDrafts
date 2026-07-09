@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from 'react'
-import { Title, Text, Tag, Banner } from '@kapptivate/ui-kit'
+import { Title, Text, Banner } from '@kapptivate/ui-kit'
 import { Page, Demo } from '../primitives'
 
 const Do = ({ children }: { children: ReactNode }) => (
@@ -32,35 +32,52 @@ const Formula = ({ children }: { children: ReactNode }) => (
   </div>
 )
 
+const RefTable = ({ rows }: { rows: [string, string][] }) => (
+  <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 24 }}>
+    {rows.map(([label, desc], i, arr) => {
+      const cell = {
+        padding: '10px 0',
+        borderBottom: i < arr.length - 1 ? '1px solid var(--color-border-grey)' : undefined,
+      }
+      return (
+        <Fragment key={label}>
+          <div style={cell}><Text weight="semibold">{label}</Text></div>
+          <div style={cell}><Text color="secondary" size="sm">{desc}</Text></div>
+        </Fragment>
+      )
+    })}
+  </div>
+)
+
 export const ToneOfVoice = () => (
   <Page
     title="Tone of voice & microcopy"
     description="Rules for writing UI text across the Kapptivate product. Every button, empty state, error message, and tooltip should follow these patterns."
   >
     {/* Voice Principles */}
-    <Demo title="Voice principles" column>
-      <Text color="secondary">
-        Kapptivate speaks to QA engineers, DevOps teams, and product managers. The voice is a knowledgeable colleague — direct, helpful, and confident without being cold.
-      </Text>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 8 }}>
-        <div style={{ background: 'var(--color-surface-white, #fff)', border: '1px solid var(--color-border-grey)', borderRadius: 6, padding: 14 }}>
-          <Text weight="semibold">Clear over clever</Text>
-          <Text color="secondary" size="sm" style={{ marginTop: 4 }}>Say exactly what happens. Technical users scan — reward them with precision.</Text>
-        </div>
-        <div style={{ background: 'var(--color-surface-white, #fff)', border: '1px solid var(--color-border-grey)', borderRadius: 6, padding: 14 }}>
-          <Text weight="semibold">Friendly, not casual</Text>
-          <Text color="secondary" size="sm" style={{ marginTop: 4 }}>Use contractions (don't, can't). Second person (your tests). No emoji in UI text.</Text>
-        </div>
-        <div style={{ background: 'var(--color-surface-white, #fff)', border: '1px solid var(--color-border-grey)', borderRadius: 6, padding: 14 }}>
-          <Text weight="semibold">Guide, don't gatekeep</Text>
-          <Text color="secondary" size="sm" style={{ marginTop: 4 }}>Empty states and errors are opportunities. Tell the user what to do next.</Text>
-        </div>
-        <div style={{ background: 'var(--color-surface-white, #fff)', border: '1px solid var(--color-border-grey)', borderRadius: 6, padding: 14 }}>
-          <Text weight="semibold">English is the UI language</Text>
-          <Text color="secondary" size="sm" style={{ marginTop: 4 }}>All system-facing text is English. User-generated content can be any language.</Text>
+    <section className="dsSection">
+      <div className="dsSectionHead">
+        <Title size="h5">Voice principles</Title>
+        <div style={{ marginTop: 6, maxWidth: 640 }}>
+          <Text color="secondary">
+            Kapptivate speaks to QA engineers, DevOps teams, and product managers. The voice is a knowledgeable colleague — direct, helpful, and confident without being cold.
+          </Text>
         </div>
       </div>
-    </Demo>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        {([
+          ['Clear over clever', 'Say exactly what happens. Technical users scan — reward them with precision.'],
+          ['Friendly, not casual', 'Use contractions (don\'t, can\'t). Second person (your tests). No emoji in UI text.'],
+          ['Guide, don\'t gatekeep', 'Empty states and errors are opportunities. Tell the user what to do next.'],
+          ['English is the UI language', 'All system-facing text is English. User-generated content can be any language.'],
+        ] as const).map(([title, desc]) => (
+          <div key={title} style={{ background: 'var(--color-surface-grey)', borderRadius: 10, padding: '16px 18px' }}>
+            <Text weight="semibold">{title}</Text>
+            <Text color="secondary" size="sm" style={{ marginTop: 4 }}>{desc}</Text>
+          </div>
+        ))}
+      </div>
+    </section>
 
     {/* Capitalization */}
     <Demo title="Capitalization" column>
@@ -108,16 +125,8 @@ export const ToneOfVoice = () => (
       </DoDont>
 
       <div style={{ marginTop: 16 }}><Title size="h6">Standard verbs</Title></div>
-      <div
-        style={{
-          marginTop: 8,
-          display: 'grid',
-          gridTemplateColumns: 'max-content 1fr',
-          alignItems: 'center',
-          columnGap: 16,
-        }}
-      >
-        {[
+      <RefTable
+        rows={[
           ['Create', 'New entity from scratch'],
           ['Delete', 'Permanent removal'],
           ['Remove', 'Detach from a list — entity still exists'],
@@ -125,19 +134,8 @@ export const ToneOfVoice = () => (
           ['Pause / Unpause', 'Toggle monitor activity (not Stop/Start)'],
           ['Revoke', 'Invalidate credentials (API keys, tokens)'],
           ['Publish', 'Make reusable component changes live'],
-        ].map(([verb, meaning], i, arr) => {
-          const cell = {
-            padding: '10px 0',
-            borderBottom: i < arr.length - 1 ? '1px solid var(--color-border-grey)' : undefined,
-          }
-          return (
-            <Fragment key={verb}>
-              <div style={cell}><Tag>{verb}</Tag></div>
-              <div style={cell}><Text color="secondary" size="sm">{meaning}</Text></div>
-            </Fragment>
-          )
-        })}
-      </div>
+        ]}
+      />
     </Demo>
 
     {/* Empty States */}
@@ -397,14 +395,12 @@ export const ToneOfVoice = () => (
       </Text>
 
       <div style={{ marginTop: 12 }}><Title size="h6">Gender reference</Title></div>
-      <div style={{ fontSize: 13, marginTop: 8 }}>
-        <div style={{ display: 'flex', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--color-border-grey)' }}>
-          <Tag>Masculin</Tag><Text color="secondary" size="sm">test, monitor, dashboard, agent, produit, rapport, composant, groupe, lien</Text>
-        </div>
-        <div style={{ display: 'flex', gap: 8, padding: '6px 0' }}>
-          <Tag>Féminin</Tag><Text color="secondary" size="sm">variable, exécution, collection, campagne, version, alerte, exclusion, erreur</Text>
-        </div>
-      </div>
+      <RefTable
+        rows={[
+          ['Masculin', 'test, monitor, dashboard, agent, produit, rapport, composant, groupe, lien'],
+          ['Féminin', 'variable, exécution, collection, campagne, version, alerte, exclusion, erreur'],
+        ]}
+      />
       <div className="dsBannerBottom">
         <Banner variant="primary" description="The product is bilingual EN/FR. These rules ensure the French UI stays consistent with the English voice while respecting French typographic conventions." />
       </div>

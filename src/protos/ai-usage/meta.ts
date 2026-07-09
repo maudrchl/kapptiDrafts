@@ -3,7 +3,7 @@ import type { ProtoMeta } from '../registry'
 
 const meta: ProtoMeta = {
   title: 'AI Usage',
-  status: 'wip dev',
+  status: 'QA',
   updatedAt: '2026-07-08',
   collection: 'AI',
   description:

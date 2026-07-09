@@ -1,0 +1,1179 @@
+/* ============================================================
+ *  Checks proto — reproduction de l'écran d'édition d'un test
+ *  On retravaille le panneau « Checks » (à droite) en contexte.
+ * ============================================================ */
+
+$primary: var(--color-primary, #ed7846);
+$accent-soft: #fbe7dd;
+$rail-bg: #163d3a;
+$rail-active: #245450;
+$rail-icon: rgba(255, 255, 255, 0.62);
+$rail-icon-active: #fff;
+$bg: #f6f7f8;
+$surface: #fff;
+$surface-2: var(--color-surface-grey, #f6f7f8);
+$step-bg: #fdf0e9;
+$step-border: #f4cdb6;
+$border: var(--color-border, #e4e7ec);
+$border-strong: #d0d5dd;
+$ink: var(--color-text-primary, #24292f);
+$ink-2: var(--color-text-secondary, #667085);
+$muted: #7c8593;
+$faint: #98a2b3;
+$fail: var(--color-error, #e0473c);
+$fail-soft: #fbe3e0;
+$warn: #d98a00;
+$warn-soft: #fbeed3;
+$radius: 9px;
+$radius-sm: 7px;
+$shadow: 0 1px 2px rgba(38, 36, 31, 0.05), 0 8px 26px rgba(38, 36, 31, 0.07);
+$mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+.app {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: $bg;
+  color: $ink;
+  font-size: 14px;
+}
+
+/* ===================== RAIL (gauche) ===================== */
+.rail {
+  width: 56px;
+  flex-shrink: 0;
+  background: $rail-bg;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 4px;
+}
+.railMark {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: $primary;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+}
+.railBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  border: 0;
+  background: transparent;
+  color: $rail-icon;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover {
+    color: $rail-icon-active;
+    background: rgba(255, 255, 255, 0.07);
+  }
+}
+.railBtnActive {
+  @extend .railBtn;
+  color: $rail-icon-active;
+  background: $rail-active;
+}
+.railSpacer {
+  flex: 1;
+}
+.railSep {
+  width: 22px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 6px 0;
+}
+
+/* ===================== WORKSPACE ===================== */
+.workspace {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  height: 52px;
+  flex-shrink: 0;
+  border-bottom: 1px solid $border;
+  background: $surface;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  // marge droite réservée pour ne pas passer sous le bouton « Code » du ProtoFrame
+  padding: 0 92px 0 16px;
+}
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.crumbBack {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: $ink-2;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 500;
+}
+.crumbSep {
+  color: $faint;
+}
+.crumbCur {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: $ink;
+}
+.crumbEdit {
+  color: $faint;
+  display: inline-flex;
+}
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ghostBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 0;
+  background: none;
+  color: $muted;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+
+  &:hover {
+    background: $surface-2;
+    color: $ink;
+  }
+}
+.ghostDanger {
+  @extend .ghostBtn;
+  color: $fail;
+}
+.topDivider {
+  width: 1px;
+  height: 22px;
+  background: $border;
+  margin: 0 4px;
+}
+.btnSave {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: $ink;
+  background: $surface;
+  border: 1px solid $border-strong;
+  border-radius: 8px;
+  padding: 7px 13px;
+  cursor: pointer;
+
+  &:hover {
+    background: $surface-2;
+  }
+}
+.btnRun {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: $primary;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 15px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(237, 120, 70, 0.4);
+
+  &:hover {
+    filter: brightness(0.96);
+  }
+}
+
+/* ===================== BODY (canvas + panel) ===================== */
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+@media (max-width: 900px) {
+  .body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+}
+
+/* ---- canvas ---- */
+.canvas {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 34px 40px 60px;
+  background:
+    radial-gradient(circle at 1px 1px, #e3ded7 1px, transparent 0) 0 0 / 24px 24px,
+    $bg;
+}
+.canvasInner {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.startRow {
+  width: 100%;
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.startFlag {
+  color: $muted;
+  display: inline-flex;
+}
+.startLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.startInput {
+  flex: 1;
+  min-width: 0;
+  background: $surface-2;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: $ink-2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.varsBtn {
+  font-family: $mono;
+  font-size: 11px;
+  color: $muted;
+}
+.connector {
+  width: 1px;
+  height: 26px;
+  background: $border-strong;
+}
+.plusNode {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid $border-strong;
+  background: $surface;
+  color: $muted;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+
+  &:hover {
+    color: $primary;
+    border-color: $primary;
+  }
+}
+
+/* step group */
+.stepGroup {
+  width: 100%;
+  background: $surface;
+  border: 1px solid $step-border;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.stepGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: $step-bg;
+  border-bottom: 1px solid rgba(244, 205, 182, 0.55);
+}
+.stepGroupMark {
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.stepGroupTitle {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.stepGroupSub {
+  font-size: 13px;
+  color: $muted;
+  margin-top: 1px;
+}
+.stepGroupMore {
+  margin-left: auto;
+  color: $muted;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+
+  &:hover {
+    color: $ink;
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+.stepBody {
+  padding: 14px 16px;
+}
+.stepCard {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.stepTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.startField {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.stepNum {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: $primary;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.stepSelect {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: $surface;
+  border: 1px solid $border-strong;
+  border-radius: $radius-sm;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+  cursor: pointer;
+}
+.stepSelect svg {
+  color: $muted;
+}
+.method {
+  color: $primary;
+  font-weight: 600;
+}
+.urlRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: $surface-2;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  padding: 7px 10px;
+  margin-bottom: 10px;
+}
+.urlText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: $ink-2;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: 999px;
+  padding: 4px 10px 4px 8px;
+  font-size: 12px;
+  color: $ink-2;
+  cursor: default;
+}
+.chipActive {
+  @extend .chip;
+  border-color: $primary;
+  box-shadow: 0 0 0 1px $primary;
+}
+.chipDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+.chipArrow {
+  color: $faint;
+  font-size: 12px;
+}
+.chipCause {
+  font-size: 11px;
+  font-weight: 600;
+}
+.dotFail {
+  background: $fail;
+}
+.dotWarn {
+  background: $warn;
+}
+.causeFail {
+  color: $fail;
+}
+.causeWarn {
+  color: $warn;
+}
+.chipEmpty {
+  font-size: 12px;
+  color: $faint;
+  font-style: italic;
+}
+.stepFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-top: 1px solid $border;
+}
+.addStep {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink-2;
+  background: none;
+  border: 0;
+  cursor: pointer;
+
+  &:hover {
+    color: $primary;
+  }
+}
+.recorder {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink-2;
+  background: $surface;
+  border: 1px solid $border-strong;
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+
+  &:hover {
+    background: $surface-2;
+  }
+}
+
+/* ===================== RIGHT PANEL ===================== */
+.panel {
+  width: 605px;
+  flex-shrink: 0;
+  background: $surface;
+  border-left: 1px solid $border;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+@media (max-width: 900px) {
+  .panel {
+    width: 100%;
+    border-left: 0;
+    border-top: 1px solid $border;
+  }
+}
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px 12px;
+}
+.panelTitleNum {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: $ink;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.panelTitle {
+  font-weight: 650;
+  font-size: 15px;
+}
+.panelHeaderActions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+.panelIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid $border;
+  background: $surface;
+  color: $ink-2;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover {
+    background: $surface-2;
+    color: $ink;
+  }
+}
+.panelIconDanger {
+  @extend .panelIcon;
+  color: $fail;
+  border-color: rgba(224, 71, 60, 0.35);
+
+  &:hover {
+    background: $fail-soft;
+    color: $fail;
+  }
+}
+.tabPlaceholder {
+  padding: 28px 18px;
+  color: $muted;
+  font-size: 13px;
+}
+
+/* card tabs : filet de séparation au-dessus de la barre d'onglets */
+.panelTabs {
+  border-top: 1px solid $border;
+}
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 14px;
+  border-bottom: 1px solid $border;
+}
+.tab {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: $muted;
+  background: none;
+  border: 0;
+  padding: 10px 12px 13px;
+  cursor: pointer;
+  position: relative;
+
+  &:hover {
+    color: $ink-2;
+  }
+}
+.tabActive {
+  @extend .tab;
+  color: $ink;
+  font-weight: 600;
+  cursor: default;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: -1px;
+    height: 2px;
+    background: $primary;
+    border-radius: 2px;
+  }
+}
+
+/* ---- checks body (the redesign) ---- */
+.checksBody {
+  padding: 8px 14px 28px;
+}
+.framing {
+  margin: 0 0 8px;
+}
+.framingTitle {
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.framingLead {
+  font-size: 12.5px;
+  color: $muted;
+  margin: 0;
+}
+.framingInline {
+  font-weight: 400;
+  font-size: 13px;
+  color: $muted;
+}
+
+.condList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grp + .grp {
+  margin-top: 16px;
+}
+.grpHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 2px 0 8px;
+}
+.grpTitle {
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.grpTitleFail {
+  @extend .grpTitle;
+  color: $fail;
+}
+.grpTitleWarn {
+  @extend .grpTitle;
+  color: $warn;
+}
+.grpNote {
+  font-size: 11.5px;
+  color: $faint;
+}
+.grpEmpty {
+  font-size: 12px;
+  color: $faint;
+  text-align: center;
+  padding: 12px;
+  border: 1px dashed $border;
+  border-radius: $radius;
+}
+
+.cond {
+  position: relative;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.grip {
+  display: inline-flex;
+  align-items: center;
+  color: $faint;
+  cursor: grab;
+  flex: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.sevDot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  flex: none;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px transparent;
+  transition: box-shadow 0.12s;
+
+  &:hover {
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+  }
+}
+.sevDotFail {
+  @extend .sevDot;
+  background: $fail;
+}
+.sevDotWarn {
+  @extend .sevDot;
+  background: $warn;
+}
+
+.dropZone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px;
+  border: 1.5px dashed transparent;
+  border-radius: 10px;
+  transition: background 0.12s, border-color 0.12s;
+}
+.dropActive {
+  background: $accent-soft;
+  border-color: $primary;
+}
+.condPadStripe {
+  padding-left: 14px;
+}
+.sevStripe {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+}
+
+/* expression = boîte bordée pleine largeur, contrôles collés (segments + filets) */
+.expr {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid $border-strong;
+  border-radius: 6px;
+  overflow: hidden;
+
+  // les selects se dimensionnent à leur contenu
+  :global(.ant-select) {
+    width: auto !important;
+    min-width: 0 !important;
+  }
+  // contrôles S forcés à 26px, contenu centré verticalement
+  :global(.ant-select-selector) {
+    height: 26px !important;
+    min-height: 26px !important;
+    align-items: center;
+  }
+  :global(input) {
+    height: 26px !important;
+  }
+
+  // chaque segment se dimensionne à son contenu, centré, texte à gauche
+  > * {
+    flex: 0 0 auto;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  > * + * {
+    border-left: 1px solid $border;
+  }
+}
+
+.exprWrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.exprFill {
+  flex: 1 1 auto;
+}
+
+// le segment extensible (valeur / prédicat) remplit la boîte pleine largeur
+.grow {
+  flex: 1 1 auto !important;
+  min-width: 56px;
+}
+
+// le bouton variables « {} » en fin de boîte
+.exprVars {
+  flex: none;
+  padding: 0 10px;
+  font-family: $mono;
+  font-size: 12px;
+  color: $muted;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text-primary, #24292f);
+    background: $surface-2;
+  }
+}
+.field {
+  font: inherit;
+  font-size: 12.5px;
+  color: $ink;
+  background: $surface;
+  border: 1px solid $border-strong;
+  border-radius: $radius-sm;
+  padding: 6px 9px;
+  max-width: 100%;
+
+  &:focus-visible {
+    outline: 2px solid $primary;
+    outline-offset: 1px;
+  }
+}
+.select {
+  @extend .field;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 26px;
+  background-image: linear-gradient(45deg, transparent 50%, $muted 50%),
+    linear-gradient(135deg, $muted 50%, transparent 50%);
+  background-position: calc(100% - 13px) 50%, calc(100% - 9px) 50%;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.subj {
+  font-weight: 600;
+}
+.valInput {
+  @extend .field;
+  width: 54px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.checkIf,
+.elseLabel {
+  flex: none;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--color-text-secondary, #667085);
+}
+
+.kebab {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 0;
+  background: none;
+  color: $muted;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover {
+    background: $surface-2;
+    color: $ink;
+  }
+}
+
+/* severity trigger : StatusTag (label = conséquence) + chevron, cliquable */
+.sevTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  cursor: pointer;
+  border: 1px solid $border-strong;
+  border-radius: 6px;
+  padding: 6px 10px;
+  transition: background 0.12s;
+
+  &:hover {
+    background: $surface-2;
+  }
+}
+.sevChev {
+  color: $muted;
+}
+
+.addWrap {
+  margin-top: 12px;
+}
+
+.sev {
+  position: relative;
+}
+.sevBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 5px 9px 5px 8px;
+  cursor: pointer;
+}
+.sevBtnFail {
+  @extend .sevBtn;
+  background: $fail-soft;
+  color: $fail;
+}
+.sevBtnWarn {
+  @extend .sevBtn;
+  background: $warn-soft;
+  color: $warn;
+}
+.sevBtnDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.sevBtnChev {
+  display: inline-flex;
+  opacity: 0.7;
+}
+.sevMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 5px);
+  z-index: 30;
+  min-width: 152px;
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: 10px;
+  box-shadow: $shadow;
+  padding: 5px;
+}
+.sevMenuHead {
+  font-family: $mono;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: $faint;
+  padding: 5px 8px 6px;
+}
+.sevMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 12.5px;
+  color: $ink;
+  background: none;
+  border: 0;
+  padding: 7px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+
+  &:hover {
+    background: $surface-2;
+  }
+}
+
+.sevMini {
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: $warn;
+  background: $warn-soft;
+  border-radius: 999px;
+  padding: 3px 9px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.sevMiniDefault {
+  @extend .sevMini;
+  color: $faint;
+  background: transparent;
+  font-weight: 500;
+
+  &:hover {
+    color: $ink-2;
+  }
+}
+
+.move {
+  font: inherit;
+  font-size: 11.5px;
+  color: $muted;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  margin-left: auto;
+  white-space: nowrap;
+
+  &:hover {
+    color: $primary;
+    background: $accent-soft;
+  }
+}
+
+.del {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 0;
+  background: $surface;
+  color: $faint;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s, background 0.12s;
+
+  &:hover {
+    color: $fail;
+    background: $fail-soft;
+  }
+}
+
+.add {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: $primary;
+  background: transparent;
+  border: 1px dashed $border-strong;
+  border-radius: $radius;
+  padding: 9px 14px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+
+  &:hover {
+    background: $accent-soft;
+    border-color: $primary;
+  }
+}
+
+/* small note under the list */
+.hint {
+  margin-top: 16px;
+  font-size: 11.5px;
+  color: $faint;
+  line-height: 1.5;
+}
+
+/* ===================== VARIANTS FLOATING CONTROL ===================== */
+.fab {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 2147483000;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid $border;
+  border-radius: 12px;
+  box-shadow: $shadow;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 300px;
+}
+.fabHead {
+  font-family: $mono;
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: $muted;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: $primary;
+  }
+}
+.fabRow {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fabLbl {
+  font-size: 10.5px;
+  color: $faint;
+  font-weight: 500;
+}
+.seg {
+  display: inline-flex;
+  background: $surface-2;
+  border: 1px solid $border;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+.segBtn {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: $ink-2;
+  border: 0;
+  background: transparent;
+  padding: 4px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    color: $ink;
+  }
+}
+.segBtnActive {
+  @extend .segBtn;
+  background: $surface;
+  color: $ink;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}

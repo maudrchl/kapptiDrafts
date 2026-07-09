@@ -93,18 +93,26 @@ const IndexPage = () => {
     else window.location.href = encodeURI(p.target)
   }
 
-  // Recherche + filtre statut ici ; le tri est géré nativement par la Table.
+  // Recherche + filtre statut, puis tri de base par statut (QA → wip dev →
+  // wip design → deployed). La Table peut re-trier au clic, mais cet ordre est
+  // l'ordre par défaut garanti, indépendant de tout tri persisté.
   const items = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return catalog.filter((p) => {
-      const matchQ =
-        !q ||
-        p.title.toLowerCase().includes(q) ||
-        (p.description ?? '').toLowerCase().includes(q)
-      const matchStatus =
-        statusFilter === 'all' || p.status === statusFilter
-      return matchQ && matchStatus
-    })
+    return catalog
+      .filter((p) => {
+        const matchQ =
+          !q ||
+          p.title.toLowerCase().includes(q) ||
+          (p.description ?? '').toLowerCase().includes(q)
+        const matchStatus =
+          statusFilter === 'all' || p.status === statusFilter
+        return matchQ && matchStatus
+      })
+      .sort((a, b) => {
+        const s =
+          STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)
+        return s !== 0 ? s : a.title.localeCompare(b.title)
+      })
   }, [search, statusFilter])
 
   // Menu du filtre statut (composant Dropdown du design system)
@@ -269,7 +277,7 @@ const IndexPage = () => {
               data={items}
               columns={columns}
               onClickRow={open}
-              persistSortKey="kapptidrafts:sort-protos"
+              persistSortKey="kapptidrafts:sort-protos-v2"
             />
           </div>
         )}
