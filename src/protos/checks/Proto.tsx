@@ -63,7 +63,7 @@ const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
 const ChecksProto = () => {
   const [tab, setTab] = useState('checks')
-  const [sevLayout, setSevLayout] = useState<'inline' | 'groups'>('groups')
+  const [sevLayout, setSevLayout] = useState<'inline' | 'groups'>('inline')
   const [logic, setLogic] = useState<'and' | 'or'>('or')
   const [failLogic, setFailLogic] = useState<'and' | 'or'>('or')
   const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('or')
@@ -238,7 +238,10 @@ const ChecksProto = () => {
             ? [
                 {
                   key: 'move',
-                  label: c.sev === 'fail' ? 'Move to Warning' : 'Move to Failed',
+                  label: sevLabel(
+                    c.sev === 'fail',
+                    c.sev === 'fail' ? 'Move to Warning' : 'Move to Failed',
+                  ),
                 },
                 { type: 'divider' as const },
               ]
