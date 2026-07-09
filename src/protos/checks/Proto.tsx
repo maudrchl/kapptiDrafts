@@ -308,7 +308,7 @@ const ChecksProto = () => {
           <div className={styles.grp}>
             <div className={styles.grpHead}>
               <span className={styles.grpTitleFail}>Must pass</span>
-              <span className={styles.grpNote}>fails the step</span>
+              <span className={styles.grpNote}>otherwise the step fails</span>
             </div>
             <div
               className={`${styles.dropZone} ${dropTarget === 'fail' ? styles.dropActive : ''}`}
@@ -328,7 +328,7 @@ const ChecksProto = () => {
           <div className={styles.grp}>
             <div className={styles.grpHead}>
               <span className={styles.grpTitleWarn}>Should pass</span>
-              <span className={styles.grpNote}>warning only</span>
+              <span className={styles.grpNote}>otherwise just a warning</span>
             </div>
             <div
               className={`${styles.dropZone} ${dropTarget === 'warn' ? styles.dropActive : ''}`}
