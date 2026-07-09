@@ -78,8 +78,21 @@ Types and mock data. Keep data realistic and Kapptivate-themed (test automation,
 
 ## Critical rules
 
-### UI language
+### UI language & microcopy
 **All user-facing text in the proto MUST be in English.** Labels, descriptions, placeholders, table headers, button text, mock data — everything the user reads is English. Code comments can be in any language.
+
+Follow Kapptivate's tone of voice rules for all UI copy:
+- **Sentence case everywhere** — buttons, labels, headers, page titles, banners, tooltips. Only capitalize proper nouns and acronyms (API Keys, CI/CD).
+- **Buttons**: `"Verb entity"` — e.g. "Create monitor", "Save changes". Compound: `"Save & run"` (lowercase after &). Bulk: `"Delete (3)"`. Picker triggers: `"Move to..."`.
+- **Empty states**: title = `"Create your first [entity] to [benefit]"`, desc = 1–2 benefit sentences in second person ending with period, CTA = `"Create [entity]"`.
+- **Success toasts**: `"Entity verbed successfully"` — e.g. "Monitor created successfully".
+- **Error toasts**: `"We couldn't verb the entity. Try again."` — empathetic, actionable.
+- **Confirm dialogs**: title = `"Verb entity?"`, body = `"If you verb this entity, consequence."`, button = `"Verb entity"`. Irreversibility = `"This action cannot be undone."`.
+- **Form labels**: sentence case noun phrase, no colon. Optional = `"(optional)"` lowercase. Validation = imperative (`"Enter a name for your monitor"`).
+- **Placeholders**: example values (`"e.g. user_email"`, `"My website monitor"`), search = `"Search..."`, selects = `"Select a [entity]..."`.
+- **Banners**: 1–2 sentences, declarative or instructional, second person, ends with period.
+- **Tooltips**: 1 sentence max, ends with period. Explain why or what happens.
+- **Voice**: professional but friendly, contractions OK (don't, can't, we'll), second person (your tests), no emoji in UI text.
 
 ### Use ui-kit components — NEVER recreate them
 The whole point of this project is to use the real production components. Before writing any custom HTML/CSS for a UI element, check if a ui-kit component exists. Use the MCP tool `mcp__ui-kit__get-documentation` to look up component APIs when unsure.

@@ -82,8 +82,9 @@
 .dsContent {
   flex: 1;
   min-width: 0;
-  padding: 44px 56px 96px;
+  padding: 80px 56px 96px;
   max-width: 1040px;
+  margin: 0 auto;
 }
 .dsPageHead {
   margin-bottom: 8px;
@@ -109,6 +110,7 @@
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
+  overflow: hidden;
 }
 .dsSurfaceColumn {
   flex-direction: column;
@@ -206,4 +208,15 @@
   color: var(--color-text-secondary, #667085);
   word-break: break-word;
   line-height: 1.3;
+}
+
+/* ---- Flush banner at bottom of surface ---- */
+.dsBannerBottom {
+  margin: 0 -29px -29px;
+}
+.dsBannerBottom > * {
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
 }

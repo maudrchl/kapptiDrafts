@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import { Overview, Colors, Typography, Icons } from './pages/foundations'
+import { ToneOfVoice } from './pages/tone-of-voice'
 import {
   ButtonPage,
   ButtonGroupPage,
@@ -50,6 +51,7 @@ export const GROUPS: DsGroup[] = [
       { slug: 'colors', name: 'Colors', Component: Colors },
       { slug: 'typography', name: 'Typography', Component: Typography },
       { slug: 'icons', name: 'Icons', Component: Icons },
+      { slug: 'tone-of-voice', name: 'Tone of voice', Component: ToneOfVoice },
     ],
   },
   {
