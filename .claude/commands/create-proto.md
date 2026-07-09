@@ -117,6 +117,11 @@ Always import from `'@kapptivate/ui-kit'` (never `'ui-kit'` — the linter rewri
 ### AntdTheme wrapper awareness
 The app wraps all content in `AntdTheme` which renders a `div.ui-kit` with `display: flex; flex: 1 1 auto; width: 100%`. If your proto needs full-width layout, add `width: 100%` to your root element.
 
+### Component sizing, footers & toasts
+- **Input / Select size — always `size="m"`.** `m` is the standard default across the app. The ui-kit's own `Input` defaults to `l`, so you MUST pass `size="m"` explicitly on every `Input`; `Select` already defaults to `m`. Never mix sizes in the same form (an `l` Input next to an `m` Select looks broken).
+- **Modal footers — right-aligned.** `Modal.Footer` does NOT auto-align its buttons (only `Alert` does). Wrap the buttons in a flex container: `<div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>…</div>`. Order: secondary/cancel first, primary last. Use `color="invisible"` for the cancel/dismiss button in a Modal (matches the DS Modal demo).
+- **Toasts / notifications.** The ui-kit's `useNotification()` throws unless a `NotificationProvider` wraps the tree, and that provider is NOT exported from `@kapptivate/ui-kit` — so it can't be used in a proto today. Use antd's themed `notification` instead (it inherits the app's `AntdTheme`): `import { notification } from 'antd'` then `notification.success({ message: 'Monitor created successfully', placement: 'bottomRight' })`. Follow the success/error toast copy rules above.
+
 ### CounterCardGroup gotchas
 - Do NOT use `CounterCardGroup.Separator` — it creates spacing issues. The `.group > div` CSS already handles connected borders.
 - Wrap in a container with `width: 100%` so the flex children stretch.

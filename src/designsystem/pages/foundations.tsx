@@ -62,10 +62,12 @@ export const Overview = () => (
         package. Browse by category in the sidebar: Foundations, Actions, Forms,
         Data display, Feedback and Navigation.
       </Text>
-      <Banner
-        variant="primary"
-        description="Tip: the “Copy” button on each import block gives you the exact line to paste."
-      />
+      <div className="dsBannerBottom">
+        <Banner
+          variant="primary"
+          description="Tip: the 'Copy' button on each import block gives you the exact line to paste."
+        />
+      </div>
     </Demo>
   </Page>
 )

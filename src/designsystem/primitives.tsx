@@ -63,6 +63,54 @@ export const Row = ({ children }: { children: ReactNode }) => (
   <div className="dsRow">{children}</div>
 )
 
+export type PropRow = {
+  name: string
+  type: string
+  default?: string
+  required?: boolean
+  description?: ReactNode
+}
+
+/** Tableau des props d'un composant (nom, type, défaut, description). */
+export const PropsTable = ({
+  title = 'Props',
+  rows,
+}: {
+  title?: string
+  rows: PropRow[]
+}) => (
+  <section className="dsSection">
+    <div className="dsSectionHead">
+      <Title size="h5">{title}</Title>
+    </div>
+    <div className="dsPropsWrap">
+      <table className="dsProps">
+        <thead>
+          <tr>
+            <th>Prop</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.name}>
+              <td>
+                <code className="dsPropName">{r.name}</code>
+                {r.required && <span className="dsPropReq" title="Required">*</span>}
+              </td>
+              <td><code className="dsPropType">{r.type}</code></td>
+              <td>{r.default ? <code className="dsPropDefault">{r.default}</code> : <span className="dsPropDash">—</span>}</td>
+              <td className="dsPropDesc">{r.description ?? <span className="dsPropDash">—</span>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+)
+
 export const Stack = ({ children }: { children: ReactNode }) => (
   <div className="dsStack">{children}</div>
 )

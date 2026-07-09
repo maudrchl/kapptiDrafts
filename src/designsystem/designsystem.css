@@ -20,11 +20,6 @@
   background: var(--color-surface-grey, #fafafb);
   padding: 20px 12px 40px;
 }
-.dsBrand {
-  display: flex;
-  align-items: center;
-  padding: 4px 10px 18px;
-}
 .dsBrandLogo {
   height: 24px;
   width: auto;
@@ -33,6 +28,11 @@
 }
 .dsBack {
   padding: 0 4px 10px;
+}
+.dsBrand {
+  display: flex;
+  align-items: center;
+  padding: 4px 10px 18px;
 }
 .dsSearch {
   padding: 0 6px 14px;
@@ -163,6 +163,72 @@
 }
 .dsCodeCopy:hover {
   background: rgba(255, 255, 255, 0.12);
+}
+
+/* ---- Props table ---- */
+.dsPropsWrap {
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-radius: 12px;
+  overflow-x: auto;
+  background: var(--color-surface-white, #fff);
+}
+.dsProps {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.dsProps th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #6b7280);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border-grey, #e4e4e7);
+  background: var(--color-surface-grey, #fafafb);
+  white-space: nowrap;
+}
+.dsProps td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--color-border-grey, #e4e4e7);
+  vertical-align: top;
+  color: var(--color-text-primary, #24292f);
+}
+.dsProps tr:last-child td {
+  border-bottom: none;
+}
+.dsProps code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+.dsPropName {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text-primary, #24292f);
+}
+.dsPropReq {
+  color: var(--color-error, #dc2626);
+  margin-left: 2px;
+  font-weight: 700;
+}
+.dsPropType {
+  color: var(--color-text-secondary, #6b7280);
+  font-weight: 400;
+  overflow-wrap: break-word;
+}
+.dsProps td:nth-child(2) {
+  max-width: 260px;
+}
+.dsPropDefault {
+  color: var(--color-text-secondary, #6b7280);
+}
+.dsPropDesc {
+  color: var(--color-text-secondary, #6b7280);
+  min-width: 220px;
+}
+.dsPropDash {
+  color: var(--color-text-tertiary, #9ca3af);
 }
 
 /* ---- Swatch grid (colors) ---- */

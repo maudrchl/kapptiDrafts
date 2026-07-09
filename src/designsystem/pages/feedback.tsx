@@ -13,8 +13,10 @@ import {
   ExternalLink,
   IconFolder,
   IconHelpCircle,
+  IconSearch,
+  IconAlertCircle,
 } from '@kapptivate/ui-kit'
-import { Page, Demo, Stack } from '../primitives'
+import { Page, Demo, Stack, PropsTable } from '../primitives'
 
 /** Un bloc de guideline : exemple vivant + « quand l'utiliser » + astuce. */
 const GuidelineBlock = ({
@@ -189,6 +191,17 @@ export const BannerPage = () => (
         </ExternalLink>
       </Text>
     </Demo>
+
+    <PropsTable
+      rows={[
+        { name: 'variant', type: "'primary' | 'secondary' | 'success' | 'error' | 'danger' | 'warning' | 'invisible'", required: true, description: 'Semantic style' },
+        { name: 'description', type: 'ReactNode', required: true, description: 'Main message' },
+        { name: 'subDescription', type: 'ReactNode', description: 'Secondary line under the message' },
+        { name: 'icon', type: 'ReactNode', description: 'Leading icon' },
+        { name: 'aside', type: 'ReactNode', description: 'Content aligned to the right (e.g. an action)' },
+        { name: 'cross', type: "'top' | 'bottom'", description: 'Show a close cross, vertically aligned' },
+      ]}
+    />
   </Page>
 )
 
@@ -249,6 +262,21 @@ export const AlertPage = () => {
           This action cannot be undone.
         </Alert>
       </Demo>
+
+      <PropsTable
+        rows={[
+          { name: 'open', type: 'boolean', description: 'Controls visibility (keep it mounted for the animation)' },
+          { name: 'title', type: 'string', description: 'Alert title' },
+          { name: 'children', type: 'ReactNode', description: 'The message body' },
+          { name: 'okText', type: 'string', description: 'Confirm button label' },
+          { name: 'cancelText', type: 'string', description: 'Cancel button label' },
+          { name: 'onOk', type: '() => void', description: 'Confirm handler' },
+          { name: 'onCancel', type: '() => void', description: 'Cancel / close handler' },
+          { name: 'danger', type: 'boolean', default: 'false', description: 'Style the confirm button as destructive' },
+          { name: 'isLoading', type: 'boolean', description: 'Show a spinner on the confirm button' },
+          { name: 'okDisabled', type: 'boolean', description: 'Disable the confirm button' },
+        ]}
+      />
     </Page>
   )
 }
@@ -281,12 +309,42 @@ export const ModalPage = () => {
           </Modal.Footer>
         </Modal>
       </Demo>
+
+      <PropsTable
+        rows={[
+          { name: 'open', type: 'boolean', description: 'Controls visibility (keep it mounted for the animation)' },
+          { name: 'mode', type: "'default' | 'headless'", default: 'default', description: 'headless removes the built-in header' },
+          { name: 'title', type: 'string | ReactNode', description: 'Header title (required in default mode)' },
+          { name: 'extraHeaderRight', type: 'ReactNode', description: 'Content on the right of the header' },
+          { name: 'width', type: 'string | number', default: '600', description: 'Modal width' },
+          { name: 'onCancel', type: '() => void', description: 'Close handler' },
+          { name: 'maskClosable', type: 'boolean', description: 'Close when clicking the overlay' },
+          { name: 'focusInput', type: 'boolean', description: 'Autofocus the first input on open' },
+          { name: 'zIndex', type: 'number', description: 'Stacking order' },
+        ]}
+      />
+      <PropsTable
+        title="Modal.Content"
+        rows={[
+          { name: 'children', type: 'ReactNode', required: true, description: 'Body content' },
+          { name: 'height / maxHeight', type: 'string | number', description: 'Constrain the body height' },
+          { name: 'hasPadding', type: 'boolean', description: 'Toggle the body padding' },
+          { name: 'overflow', type: 'CSS overflow', description: 'Overflow behavior of the body' },
+        ]}
+      />
+      <PropsTable
+        title="Modal.Footer"
+        rows={[
+          { name: 'children', type: 'ReactNode', required: true, description: 'Footer content, usually action buttons' },
+        ]}
+      />
     </Page>
   )
 }
 
 export const DrawerPage = () => {
   const [open, setOpen] = useState(false)
+  const [actionsOpen, setActionsOpen] = useState(false)
   return (
     <Page
       title="Drawer"
@@ -297,12 +355,49 @@ export const DrawerPage = () => {
         <Button color="secondary" onClick={() => setOpen(true)}>
           Open panel
         </Button>
-        <Drawer open={open} title="Run details" onClose={() => setOpen(false)} width={420}>
+        <Drawer open={open} title="Run details" onClose={() => setOpen(false)}>
           <Text color="secondary">
             Logs, screenshots and metrics from the latest test run.
           </Text>
         </Drawer>
       </Demo>
+      <Demo title="With actions">
+        <Button color="secondary" onClick={() => setActionsOpen(true)}>
+          Edit monitor
+        </Button>
+        <Drawer
+          open={actionsOpen}
+          title="Edit monitor"
+          onClose={() => setActionsOpen(false)}
+          extra={
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button color="secondary" onClick={() => setActionsOpen(false)}>
+                Cancel
+              </Button>
+              <Button color="primary" onClick={() => setActionsOpen(false)}>
+                Save changes
+              </Button>
+            </div>
+          }
+        >
+          <Text color="secondary">
+            Update the monitor configuration. Changes apply on the next run.
+          </Text>
+        </Drawer>
+      </Demo>
+
+      <PropsTable
+        rows={[
+          { name: 'open', type: 'boolean', description: 'Controls visibility (keep it mounted for the animation)' },
+          { name: 'title', type: 'string | ReactNode', description: 'Header title' },
+          { name: 'onClose', type: '() => void', description: 'Close handler' },
+          { name: 'width', type: 'number', default: '500', description: 'Panel width in px' },
+          { name: 'extra', type: 'ReactNode', description: 'Header content on the right (e.g. action buttons)' },
+          { name: 'maskClosable', type: 'boolean', description: 'Close when clicking the overlay' },
+          { name: 'resizable', type: 'boolean', default: 'false', description: 'Allow drag-resizing the panel' },
+          { name: 'zIndex', type: 'number', default: '1000', description: 'Stacking order' },
+        ]}
+      />
     </Page>
   )
 }
@@ -327,6 +422,19 @@ export const TooltipPage = () => (
         <Button color="secondary">Left</Button>
       </Tooltip>
     </Demo>
+
+    <PropsTable
+      rows={[
+        { name: 'content', type: 'ReactNode', required: true, description: 'Tooltip content' },
+        { name: 'children', type: 'ReactNode', required: true, description: 'The element the tooltip is attached to' },
+        { name: 'placement', type: "'top' | 'right' | 'bottom' | 'left' (+ start/end variants)", default: 'top', description: 'Position relative to the target' },
+        { name: 'color', type: 'TextColor', description: 'Background color of the tooltip' },
+        { name: 'open', type: 'boolean', description: 'Controlled visibility' },
+        { name: 'active', type: 'boolean', description: 'Enable/disable the tooltip' },
+        { name: 'maxWidth', type: 'string', description: 'Max width before wrapping' },
+        { name: 'destroyTooltipOnHide', type: 'boolean', description: 'Unmount the content when hidden' },
+      ]}
+    />
   </Page>
 )
 
@@ -355,22 +463,60 @@ export const PopoverPage = () => (
         </Button>
       </Popover>
     </Demo>
+
+    <PropsTable
+      rows={[
+        { name: 'content', type: 'ReactNode', required: true, description: 'Floating content' },
+        { name: 'children', type: 'ReactNode', required: true, description: 'The trigger element' },
+        { name: 'trigger', type: "'click' | 'hover'", default: 'hover', description: 'How the popover opens' },
+        { name: 'placement', type: 'Placement', description: 'Position relative to the trigger' },
+        { name: 'open', type: 'boolean', description: 'Controlled visibility; pairs with setOpen' },
+        { name: 'setOpen', type: '(open: boolean) => void', description: 'Called when visibility changes' },
+        { name: 'arrow', type: 'boolean', description: 'Show the pointing arrow' },
+        { name: 'noPadding', type: 'boolean', description: 'Remove the inner padding' },
+        { name: 'active', type: 'boolean', description: 'Enable/disable the popover' },
+        { name: 'zIndex', type: 'number', description: 'Stacking order' },
+      ]}
+    />
   </Page>
 )
 
 export const EmptyStatePage = () => (
   <Page
     title="EmptyState"
-    description="Centered icon + title + description. Ideal for empty lists or tables."
+    description="Centered icon + title + description. Ideal for empty lists or tables. Use the right variant: nothing created yet, no search results, or a load error."
     importCode={"import { EmptyState } from '@kapptivate/ui-kit'"}
   >
-    <Demo title="Default" column>
+    <Demo title="No content" column>
       <EmptyState
         icon={<IconFolder color="var(--color-text-secondary)" />}
         text="No folders"
         description="Items you create will appear here."
       />
     </Demo>
+    <Demo title="No search results" column>
+      <EmptyState
+        icon={<IconSearch color="var(--color-text-secondary)" />}
+        text="No results found"
+        description="Try adjusting your filters or search terms."
+      />
+    </Demo>
+    <Demo title="Load error" column>
+      <EmptyState
+        icon={<IconAlertCircle color="var(--color-text-secondary)" />}
+        text="Couldn't load monitors"
+        description="Something went wrong on our end. Try again in a moment."
+      />
+    </Demo>
+
+    <PropsTable
+      rows={[
+        { name: 'text', type: 'string', required: true, description: 'Title of the empty state' },
+        { name: 'description', type: 'string', description: 'Supporting text under the title' },
+        { name: 'icon', type: 'ReactElement', description: 'Centered icon above the text' },
+        { name: 'useNoResultFoundText', type: 'boolean', default: 'false', description: 'Replace text with the localized "no result found" label' },
+      ]}
+    />
   </Page>
 )
 
@@ -385,5 +531,12 @@ export const LoaderPage = () => (
       <Loader size="medium" />
       <Loader size="large" />
     </Demo>
+
+    <PropsTable
+      rows={[
+        { name: 'size', type: "'small' | 'medium' | 'large'", required: true, description: 'Loader size' },
+        { name: 'color', type: "'default' | 'red' | 'white' | 'grey'", default: 'default', description: 'Animation color' },
+      ]}
+    />
   </Page>
 )

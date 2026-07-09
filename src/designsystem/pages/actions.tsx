@@ -11,7 +11,7 @@ import {
   IconCopy,
   IconSettings,
 } from '@kapptivate/ui-kit'
-import { Page, Demo } from '../primitives'
+import { Page, Demo, PropsTable } from '../primitives'
 
 export const ButtonPage = () => (
   <Page
@@ -65,6 +65,22 @@ export const ButtonPage = () => (
         Filters
       </Button>
     </Demo>
+
+    <PropsTable
+      rows={[
+        { name: 'color', type: "'primary' | 'secondary' | 'invisible' | 'danger-p' | 'danger-s'", default: 'invisible', description: 'Visual style. danger-p is solid, danger-s is soft' },
+        { name: 'size', type: "'s' | 'm' | 'l'", default: 'm', description: 'Button size' },
+        { name: 'icon', type: 'IconComponent', description: 'Icon component rendered before the label' },
+        { name: 'iconRight', type: 'boolean', default: 'false', description: 'Render the icon after the label' },
+        { name: 'counter', type: 'number', description: 'Badge counter shown next to the label' },
+        { name: 'isLoading', type: 'boolean', default: 'false', description: 'Shows a spinner and disables the button' },
+        { name: 'isLoadingChildren', type: 'ReactNode', description: 'Content shown while loading' },
+        { name: 'fullWidth', type: 'boolean', default: 'false', description: 'Stretch to the container width' },
+        { name: 'noBorder', type: 'boolean', default: 'false', description: 'Remove the border' },
+        { name: 'disabled', type: 'boolean', default: 'false', description: 'Disable interactions' },
+        { name: 'onClick', type: '(e) => void', description: 'Click handler' },
+      ]}
+    />
   </Page>
 )
 
@@ -87,6 +103,14 @@ export const ButtonGroupPage = () => (
         </Button>
       </ButtonGroup>
     </Demo>
+
+    <PropsTable
+      rows={[
+        { name: 'children', type: 'ReactNode[]', required: true, description: 'The buttons to stack together' },
+        { name: 'className', type: 'string', description: 'Additional class name' },
+        { name: 'style', type: 'CSSProperties', description: 'Inline styles for the wrapper' },
+      ]}
+    />
   </Page>
 )
 
@@ -117,6 +141,18 @@ export const DropdownPage = () => (
         </Button>
       </Dropdown>
     </Demo>
+
+    <PropsTable
+      rows={[
+        { name: 'menu', type: '{ items: MenuItem[] }', required: true, description: 'Menu config. Add { type: "divider" } for a separator, danger: true for destructive items' },
+        { name: 'children', type: 'ReactNode', required: true, description: 'The trigger element' },
+        { name: 'trigger', type: "'click' | 'hover' | 'contextMenu'", default: 'click', description: 'How the menu opens' },
+        { name: 'placement', type: "'bottomRight' | 'bottomLeft' | 'topRight' | 'topLeft'", description: 'Where the menu appears relative to the trigger' },
+        { name: 'open', type: 'boolean', description: 'Controlled open state' },
+        { name: 'onOpenChange', type: '(open: boolean) => void', description: 'Called when the open state changes' },
+        { name: 'active', type: 'boolean', description: 'Force the active/pressed style on the trigger' },
+      ]}
+    />
   </Page>
 )
 
@@ -131,5 +167,12 @@ export const ButtonDropdownPage = () => (
         Create
       </ButtonDropdown>
     </Demo>
+
+    <PropsTable
+      rows={[
+        { name: 'menu', type: '{ items: MenuItem[] }', required: true, description: 'Menu config, same shape as Dropdown' },
+        { name: '…Button props', type: 'ButtonProps', description: 'Accepts every Button prop (color, size, icon, counter, disabled, isLoading…)' },
+      ]}
+    />
   </Page>
 )

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { message } from 'antd'
+import { notification } from 'antd'
 import {
   Button,
   SearchInput,
@@ -17,6 +17,7 @@ import {
   Drawer,
   Segmented,
   Input,
+  Toggle,
   EmptyState,
   CopyToClipboard,
   IconDownload,
@@ -109,6 +110,15 @@ const LOG_LEVEL_CLASSES: Record<string, string> = {
   debug: styles.logLevelDebug,
 }
 
+/* Toast feedback — antd notification, themed by the app's AntdTheme (ConfigProvider).
+   NB: the ui-kit's own useNotification() throws without a NotificationProvider,
+   which the package doesn't export, so we use antd's notification directly. */
+const toast = {
+  success: (m: string) => notification.success({ message: m, placement: 'bottomRight', duration: 3 }),
+  info: (m: string) => notification.info({ message: m, placement: 'bottomRight', duration: 3 }),
+  error: (m: string) => notification.error({ message: m, placement: 'bottomRight', duration: 3 }),
+}
+
 const genKey = () => {
   const hex = '0123456789abcdef'
   let s = ''
@@ -190,7 +200,7 @@ const LogsView = ({
             icon={IconPlay}
             onClick={() => {
               setLive((s) => !s)
-              message.info(live ? 'Live tail stopped' : 'Live tail started')
+              toast.info(live ? 'Live tail stopped' : 'Live tail started')
             }}
           >
             {live ? 'Streaming…' : 'Live tail'}
@@ -356,7 +366,7 @@ const TracesView = ({
 /* ─── Service Map View ─── */
 const ServiceMapView = () => {
   const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string | null>(SERVICES[0]?.id ?? null)
   const sel = SERVICES.find((s) => s.id === selected)
   const q = search.trim().toLowerCase()
   const matches = (label: string) => q === '' || label.toLowerCase().includes(q)
@@ -611,7 +621,7 @@ const UsageView = ({
     if (isNaN(n) || n <= 0) return
     setCap(n)
     setQuotaOpen(false)
-    message.success('Quota updated successfully')
+    toast.success('Quota updated successfully')
   }
 
   const issueKey = () => {
@@ -786,7 +796,7 @@ const UsageView = ({
             disabled={retDraft === retention}
             onClick={() => {
               setRetention(retDraft)
-              message.success('Retention updated successfully')
+              toast.success('Retention updated successfully')
             }}
           >
             Save retention
@@ -803,14 +813,17 @@ const UsageView = ({
           <Input
             label="Monthly cap"
             value={capDraft}
+            size="m"
             type="number"
             suffix="GiB"
             onChange={(e) => setCapDraft(e.target.value)}
           />
         </Modal.Content>
         <Modal.Footer>
-          <Button color="secondary" onClick={() => setQuotaOpen(false)}>Cancel</Button>
-          <Button color="primary" onClick={saveQuota}>Save quota</Button>
+          <div className={styles.modalFoot}>
+            <Button color="invisible" onClick={() => setQuotaOpen(false)}>Cancel</Button>
+            <Button color="primary" onClick={saveQuota}>Save quota</Button>
+          </div>
         </Modal.Footer>
       </Modal>
 
@@ -848,16 +861,18 @@ const UsageView = ({
           </div>
         </Modal.Content>
         <Modal.Footer>
-          <Button
-            color="primary"
-            disabled={!keyCopied}
-            onClick={() => {
-              setKeyStep('none')
-              message.success('API key issued successfully')
-            }}
-          >
-            {keyCopied ? "I've stored it — done" : 'Copy the key first'}
-          </Button>
+          <div className={styles.modalFoot}>
+            <Button
+              color="primary"
+              disabled={!keyCopied}
+              onClick={() => {
+                setKeyStep('none')
+                toast.success('API key issued successfully')
+              }}
+            >
+              {keyCopied ? "I've stored it — done" : 'Copy the key first'}
+            </Button>
+          </div>
         </Modal.Footer>
       </Modal>
 
@@ -872,7 +887,7 @@ const UsageView = ({
         onOk={() => {
           setKeyState((k) => ({ ...k, status: 'revoked', lastUsed: 'revoked' }))
           setKeyStep('none')
-          message.success('API key revoked successfully')
+          toast.success('API key revoked successfully')
         }}
       >
         If you revoke this key, ingestion stops until you issue a new one. This action cannot be undone.
@@ -901,8 +916,14 @@ const ExploreTabsProto = () => {
   const [alertOpen, setAlertOpen] = useState(false)
   const [connectOpen, setConnectOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
+  const [configureOpen, setConfigureOpen] = useState(false)
   const [connectMethod, setConnectMethod] = useState<'helm' | 'kubectl'>('helm')
   const [clusterName, setClusterName] = useState('')
+
+  // service map settings (Configure drawer)
+  const [cfgInterval, setCfgInterval] = useState('15m')
+  const [cfgLatencies, setCfgLatencies] = useState(true)
+  const [cfgErrors, setCfgErrors] = useState(true)
 
   const emptyAlert: AlertDraft = { name: '', signal: 'logs', query: '', operator: 'gt', threshold: '', severity: 'warning', channel: 'slack' }
   const [alertDraft, setAlertDraft] = useState<AlertDraft>(emptyAlert)
@@ -928,41 +949,37 @@ const ExploreTabsProto = () => {
 
   const createAlert = () => {
     if (!alertDraft.name.trim()) {
-      message.error("Enter a name for your alert. Try again.")
+      toast.error("Enter a name for your alert. Try again.")
       return
     }
     setAlertOpen(false)
-    message.success('Alert created successfully')
+    toast.success('Alert created successfully')
   }
 
   const runAction = (label: string) => {
     switch (label) {
       case 'Export':
-        message.success(`${meta.title} exported successfully`)
+        toast.success(`${meta.title} exported successfully`)
         break
       case 'Create alert':
         openAlert()
         break
       case 'Compare traces':
         if (selectedTraces.length === 2) setCompareOpen(true)
-        else message.info('Select two traces to compare')
+        else toast.info('Select two traces to compare')
         break
       case 'Connect cluster':
         setConnectOpen(true)
         break
       case 'Configure':
-        message.info('Configuration coming soon')
+        setConfigureOpen(true)
         break
-      case 'Refresh': {
-        const hide = message.loading('Refreshing…')
-        setTimeout(() => {
-          hide()
-          message.success('Service map refreshed successfully')
-        }, 700)
+      case 'Refresh':
+        toast.info('Refreshing service map…')
+        setTimeout(() => toast.success('Service map refreshed successfully'), 700)
         break
-      }
       case 'Read docs':
-        message.info('Opening documentation')
+        toast.info('Opening documentation')
         break
       case 'Adjust quota':
         setQuotaOpen(true)
@@ -1091,7 +1108,7 @@ const ExploreTabsProto = () => {
         <Modal.Content maxHeight="60vh">
           <div className={styles.field}>
             <label>Alert name</label>
-            <Input value={alertDraft.name} fullWidth onChange={(e) => setAlertDraft((d) => ({ ...d, name: e.target.value }))} placeholder="e.g. High error rate on checkout" />
+            <Input value={alertDraft.name} size="m" fullWidth onChange={(e) => setAlertDraft((d) => ({ ...d, name: e.target.value }))} placeholder="e.g. High error rate on checkout" />
           </div>
           <div className={styles.field}>
             <label>Signal</label>
@@ -1103,7 +1120,7 @@ const ExploreTabsProto = () => {
           </div>
           <div className={styles.field}>
             <label>Query</label>
-            <Input value={alertDraft.query} mono fullWidth onChange={(e) => setAlertDraft((d) => ({ ...d, query: e.target.value }))} />
+            <Input value={alertDraft.query} size="m" mono fullWidth onChange={(e) => setAlertDraft((d) => ({ ...d, query: e.target.value }))} />
           </div>
           <div className={styles.formRow}>
             <div className={styles.field} style={{ flex: 1 }}>
@@ -1117,7 +1134,7 @@ const ExploreTabsProto = () => {
             </div>
             <div className={styles.field} style={{ width: 120 }}>
               <label>Threshold</label>
-              <Input value={alertDraft.threshold} type="number" fullWidth onChange={(e) => setAlertDraft((d) => ({ ...d, threshold: e.target.value }))} placeholder="5" />
+              <Input value={alertDraft.threshold} size="m" type="number" fullWidth onChange={(e) => setAlertDraft((d) => ({ ...d, threshold: e.target.value }))} placeholder="5" />
             </div>
           </div>
           <div className={styles.formRow}>
@@ -1132,8 +1149,10 @@ const ExploreTabsProto = () => {
           </div>
         </Modal.Content>
         <Modal.Footer>
-          <Button color="secondary" onClick={() => setAlertOpen(false)}>Cancel</Button>
-          <Button color="primary" onClick={createAlert}>Create alert</Button>
+          <div className={styles.modalFoot}>
+            <Button color="invisible" onClick={() => setAlertOpen(false)}>Cancel</Button>
+            <Button color="primary" onClick={createAlert}>Create alert</Button>
+          </div>
         </Modal.Footer>
       </Modal>
 
@@ -1142,7 +1161,7 @@ const ExploreTabsProto = () => {
         <Modal.Content>
           <div className={styles.field}>
             <label>Cluster name</label>
-            <Input value={clusterName} fullWidth onChange={(e) => setClusterName(e.target.value)} placeholder="e.g. prod-eu-west" />
+            <Input value={clusterName} size="m" fullWidth onChange={(e) => setClusterName(e.target.value)} placeholder="e.g. prod-eu-west" />
           </div>
           <div className={styles.field}>
             <label>Install method</label>
@@ -1172,16 +1191,18 @@ helm install kapp-agent kapptivate/agent \\
           </div>
         </Modal.Content>
         <Modal.Footer>
-          <Button color="secondary" onClick={() => setConnectOpen(false)}>Cancel</Button>
-          <Button
-            color="primary"
-            onClick={() => {
-              setConnectOpen(false)
-              message.success('Cluster connected successfully')
-            }}
-          >
-            Connect cluster
-          </Button>
+          <div className={styles.modalFoot}>
+            <Button color="invisible" onClick={() => setConnectOpen(false)}>Cancel</Button>
+            <Button
+              color="primary"
+              onClick={() => {
+                setConnectOpen(false)
+                toast.success('Cluster connected successfully')
+              }}
+            >
+              Connect cluster
+            </Button>
+          </div>
         </Modal.Footer>
       </Modal>
 
@@ -1205,6 +1226,56 @@ helm install kapp-agent kapptivate/agent \\
               </div>
             </div>
           ))}
+        </div>
+      </Drawer>
+
+      {/* Service map settings drawer */}
+      <Drawer
+        open={configureOpen}
+        onClose={() => setConfigureOpen(false)}
+        title="Service map settings"
+        extra={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button color="invisible" onClick={() => setConfigureOpen(false)}>Cancel</Button>
+            <Button
+              color="primary"
+              onClick={() => {
+                setConfigureOpen(false)
+                toast.success('Service map settings saved successfully')
+              }}
+            >
+              Save changes
+            </Button>
+          </div>
+        }
+      >
+        <div className={styles.field}>
+          <label>Auto-refresh interval</label>
+          <Select
+            fullWidth
+            value={cfgInterval}
+            onChange={(_e, v) => setCfgInterval(v)}
+            options={[
+              { label: 'Off', value: 'off' },
+              { label: 'Every 15 seconds', value: '15s' },
+              { label: 'Every 1 minute', value: '1m' },
+              { label: 'Every 15 minutes', value: '15m' },
+            ]}
+          />
+        </div>
+        <div className={styles.drawerToggles}>
+          <Toggle
+            title="Show latencies on edges"
+            description="Display p95 latency labels on the connections between services."
+            value={cfgLatencies}
+            onChange={setCfgLatencies}
+          />
+          <Toggle
+            title="Highlight error paths"
+            description="Emphasize service paths with an error rate above 1%."
+            value={cfgErrors}
+            onChange={setCfgErrors}
+          />
         </div>
       </Drawer>
     </div>
