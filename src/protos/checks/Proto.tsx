@@ -24,7 +24,6 @@ import {
   IconShield,
   IconHelpCircle,
   IconChevronDown,
-  IconGripVertical,
   IconMoreVertical,
   IconZap,
   IconLock,
@@ -42,7 +41,6 @@ import {
 import styles from './checks.module.scss'
 import {
   INITIAL_CONDITIONS,
-  SEV_OPTIONS,
   SUBJECTS,
   NUM_OPS,
   UNITS,
@@ -52,7 +50,6 @@ import {
   triggerText,
   type Condition,
   type Severity,
-  type SevLayout,
 } from './constants'
 
 let uid = 100
@@ -64,8 +61,11 @@ const ACTION_OPTIONS = ['API Call', 'Navigate', 'Click', 'Fill in', 'Assert', 'W
 const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
 const ChecksProto = () => {
-  const [sevLayout, setSevLayout] = useState<SevLayout>('inline')
   const [tab, setTab] = useState('checks')
+  const [sevLayout, setSevLayout] = useState<'inline' | 'groups'>('groups')
+  const [logic, setLogic] = useState<'and' | 'or'>('and')
+  const [failLogic, setFailLogic] = useState<'and' | 'or'>('and')
+  const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('and')
   const [conds, setConds] = useState<Condition[]>(() =>
     INITIAL_CONDITIONS.map((c) => ({ ...c })),
   )
@@ -73,18 +73,11 @@ const ChecksProto = () => {
   const [action, setAction] = useState('API Call')
   const [url, setUrl] = useState('https://jsonplaceholder.typicode.com/todos/1')
   const [startUrl, setStartUrl] = useState('https://kapptivate.com')
-  const [dragId, setDragId] = useState<string | null>(null)
-  const [dropTarget, setDropTarget] = useState<Severity | null>(null)
 
   const patch = (id: string, next: Partial<Condition>) =>
     setConds((cur) => cur.map((c) => (c.id === id ? { ...c, ...next } : c)))
   const remove = (id: string) =>
     setConds((cur) => cur.filter((c) => c.id !== id))
-  const dropTo = (sev: Severity) => {
-    if (dragId) patch(dragId, { sev })
-    setDragId(null)
-    setDropTarget(null)
-  }
   const add = () =>
     setConds((cur) => [
       ...cur,
@@ -206,13 +199,13 @@ const ChecksProto = () => {
         onClick: ({ key }: { key: string }) => patch(c.id, { sev: key as Severity }),
         items: [
           { key: 'fail', label: sevLabel(false, 'Fails the step') },
-          { key: 'warn', label: sevLabel(true, 'Warning only') },
+          { key: 'warn', label: sevLabel(true, 'Sets a warning') },
         ],
       }}
     >
       <span className={styles.sevTrigger}>
         <StatusTag variant="ghost" color={c.sev === 'warn' ? 'warning' : 'failed'}>
-          {c.sev === 'warn' ? 'Warning only' : 'Fails the step'}
+          {c.sev === 'warn' ? 'Sets a warning' : 'Fails the step'}
         </StatusTag>
         <span className={styles.sevChev}>
           <IconChevronDown size={13} />
@@ -221,16 +214,26 @@ const ChecksProto = () => {
     </Dropdown>
   )
 
-  const rowMenu = (c: Condition) => (
+  const rowMenu = (c: Condition, mode: 'inline' | 'groups') => (
     <Dropdown
       trigger="click"
       placement="bottomRight"
       menu={{
         onClick: ({ key }: { key: string }) => {
+          if (key === 'move') patch(c.id, { sev: c.sev === 'fail' ? 'warn' : 'fail' })
           if (key === 'duplicate') duplicate(c)
           if (key === 'delete') remove(c.id)
         },
         items: [
+          ...(mode === 'groups'
+            ? [
+                {
+                  key: 'move',
+                  label: c.sev === 'fail' ? 'Move to Warning' : 'Move to Failed',
+                },
+                { type: 'divider' as const },
+              ]
+            : []),
           { key: 'duplicate', label: 'Duplicate', icon: <IconCopy size={14} /> },
           { type: 'divider' as const },
           { key: 'delete', label: 'Delete', danger: true, icon: <IconTrash size={14} /> },
@@ -243,7 +246,7 @@ const ChecksProto = () => {
     </Dropdown>
   )
 
-  // Fallback au drag & drop : le dot ouvre un dropdown pour reclasser la condition
+  // Le dot ouvre un dropdown pour changer la sévérité (reclasse la condition)
   const sevDot = (c: Condition) => (
     <Dropdown
       trigger="click"
@@ -252,7 +255,7 @@ const ChecksProto = () => {
         onClick: ({ key }: { key: string }) => patch(c.id, { sev: key as Severity }),
         items: [
           { key: 'fail', label: sevLabel(false, 'Fails the step') },
-          { key: 'warn', label: sevLabel(true, 'Warning only') },
+          { key: 'warn', label: sevLabel(true, 'Sets a warning') },
         ],
       }}
     >
@@ -267,96 +270,108 @@ const ChecksProto = () => {
 
   // Modèle proposé par l'équipe : « Check if [condition], else 🔴 »
   // → condition d'abord, point de sévérité APRÈS, en position « else ».
-  const condRow = (c: Condition) => (
-    <div key={c.id} className={styles.cond}>
-      <span className={styles.checkIf}>Check if</span>
-      <span className={styles.exprWrap}>{expr(c)}</span>
-      <span className={styles.elseLabel}>, else</span>
-      {sevDot(c)}
-      {rowMenu(c)}
+  // Connecteur logique : seul le 1er select (non-Check-if) est éditable, les
+  // suivants héritent (disabled).
+  const connSelect = (
+    value: 'and' | 'or',
+    onSet: (v: 'and' | 'or') => void,
+    disabled: boolean,
+  ) => (
+    <Select
+      size="s"
+      className={styles.conn}
+      width="46px"
+      disabled={disabled}
+      options={toOptions(['and', 'or'])}
+      value={value}
+      onChange={(_e: unknown, v: string) => onSet(optVal(v) as 'and' | 'or')}
+    />
+  )
+
+  const addBtn = (
+    <div className={styles.addWrap}>
+      <Button color="secondary" size="s" icon={IconPlus} onClick={add}>
+        Add condition
+      </Button>
     </div>
   )
 
-  const groupRow = (c: Condition) => (
-    <div
-      key={c.id}
-      className={styles.cond}
-      draggable
-      onDragStart={() => setDragId(c.id)}
-      onDragEnd={() => {
-        setDragId(null)
-        setDropTarget(null)
-      }}
-    >
-      <span className={styles.grip}>
-        <IconGripVertical size={16} />
-      </span>
+  // Option 1 : sévérité par condition (« Check if …, else 🔴 »), logique partagée.
+  const condRow = (c: Condition, i: number) => (
+    <div key={c.id} className={styles.cond}>
+      {i === 0 ? (
+        <span className={styles.checkIf}>Check if</span>
+      ) : (
+        connSelect(logic, setLogic, i > 1)
+      )}
       <span className={styles.exprWrap}>{expr(c)}</span>
+      <span className={styles.elseLabel}>, else</span>
       {sevDot(c)}
-      {rowMenu(c)}
+      {rowMenu(c, 'inline')}
+    </div>
+  )
+
+  // Option 2 : chaque groupe = une expression and/or, la conséquence est portée
+  // par le groupe → pas de pastille par ligne.
+  const groupExpr = (
+    c: Condition,
+    i: number,
+    gLogic: 'and' | 'or',
+    setG: (v: 'and' | 'or') => void,
+  ) => (
+    <div key={c.id} className={styles.cond}>
+      {i === 0 ? (
+        <span className={styles.checkIf}>Check if</span>
+      ) : (
+        connSelect(gLogic, setG, i > 1)
+      )}
+      <span className={styles.exprWrap}>{expr(c)}</span>
+      {rowMenu(c, 'groups')}
     </div>
   )
 
   const fails = conds.filter((c) => c.sev === 'fail')
   const warns = conds.filter((c) => c.sev === 'warn')
 
-  const checksBody = () => (
-    <div className={styles.checksBody}>
-
-      {sevLayout === 'groups' ? (
-        <>
-          <div className={styles.grp}>
-            <div className={styles.grpHead}>
-              <span className={styles.grpTitleFail}>Must pass</span>
-              <span className={styles.grpNote}>otherwise the step fails</span>
-            </div>
-            <div
-              className={`${styles.dropZone} ${dropTarget === 'fail' ? styles.dropActive : ''}`}
-              onDragOver={(e) => {
-                e.preventDefault()
-                if (dropTarget !== 'fail') setDropTarget('fail')
-              }}
-              onDrop={() => dropTo('fail')}
-            >
-              {fails.length ? (
-                fails.map((c) => groupRow(c))
-              ) : (
-                <div className={styles.grpEmpty}>Drop a condition here</div>
-              )}
-            </div>
+  const checksBody = () =>
+    sevLayout === 'groups' ? (
+      <div className={styles.checksBody}>
+        <div className={styles.grp}>
+          <div className={styles.grpHead}>
+            <span className={styles.grpDotFail} />
+            <span className={styles.grpTitleFail}>Failed</span>
+            <span className={styles.grpNote}>conditions that fail the step</span>
           </div>
-          <div className={styles.grp}>
-            <div className={styles.grpHead}>
-              <span className={styles.grpTitleWarn}>Should pass</span>
-              <span className={styles.grpNote}>otherwise just a warning</span>
-            </div>
-            <div
-              className={`${styles.dropZone} ${dropTarget === 'warn' ? styles.dropActive : ''}`}
-              onDragOver={(e) => {
-                e.preventDefault()
-                if (dropTarget !== 'warn') setDropTarget('warn')
-              }}
-              onDrop={() => dropTo('warn')}
-            >
-              {warns.length ? (
-                warns.map((c) => groupRow(c))
-              ) : (
-                <div className={styles.grpEmpty}>Drop a condition here</div>
-              )}
-            </div>
+          <div className={styles.condList}>
+            {fails.length ? (
+              fails.map((c, i) => groupExpr(c, i, failLogic, setFailLogic))
+            ) : (
+              <div className={styles.grpEmpty}>No failing conditions</div>
+            )}
           </div>
-        </>
-      ) : (
-        <div className={styles.condList}>{conds.map((c) => condRow(c))}</div>
-      )}
-
-      <div className={styles.addWrap}>
-        <Button color="secondary" size="s" icon={IconPlus} onClick={add}>
-          Add condition
-        </Button>
+        </div>
+        <div className={styles.grp}>
+          <div className={styles.grpHead}>
+            <span className={styles.grpDotWarn} />
+            <span className={styles.grpTitleWarn}>Warning</span>
+            <span className={styles.grpNote}>conditions that only warn</span>
+          </div>
+          <div className={styles.condList}>
+            {warns.length ? (
+              warns.map((c, i) => groupExpr(c, i, warnLogic, setWarnLogic))
+            ) : (
+              <div className={styles.grpEmpty}>No warning conditions</div>
+            )}
+          </div>
+        </div>
+        {addBtn}
       </div>
-    </div>
-  )
+    ) : (
+      <div className={styles.checksBody}>
+        <div className={styles.condList}>{conds.map((c, i) => condRow(c, i))}</div>
+        {addBtn}
+      </div>
+    )
 
   const tabPlaceholder = (label: string) => (
     <div className={styles.tabPlaceholder}>{label}</div>
@@ -540,17 +555,20 @@ const ChecksProto = () => {
       <div className={styles.fab}>
         <div className={styles.fabHead}>Proto · explore</div>
         <div className={styles.fabRow}>
-          <span className={styles.fabLbl}>Sévérité si non remplie</span>
+          <span className={styles.fabLbl}>Sévérité</span>
           <div className={styles.seg}>
-            {SEV_OPTIONS.map((o) => (
-              <button
-                key={o.value}
-                className={o.value === sevLayout ? styles.segBtnActive : styles.segBtn}
-                onClick={() => setSevLayout(o.value)}
-              >
-                {o.label}
-              </button>
-            ))}
+            <button
+              className={sevLayout === 'inline' ? styles.segBtnActive : styles.segBtn}
+              onClick={() => setSevLayout('inline')}
+            >
+              Pastille par ligne
+            </button>
+            <button
+              className={sevLayout === 'groups' ? styles.segBtnActive : styles.segBtn}
+              onClick={() => setSevLayout('groups')}
+            >
+              Deux groupes
+            </button>
           </div>
         </div>
       </div>
