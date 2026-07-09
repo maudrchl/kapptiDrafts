@@ -24,6 +24,7 @@ import {
   IconShield,
   IconHelpCircle,
   IconChevronDown,
+  IconGripVertical,
   IconMoreVertical,
   IconZap,
   IconLock,
@@ -63,9 +64,11 @@ const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 const ChecksProto = () => {
   const [tab, setTab] = useState('checks')
   const [sevLayout, setSevLayout] = useState<'inline' | 'groups'>('groups')
-  const [logic, setLogic] = useState<'and' | 'or'>('and')
-  const [failLogic, setFailLogic] = useState<'and' | 'or'>('and')
-  const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('and')
+  const [logic, setLogic] = useState<'and' | 'or'>('or')
+  const [failLogic, setFailLogic] = useState<'and' | 'or'>('or')
+  const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('or')
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dropSev, setDropSev] = useState<Severity | null>(null)
   const [conds, setConds] = useState<Condition[]>(() =>
     INITIAL_CONDITIONS.map((c) => ({ ...c })),
   )
@@ -90,6 +93,12 @@ const ChecksProto = () => {
       next.splice(i + 1, 0, { ...c, id: nextId() })
       return next
     })
+  // DnD : glisser une condition d'un groupe à l'autre change sa sévérité.
+  const dropTo = (sev: Severity) => {
+    if (dragId) patch(dragId, { sev })
+    setDragId(null)
+    setDropSev(null)
+  }
 
   /* ---------- checks renderers (functions, NOT components → keep input focus) ---------- */
   const varsBtn = <span className={styles.exprVars}>{'{}'}</span>
@@ -280,7 +289,8 @@ const ChecksProto = () => {
     <Select
       size="s"
       className={styles.conn}
-      width="46px"
+      width="64px"
+      minWidth="0"
       disabled={disabled}
       options={toOptions(['and', 'or'])}
       value={value}
@@ -319,13 +329,25 @@ const ChecksProto = () => {
     gLogic: 'and' | 'or',
     setG: (v: 'and' | 'or') => void,
   ) => (
-    <div key={c.id} className={styles.cond}>
+    <div
+      key={c.id}
+      className={styles.cond}
+      draggable
+      onDragStart={() => setDragId(c.id)}
+      onDragEnd={() => {
+        setDragId(null)
+        setDropSev(null)
+      }}
+    >
       {i === 0 ? (
         <span className={styles.checkIf}>Check if</span>
       ) : (
         connSelect(gLogic, setG, i > 1)
       )}
       <span className={styles.exprWrap}>{expr(c)}</span>
+      <span className={styles.grip} title="Drag to the other group">
+        <IconGripVertical size={15} />
+      </span>
       {rowMenu(c, 'groups')}
     </div>
   )
@@ -336,7 +358,14 @@ const ChecksProto = () => {
   const checksBody = () =>
     sevLayout === 'groups' ? (
       <div className={styles.checksBody}>
-        <div className={styles.grp}>
+        <div
+          className={`${styles.grp} ${dropSev === 'fail' ? styles.grpDrop : ''}`}
+          onDragOver={(e) => {
+            e.preventDefault()
+            if (dropSev !== 'fail') setDropSev('fail')
+          }}
+          onDrop={() => dropTo('fail')}
+        >
           <div className={styles.grpHead}>
             <span className={styles.grpDotFail} />
             <span className={styles.grpTitleFail}>Failed</span>
@@ -350,7 +379,15 @@ const ChecksProto = () => {
             )}
           </div>
         </div>
-        <div className={styles.grp}>
+        <div className={styles.grpDivider} />
+        <div
+          className={`${styles.grp} ${dropSev === 'warn' ? styles.grpDrop : ''}`}
+          onDragOver={(e) => {
+            e.preventDefault()
+            if (dropSev !== 'warn') setDropSev('warn')
+          }}
+          onDrop={() => dropTo('warn')}
+        >
           <div className={styles.grpHead}>
             <span className={styles.grpDotWarn} />
             <span className={styles.grpTitleWarn}>Warning</span>

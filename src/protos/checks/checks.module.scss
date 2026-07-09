@@ -672,6 +672,16 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 .grp + .grp {
   margin-top: 16px;
 }
+.grpDrop {
+  outline: 1.5px dashed $primary;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+.grpDivider {
+  height: 1px;
+  background: $border;
+  margin: 16px -14px;
+}
 .grpHead {
   display: flex;
   align-items: center;
