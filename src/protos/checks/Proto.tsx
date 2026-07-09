@@ -543,6 +543,11 @@ const ChecksProto = () => {
                             <span
                               className={`${styles.chipDot} ${c.sev === 'warn' ? styles.dotWarn : styles.dotFail}`}
                             />
+                            <span
+                              className={`${styles.chipCause} ${c.sev === 'warn' ? styles.causeWarn : styles.causeFail}`}
+                            >
+                              {c.sev === 'warn' ? 'Warning' : 'Failed'}
+                            </span>
                           </span>
                         ))
                       )}
