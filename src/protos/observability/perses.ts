@@ -130,7 +130,7 @@ export const INITIAL_DASHBOARD: Dashboard = {
           queryType: 'clickhouse-timeseries',
           sql: SQL_TIMESERIES('count()'),
           unit: 'Count',
-          showLegend: false,
+          showLegend: true,
           yMin: 10,
           yMax: 35,
           yTicks: 6,
@@ -148,14 +148,14 @@ export const INITIAL_DASHBOARD: Dashboard = {
           queryType: 'clickhouse-timeseries',
           sql: SQL_TIMESERIES('avg(Duration) / 1e6'),
           unit: 'ms',
-          showLegend: false,
+          showLegend: true,
           yMin: 60,
           yMax: 120,
           yTicks: 7,
           xLabels: X_LABELS['1h'],
           span: 1,
           series: [
-            { name: 'demo-site', color: SERIES_PINK, points: [88, 94, 100, 105, 108, null, null] },
+            { name: 'demo-site', color: PALETTE[1], points: [88, 94, 100, 105, 108, null, null] },
           ],
         },
         {
@@ -173,7 +173,7 @@ export const INITIAL_DASHBOARD: Dashboard = {
           xLabels: X_LABELS['1h'],
           span: 1,
           series: [
-            { name: 'demo-site', color: SERIES_PINK, points: [375, 398, 415, 432, 445, null, null] },
+            { name: 'demo-site', color: PALETTE[2], points: [375, 398, 415, 432, 445, null, null] },
           ],
         },
         {
@@ -191,7 +191,7 @@ export const INITIAL_DASHBOARD: Dashboard = {
           xLabels: ['08:30', '08:40', '08:50', '09:00', '09:10', '09:20', '09:30', '09:40'],
           span: 3,
           series: [
-            { name: 'demo-site', color: SERIES_PINK, points: [null, null, null, 13, 13, 13, 13, null] },
+            { name: 'demo-site', color: PALETTE[3], points: [null, null, null, 13, 13, 13, 13, null] },
           ],
         },
       ],
@@ -226,7 +226,7 @@ export const makePanel = (spec: PanelSpec): Omit<Panel, 'id'> => ({
   queryType: spec.queryType ?? 'clickhouse-sql',
   sql: spec.sql ?? SQL_TIMESERIES('count()'),
   unit: spec.unit ?? 'Count',
-  showLegend: spec.showLegend ?? false,
+  showLegend: spec.showLegend ?? true,
   yMin: spec.yMin ?? 0,
   yMax: spec.yMax ?? 20,
   yTicks: spec.yTicks ?? 5,
@@ -242,7 +242,7 @@ const ramp = (min: number, max: number, n = 5): (number | null)[] => {
   return pts
 }
 
-const series = (points: (number | null)[]): Series[] => [{ name: 'demo-site', color: SERIES_PINK, points }]
+const series = (points: (number | null)[], color: string = SERIES_PINK): Series[] => [{ name: 'demo-site', color, points }]
 
 /** Suggère un type de viz d'après la forme de la requête. */
 export const suggestViz = (sql: string): { type: PanelType; reason: string } => {
@@ -261,23 +261,23 @@ export const SIGNAL_SEEDS: Record<string, { group: string; panels: PanelSpec[] }
   traces: {
     group: 'Traces · RED',
     panels: [
-      { name: 'Request rate', unit: 'req/s', queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES('count() / 60'), yMin: 0, yMax: 40, yTicks: 5, series: series(ramp(8, 34)) },
-      { name: 'Error rate', unit: '%', queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES("countIf(StatusCode = 'Error') / count() * 100"), yMin: 0, yMax: 8, yTicks: 5, series: series(ramp(1, 5)) },
-      { name: 'Duration (p95)', unit: 'ms', showLegend: true, queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES('quantile(0.95)(Duration) / 1e6'), yMin: 200, yMax: 500, yTicks: 7, series: series(ramp(280, 460)) },
+      { name: 'Request rate', unit: 'req/s', queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES('count() / 60'), yMin: 0, yMax: 40, yTicks: 5, series: series(ramp(8, 34), PALETTE[1]) },
+      { name: 'Error rate', unit: '%', queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES("countIf(StatusCode = 'Error') / count() * 100"), yMin: 0, yMax: 8, yTicks: 5, series: series(ramp(1, 5), PALETTE[7]) },
+      { name: 'Duration (p95)', unit: 'ms', showLegend: true, queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES('quantile(0.95)(Duration) / 1e6'), yMin: 200, yMax: 500, yTicks: 7, series: series(ramp(280, 460), PALETTE[2]) },
     ],
   },
   logs: {
     group: 'Logs · overview',
     panels: [
-      { name: 'Log volume', unit: 'lines/min', queryType: 'clickhouse-timeseries', sql: 'SELECT toStartOfInterval(Timestamp, INTERVAL 60 SECOND) AS t, count() AS value FROM otel_logs\nWHERE Timestamp BETWEEN {from:DateTime64(3)} AND {to:DateTime64(3)}\nGROUP BY t ORDER BY t', yMin: 0, yMax: 120, yTicks: 7, series: series(ramp(30, 100)) },
-      { name: 'Errors & warnings', unit: 'lines', showLegend: true, queryType: 'clickhouse-timeseries', sql: "SELECT toStartOfInterval(Timestamp, INTERVAL 60 SECOND) AS t, SeverityText AS level, count() AS value FROM otel_logs\nWHERE SeverityText IN ('ERROR','WARN') AND Timestamp BETWEEN {from:DateTime64(3)} AND {to:DateTime64(3)}\nGROUP BY t, level ORDER BY t", yMin: 0, yMax: 40, yTicks: 5, series: series(ramp(4, 22)) },
+      { name: 'Log volume', unit: 'lines/min', queryType: 'clickhouse-timeseries', sql: 'SELECT toStartOfInterval(Timestamp, INTERVAL 60 SECOND) AS t, count() AS value FROM otel_logs\nWHERE Timestamp BETWEEN {from:DateTime64(3)} AND {to:DateTime64(3)}\nGROUP BY t ORDER BY t', yMin: 0, yMax: 120, yTicks: 7, series: series(ramp(30, 100), PALETTE[3]) },
+      { name: 'Errors & warnings', unit: 'lines', showLegend: true, queryType: 'clickhouse-timeseries', sql: "SELECT toStartOfInterval(Timestamp, INTERVAL 60 SECOND) AS t, SeverityText AS level, count() AS value FROM otel_logs\nWHERE SeverityText IN ('ERROR','WARN') AND Timestamp BETWEEN {from:DateTime64(3)} AND {to:DateTime64(3)}\nGROUP BY t, level ORDER BY t", yMin: 0, yMax: 40, yTicks: 5, series: series(ramp(4, 22), PALETTE[7]) },
     ],
   },
   metrics: {
     group: 'Metrics · overview',
     panels: [
-      { name: 'CPU usage', unit: '%', queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES('avg(Value)'), yMin: 0, yMax: 100, yTicks: 6, series: series(ramp(28, 62)) },
-      { name: 'Memory usage', unit: '%', queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES('avg(Value)'), yMin: 0, yMax: 100, yTicks: 6, series: series(ramp(40, 71)) },
+      { name: 'CPU usage', unit: '%', queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES('avg(Value)'), yMin: 0, yMax: 100, yTicks: 6, series: series(ramp(28, 62), PALETTE[2]) },
+      { name: 'Memory usage', unit: '%', queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES('avg(Value)'), yMin: 0, yMax: 100, yTicks: 6, series: series(ramp(40, 71), PALETTE[4]) },
     ],
   },
 }
@@ -308,7 +308,7 @@ export const interpretPrompt = (raw: string): AiProposal => {
         name: byService ? `Duration (p${p * 100}) by service` : `Duration (p${p * 100})`,
         unit: 'ms', showLegend: true, queryType: 'clickhouse-sql',
         sql: `SELECT toStartOfInterval(Timestamp, INTERVAL 300 SECOND) AS t,${byService ? ' ServiceName AS service,' : ''} quantile(${p})(Duration) / 1e6 AS value FROM otel_traces\nWHERE Timestamp BETWEEN {from:DateTime64(3)} AND {to:DateTime64(3)}\nGROUP BY t${byService ? ', service' : ''} ORDER BY t`,
-        yMin: 200, yMax: 500, yTicks: 7, series: series(ramp(280, 470)),
+        yMin: 200, yMax: 500, yTicks: 7, series: series(ramp(280, 470), PALETTE[2]),
       }],
     }
   }
@@ -319,7 +319,7 @@ export const interpretPrompt = (raw: string): AiProposal => {
       panels: [{
         name: 'Error rate', unit: '%', queryType: 'clickhouse-sql',
         sql: "SELECT toStartOfInterval(Timestamp, INTERVAL 300 SECOND) AS t, countIf(StatusCode = 'Error') / count() * 100 AS value FROM otel_traces\nWHERE Timestamp BETWEEN {from:DateTime64(3)} AND {to:DateTime64(3)}\nGROUP BY t ORDER BY t",
-        yMin: 0, yMax: 8, yTicks: 5, series: series(ramp(1, 6)),
+        yMin: 0, yMax: 8, yTicks: 5, series: series(ramp(1, 6), PALETTE[7]),
       }],
     }
   }
@@ -330,7 +330,7 @@ export const interpretPrompt = (raw: string): AiProposal => {
       panels: [{
         name: 'Request rate', unit: 'req/s', queryType: 'clickhouse-sql',
         sql: SQL_TIMESERIES('count() / 300'),
-        yMin: 0, yMax: 40, yTicks: 5, series: series(ramp(8, 34)),
+        yMin: 0, yMax: 40, yTicks: 5, series: series(ramp(8, 34), PALETTE[1]),
       }],
     }
   }

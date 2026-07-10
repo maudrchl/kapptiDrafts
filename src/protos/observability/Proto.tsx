@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Button,
   SearchInput,
@@ -13,6 +13,8 @@ import {
   Tabs,
   Modal,
   Alert,
+  Banner,
+  IconAlertTriangle,
   Drawer,
   Segmented,
   Input,
@@ -58,6 +60,7 @@ import { interpretPrompt } from './perses'
 import type { PanelSpec } from './perses'
 import type { ExploreTab, PodEntry, SignalKey } from './constants'
 import {
+  EXPLORE_TABS,
   PAGE_META,
   LOGS,
   TRACES,
@@ -103,10 +106,10 @@ const NAV_RUN = [
 const NAV_EXPLORE: { key: ExploreTab; icon: React.ComponentType<{ size?: number }>; label: string }[] = [
   { key: 'logs', icon: IconFile, label: 'Logs explorer' },
   { key: 'traces', icon: IconBookOpen, label: 'Traces' },
+  { key: 'perses', icon: IconGlobe, label: 'Traces (Perses)' },
   { key: 'svcmap', icon: IconNetwork, label: 'Service map' },
   { key: 'k8s', icon: IconWrench, label: 'Kubernetes' },
   { key: 'usage', icon: IconBarChartBig, label: 'Usage & ingestion' },
-  { key: 'perses', icon: IconGlobe, label: 'Traces (Perses)' },
 ]
 
 const LOG_LEVEL_CLASSES: Record<string, string> = {
@@ -464,14 +467,61 @@ const ServiceMapView = () => {
   )
 }
 
+/* ─── Kubernetes mock data (deployments / services / events) ─── */
+const K8S_DEPLOYMENTS = [
+  { key: 'd1', name: 'api-gateway', ready: '3/3', uptodate: 3, available: 3, age: '12d', ns: 'production' },
+  { key: 'd2', name: 'kappticentral', ready: '2/2', uptodate: 2, available: 2, age: '12d', ns: 'production' },
+  { key: 'd3', name: 'runner-eu-west', ready: '4/4', uptodate: 4, available: 4, age: '8d', ns: 'production' },
+  { key: 'd4', name: 'screenshot-svc', ready: '0/1', uptodate: 1, available: 0, age: '6h', ns: 'production' },
+  { key: 'd5', name: 'metrics-proxy', ready: '2/2', uptodate: 2, available: 2, age: '20d', ns: 'production' },
+]
+const K8S_SERVICES = [
+  { key: 's1', name: 'api-gateway', type: 'LoadBalancer', clusterIP: '10.24.1.10', ports: '443/TCP', age: '12d', ns: 'production' },
+  { key: 's2', name: 'kappticentral', type: 'ClusterIP', clusterIP: '10.24.2.31', ports: '8080/TCP', age: '12d', ns: 'production' },
+  { key: 's3', name: 'metrics-proxy', type: 'ClusterIP', clusterIP: '10.24.2.44', ports: '9090/TCP', age: '20d', ns: 'production' },
+  { key: 's4', name: 'screenshot-svc', type: 'ClusterIP', clusterIP: '10.24.2.58', ports: '4000/TCP', age: '6h', ns: 'production' },
+]
+const K8S_EVENTS = [
+  { key: 'e1', type: 'Warning', reason: 'BackOff', object: 'pod/screenshot-svc-4c7b8d-p2w5t', message: 'Back-off restarting failed container', age: '2m', ns: 'production' },
+  { key: 'e2', type: 'Warning', reason: 'Unhealthy', object: 'pod/screenshot-svc-4c7b8d-p2w5t', message: 'Liveness probe failed: HTTP 500', age: '3m', ns: 'production' },
+  { key: 'e3', type: 'Normal', reason: 'Scheduled', object: 'pod/runner-eu-west-9e2f1a-j6h3r', message: 'Successfully assigned to node-3', age: '8m', ns: 'production' },
+  { key: 'e4', type: 'Normal', reason: 'Pulled', object: 'pod/api-gateway-7f8d9c-x4k2p', message: 'Container image already present on machine', age: '14m', ns: 'production' },
+]
+
 /* ─── Kubernetes View ─── */
 const KubernetesView = () => {
   const [search, setSearch] = useState('')
   const [ns, setNs] = useState('production')
+  const [k8sTab, setK8sTab] = useState('pods')
   const q = search.trim().toLowerCase()
+  const byNsQ = (row: { ns: string; name?: string; object?: string }) =>
+    (ns === 'all' || row.ns === ns) &&
+    (q === '' || `${row.name ?? ''} ${row.object ?? ''}`.toLowerCase().includes(q))
   const filtered = PODS.filter(
     (p) => (ns === 'all' || p.ns === ns) && (q === '' || p.name.toLowerCase().includes(q)),
   )
+
+  const deployColumns = [
+    { title: 'Deployment', dataIndex: 'name', key: 'name', render: (v: string) => <Tag mono maxLen={40}>{v}</Tag> },
+    { title: 'Ready', dataIndex: 'ready', key: 'ready', width: 100, render: (v: string) => <span className={styles.mono}>{v}</span> },
+    { title: 'Up-to-date', dataIndex: 'uptodate', key: 'uptodate', width: 110 },
+    { title: 'Available', dataIndex: 'available', key: 'available', width: 100 },
+    { title: 'Age', dataIndex: 'age', key: 'age', width: 80 },
+  ]
+  const svcColumns = [
+    { title: 'Service', dataIndex: 'name', key: 'name', render: (v: string) => <Tag mono maxLen={40}>{v}</Tag> },
+    { title: 'Type', dataIndex: 'type', key: 'type', width: 150, render: (v: string) => <StatusTag variant="ghost" color={v === 'LoadBalancer' ? 'info' : 'neutral'}>{v}</StatusTag> },
+    { title: 'Cluster IP', dataIndex: 'clusterIP', key: 'clusterIP', width: 150, render: (v: string) => <span className={styles.mono}>{v}</span> },
+    { title: 'Ports', dataIndex: 'ports', key: 'ports', width: 130, render: (v: string) => <span className={styles.mono}>{v}</span> },
+    { title: 'Age', dataIndex: 'age', key: 'age', width: 80 },
+  ]
+  const eventColumns = [
+    { title: 'Type', dataIndex: 'type', key: 'type', width: 110, render: (v: string) => <StatusTag variant="ghost" color={v === 'Warning' ? 'warning' : 'success'}>{v}</StatusTag> },
+    { title: 'Reason', dataIndex: 'reason', key: 'reason', width: 130, render: (v: string) => <Tag mono>{v}</Tag> },
+    { title: 'Object', dataIndex: 'object', key: 'object', render: (v: string) => <span className={styles.mono}>{v}</span> },
+    { title: 'Message', dataIndex: 'message', key: 'message' },
+    { title: 'Age', dataIndex: 'age', key: 'age', width: 70 },
+  ]
 
   const podColumns = [
     { title: 'Pod', dataIndex: 'name', key: 'name', render: (v: string) => <Tag mono maxLen={40}>{v}</Tag> },
@@ -479,7 +529,7 @@ const KubernetesView = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 140,
+      width: 200,
       render: (v: PodEntry['status']) => (
         <StatusTag variant="ghost" color={v === 'Running' ? 'success' : v === 'CrashLoopBackOff' ? 'failed' : 'warning'}>{v}</StatusTag>
       ),
@@ -557,10 +607,14 @@ const KubernetesView = () => {
           { key: 'services', label: 'Services' },
           { key: 'events', label: 'Events' },
         ]}
-        defaultActiveKey="pods"
+        activeKey={k8sTab}
+        onChange={setK8sTab}
       />
 
-      <Table rowKey="key" columns={podColumns} data={filtered} showHeader />
+      {k8sTab === 'pods' && <Table rowKey="key" columns={podColumns} data={filtered} showHeader />}
+      {k8sTab === 'deployments' && <Table rowKey="key" columns={deployColumns} data={K8S_DEPLOYMENTS.filter(byNsQ)} showHeader />}
+      {k8sTab === 'services' && <Table rowKey="key" columns={svcColumns} data={K8S_SERVICES.filter(byNsQ)} showHeader />}
+      {k8sTab === 'events' && <Table rowKey="key" columns={eventColumns} data={K8S_EVENTS.filter(byNsQ)} showHeader />}
     </>
   )
 }
@@ -630,6 +684,22 @@ const UsageView = ({
 
   return (
     <div className={styles.usageStack}>
+      {/* State banner — aligné sur l'expérience AI Usage */}
+      {pct >= 80 && (
+        <Banner
+          variant={pct >= 95 ? 'error' : 'warning'}
+          description={pct >= 95 ? 'Monthly ingestion quota nearly exhausted' : `${pct.toFixed(0)}% of your monthly ingestion quota used`}
+          subDescription={
+            <>
+              At the current rate, your <b>{fmtGB(cap)}</b> monthly quota runs out around{' '}
+              <b>day {Math.min(USAGE_DAYS_IN_MONTH, Math.round((cap / USAGE_INGESTED_GB) * USAGE_DAY_OF_MONTH))}</b>. Ingestion keeps working; overage is billed and admins are notified.
+            </>
+          }
+          icon={<IconAlertTriangle size={18} />}
+          aside={<Button color="secondary" size="s" onClick={() => setQuotaOpen(true)}>Adjust quota</Button>}
+        />
+      )}
+
       {/* Quota & consumption */}
       <div className={styles.detailCard}>
         <div className={styles.cardHead}>
@@ -663,6 +733,8 @@ const UsageView = ({
         </div>
       </div>
 
+      {/* Consumption chart + signal breakdown, side by side (comme AI Usage) */}
+      <div className={styles.usageGrid}>
       {/* Daily consumption chart */}
       <div className={styles.detailCard}>
         <div className={styles.cardHead}>
@@ -736,6 +808,7 @@ const UsageView = ({
             </div>
           )
         })}
+      </div>
       </div>
 
       {/* Connection & OTLP key */}
@@ -896,7 +969,17 @@ const UsageView = ({
 /* ─── Main Proto ─── */
 const ExploreTabsProto = () => {
   const [mode, setMode] = useState<'run' | 'obs'>('obs')
-  const [tab, setTab] = useState<ExploreTab>('perses')
+  // Onglet actif, synchronisé avec l'URL (?tab=…) — persiste au refresh, Logs par défaut.
+  const [tab, setTab] = useState<ExploreTab>(() => {
+    const t = new URLSearchParams(window.location.search).get('tab')
+    return EXPLORE_TABS.some((x) => x.key === t) ? (t as ExploreTab) : 'logs'
+  })
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', tab)
+    window.history.replaceState(null, '', url)
+  }, [tab])
+  const [persesHeaderSlot, setPersesHeaderSlot] = useState<HTMLDivElement | null>(null)
 
   // lifted view state (needed by header actions)
   const [logSearch, setLogSearch] = useState('')
@@ -1028,7 +1111,7 @@ const ExploreTabsProto = () => {
       case 'usage':
         return <UsageView cap={cap} setCap={setCap} quotaOpen={quotaOpen} setQuotaOpen={setQuotaOpen} />
       case 'perses':
-        return <PersesView />
+        return <PersesView headerSlot={persesHeaderSlot} />
     }
   }
 
@@ -1104,19 +1187,25 @@ const ExploreTabsProto = () => {
             <div className={styles.contentTitle}>{meta.title}</div>
             <div className={styles.contentSub}>{meta.sub}</div>
           </div>
-          <div className={styles.contentActions}>
-            {meta.actions.map((a) => (
-              <Button
-                key={a.label}
-                color={a.primary ? 'primary' : 'secondary'}
-                icon={a.label === 'Export' ? IconDownload : a.label === 'Create alert' ? Plus : a.label === 'Pin as panel' ? Pin : undefined}
-                disabled={actionDisabled(a.label)}
-                onClick={() => runAction(a.label)}
-              >
-                {a.label === 'Compare traces' && selectedTraces.length > 0 ? `Compare traces (${selectedTraces.length})` : a.label}
-              </Button>
-            ))}
-          </div>
+          {tab === 'perses' ? (
+            // Le cluster d'actions Perses est téléporté ici depuis PersesView (portal),
+            // pour être aligné en haut comme les actions des autres tabs.
+            <div className={styles.contentActions} ref={setPersesHeaderSlot} />
+          ) : (
+            <div className={styles.contentActions}>
+              {meta.actions.map((a) => (
+                <Button
+                  key={a.label}
+                  color={a.primary ? 'primary' : 'secondary'}
+                  icon={a.label === 'Export' ? IconDownload : a.label === 'Create alert' ? Plus : a.label === 'Pin as panel' ? Pin : undefined}
+                  disabled={actionDisabled(a.label)}
+                  onClick={() => runAction(a.label)}
+                >
+                  {a.label === 'Compare traces' && selectedTraces.length > 0 ? `Compare traces (${selectedTraces.length})` : a.label}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
         <div className={styles.contentBody}>{renderView()}</div>
       </div>

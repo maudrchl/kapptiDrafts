@@ -53,7 +53,30 @@
   min-width: 0;
 }
 
-/* ===== GROUPS (Collapse ghost) ===== */
+/* ===== GROUPS (Collapse) ===== */
+/* chaque groupe = un bloc blanc bordé, pour lire comme une unité */
+.groupList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  :global(.ant-collapse-item) {
+    background: var(--color-surface-white, #fff) !important;
+    border: 1px solid var(--color-border-grey, #e4e4e7) !important;
+    border-radius: var(--radius-lg, 10px) !important;
+    overflow: hidden;
+  }
+
+  :global(.ant-collapse-header) {
+    padding: 12px 16px !important;
+    align-items: center !important;
+  }
+
+  :global(.ant-collapse-content-box) {
+    padding: 0 16px 14px !important;
+  }
+}
+
 .groupLabel {
   display: inline-flex;
   align-items: center;
@@ -281,6 +304,7 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
+  flex: 1 1 auto; /* pousse le menu (3 points) tout à droite */
 }
 
 .panelTitle {
@@ -304,6 +328,13 @@
 
 .panelWrap:hover .grip {
   opacity: 1;
+}
+
+.panelMenu {
+  margin-left: auto; /* pousse les 3 points tout à droite du header */
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* colour swatches (Edit Panel · General) */
