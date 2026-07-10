@@ -49,6 +49,7 @@ import {
   QUERY_TYPE_OPTIONS,
   TIME_RANGE_OPTIONS,
   SQL_HINT,
+  PALETTE,
   interpretPrompt,
   suggestViz,
 } from './perses'
@@ -134,11 +135,10 @@ const EditPanelDrawer = ({
       </div>
 
       <div className={styles.previewTitle}>Preview</div>
-      <Card className={styles.previewCard}>
-        <Card.Content title={draft.name || 'Untitled panel'}>
-          <LineChart panel={draft} height={220} />
-        </Card.Content>
-      </Card>
+      <div className={styles.previewCard}>
+        <div className={styles.previewCardTitle}>{draft.name || 'Untitled panel'}</div>
+        <LineChart panel={{ ...draft, span: 3 }} height={200} />
+      </div>
 
       <div className={styles.editTabs}>
         <Tabs
@@ -203,6 +203,26 @@ const EditPanelDrawer = ({
                 <label>Y max</label>
                 <Input value={String(draft.yMax)} size="m" type="number" fullWidth onChange={(e) => set({ yMax: Number(e.target.value) })} />
               </div>
+            </div>
+            <div className={styles.editField}>
+              <label>Series color</label>
+              {draft.series.map((s, si) => (
+                <div key={si} className={styles.colorRow}>
+                  {draft.series.length > 1 && <span className={styles.colorName}>{s.name}</span>}
+                  <div className={styles.swatches}>
+                    {PALETTE.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        aria-label={`Set colour ${c}`}
+                        className={c === s.color ? `${styles.swatch} ${styles.swatchActive}` : styles.swatch}
+                        style={{ background: c }}
+                        onClick={() => set({ series: draft.series.map((x, i) => (i === si ? { ...x, color: c } : x)) })}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -417,20 +437,23 @@ const PersesView = () => {
           dragId === panel.id ? styles.dragging : '',
           dropId === panel.id ? styles.dropTarget : '',
         ].join(' ')}
-        draggable
-        onDragStart={() => setDragId(panel.id)}
-        onDragEnd={() => { setDragId(null); setDropId(null) }}
         onDragOver={(e) => { e.preventDefault(); if (panel.id !== dragId) setDropId(panel.id) }}
         onDragLeave={() => setDropId((cur) => (cur === panel.id ? null : cur))}
         onDrop={(e) => { e.preventDefault(); onDrop(panel.id) }}
       >
         <Card className={styles.panelCard}>
-          <div className={styles.panelHead}>
-            <span className={styles.panelTitle} title={panel.name}>{panel.name}</span>
-            <span className={styles.panelAside}>
-              <span className={styles.grip} title="Drag to reorder"><GripVertical size={15} /></span>
-              <ActionMenu options={menu.options} onClick={menu.onClick} />
+          <div
+            className={styles.panelHead}
+            draggable
+            onDragStart={() => setDragId(panel.id)}
+            onDragEnd={() => { setDragId(null); setDropId(null) }}
+            title="Drag to reorder"
+          >
+            <span className={styles.panelTitleGroup}>
+              <span className={styles.grip}><GripVertical size={15} /></span>
+              <span className={styles.panelTitle} title={panel.name}>{panel.name}</span>
             </span>
+            <ActionMenu options={menu.options} onClick={menu.onClick} />
           </div>
           <LineChart panel={panel} height={panel.span === 3 ? 240 : 172} />
         </Card>

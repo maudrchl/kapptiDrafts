@@ -52,8 +52,23 @@ export type Dashboard = {
   groups: PanelGroup[]
 }
 
-/** Couleur des séries — rose Perses par défaut. */
-export const SERIES_PINK = '#c2477e'
+/** Palette des séries — surchargeable ici (source unique) ou par panel via l'éditeur. */
+export const PALETTE = [
+  '#c2477e', // rose (défaut)
+  '#2e7d74', // teal
+  '#ed7846', // orange (marque)
+  '#3b82f6', // bleu
+  '#1fae7e', // vert
+  '#a855f7', // violet
+  '#f2b338', // ambre
+  '#e0372e', // rouge
+] as const
+
+/** Couleur de série par défaut = 1er ton de la palette. */
+export const SERIES_PINK = PALETTE[0]
+
+/** Couleur de la n-ième série (cycle sur la palette). */
+export const seriesColor = (i: number) => PALETTE[i % PALETTE.length]
 
 export const PANEL_TYPE_OPTIONS: { label: string; value: PanelType }[] = [
   { label: 'Time Series Chart', value: 'timeseries' },
