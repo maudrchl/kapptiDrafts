@@ -1,4 +1,4 @@
-export type ExploreTab = 'logs' | 'traces' | 'svcmap' | 'k8s' | 'usage'
+export type ExploreTab = 'logs' | 'traces' | 'svcmap' | 'k8s' | 'usage' | 'perses'
 
 export const EXPLORE_TABS: { key: ExploreTab; label: string }[] = [
   { key: 'logs', label: 'Logs explorer' },
@@ -6,6 +6,7 @@ export const EXPLORE_TABS: { key: ExploreTab; label: string }[] = [
   { key: 'svcmap', label: 'Service map' },
   { key: 'k8s', label: 'Kubernetes' },
   { key: 'usage', label: 'Usage & ingestion' },
+  { key: 'perses', label: 'Traces (Perses)' },
 ]
 
 export const PAGE_META: Record<
@@ -16,7 +17,7 @@ export const PAGE_META: Record<
     title: 'Logs explorer',
     sub: 'Search, filter and analyze logs across all services in real time',
     actions: [
-      { label: 'Export', primary: false },
+      { label: 'Pin as panel', primary: false },
       { label: 'Create alert', primary: true },
     ],
   },
@@ -24,7 +25,7 @@ export const PAGE_META: Record<
     title: 'Traces',
     sub: 'Distributed tracing — follow requests across your microservices',
     actions: [
-      { label: 'Export', primary: false },
+      { label: 'Pin as panel', primary: false },
       { label: 'Compare traces', primary: true },
     ],
   },
@@ -51,6 +52,11 @@ export const PAGE_META: Record<
       { label: 'Read docs', primary: false },
       { label: 'Adjust quota', primary: true },
     ],
+  },
+  perses: {
+    title: 'Traces (Perses)',
+    sub: 'Build and edit trace dashboards backed by ClickHouse — Perses-powered',
+    actions: [],
   },
 }
 

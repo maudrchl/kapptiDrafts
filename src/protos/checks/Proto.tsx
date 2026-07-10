@@ -48,7 +48,7 @@ import {
   predsFor,
   predNeedsValue,
   resetForKind,
-  triggerText,
+  conditionText,
   type Condition,
   type Severity,
 } from './constants'
@@ -56,14 +56,35 @@ import {
 let uid = 100
 const nextId = () => `c${++uid}`
 
+// Présentation dans le panneau d'édition (droite) — 2 options, figées.
+type SevLayout = 'inline' | 'groups'
+const SEV_LAYOUTS: { value: SevLayout; label: string }[] = [
+  { value: 'inline', label: 'Pastille par ligne' },
+  { value: 'groups', label: 'Deux groupes' },
+]
+
+// Affichage du récap des conditions DANS LE FORMULAIRE (canvas, à gauche).
+type FormView = 'chips' | 'grouped' | 'list'
+const FORM_VIEWS: { value: FormView; label: string }[] = [
+  { value: 'chips', label: 'Chips' },
+  { value: 'grouped', label: 'Groupé par sévérité' },
+  { value: 'list', label: 'Checklist' },
+]
+
 const toOptions = (arr: string[]) => arr.map((v) => ({ label: v, value: v }))
 const optVal = (v: any): string => (v && typeof v === 'object' ? v.value : v)
 const ACTION_OPTIONS = ['API Call', 'Navigate', 'Click', 'Fill in', 'Assert', 'Wait']
 const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
+const initFormView = (): FormView => {
+  const v = new URLSearchParams(window.location.search).get('form')
+  return FORM_VIEWS.some((f) => f.value === v) ? (v as FormView) : 'chips'
+}
+
 const ChecksProto = () => {
   const [tab, setTab] = useState('checks')
-  const [sevLayout, setSevLayout] = useState<'inline' | 'groups'>('inline')
+  const [sevLayout, setSevLayout] = useState<SevLayout>('inline')
+  const [formView, setFormView] = useState<FormView>(initFormView)
   const [logic, setLogic] = useState<'and' | 'or'>('or')
   const [failLogic, setFailLogic] = useState<'and' | 'or'>('or')
   const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('or')
@@ -358,60 +379,133 @@ const ChecksProto = () => {
   const fails = conds.filter((c) => c.sev === 'fail')
   const warns = conds.filter((c) => c.sev === 'warn')
 
-  const checksBody = () =>
-    sevLayout === 'groups' ? (
-      <div className={styles.checksBody}>
-        <div
-          className={`${styles.grp} ${dropSev === 'fail' ? styles.grpDrop : ''}`}
-          onDragOver={(e) => {
-            e.preventDefault()
-            if (dropSev !== 'fail') setDropSev('fail')
-          }}
-          onDrop={() => dropTo('fail')}
-        >
-          <div className={styles.grpHead}>
-            <span className={styles.grpDotFail} />
-            <span className={styles.grpTitleFail}>Failed</span>
-            <span className={styles.grpNote}>conditions that fail the step</span>
-          </div>
-          <div className={styles.condList}>
-            {fails.length ? (
-              fails.map((c, i) => groupExpr(c, i, failLogic, setFailLogic))
-            ) : (
-              <div className={styles.grpEmpty}>No failing conditions</div>
-            )}
-          </div>
+  // Un groupe (Failed / Warning) partagé par « Deux groupes » et « côte à côte ».
+  const renderGroup = (sev: Severity) => {
+    const list = sev === 'fail' ? fails : warns
+    const gLogic = sev === 'fail' ? failLogic : warnLogic
+    const setG = sev === 'fail' ? setFailLogic : setWarnLogic
+    return (
+      <div
+        className={`${styles.grp} ${dropSev === sev ? styles.grpDrop : ''}`}
+        onDragOver={(e) => {
+          e.preventDefault()
+          if (dropSev !== sev) setDropSev(sev)
+        }}
+        onDrop={() => dropTo(sev)}
+      >
+        <div className={styles.grpHead}>
+          <span className={sev === 'fail' ? styles.grpDotFail : styles.grpDotWarn} />
+          <span className={sev === 'fail' ? styles.grpTitleFail : styles.grpTitleWarn}>
+            {sev === 'fail' ? 'Failed' : 'Warning'}
+          </span>
+          <span className={styles.grpNote}>
+            {sev === 'fail' ? 'conditions that fail the step' : 'conditions that only warn'}
+          </span>
         </div>
-        <div className={styles.grpDivider} />
-        <div
-          className={`${styles.grp} ${dropSev === 'warn' ? styles.grpDrop : ''}`}
-          onDragOver={(e) => {
-            e.preventDefault()
-            if (dropSev !== 'warn') setDropSev('warn')
-          }}
-          onDrop={() => dropTo('warn')}
-        >
-          <div className={styles.grpHead}>
-            <span className={styles.grpDotWarn} />
-            <span className={styles.grpTitleWarn}>Warning</span>
-            <span className={styles.grpNote}>conditions that only warn</span>
-          </div>
-          <div className={styles.condList}>
-            {warns.length ? (
-              warns.map((c, i) => groupExpr(c, i, warnLogic, setWarnLogic))
-            ) : (
-              <div className={styles.grpEmpty}>No warning conditions</div>
-            )}
-          </div>
+        <div className={styles.condList}>
+          {list.length ? (
+            list.map((c, i) => groupExpr(c, i, gLogic, setG))
+          ) : (
+            <div className={styles.grpEmpty}>
+              {sev === 'fail' ? 'No failing conditions' : 'No warning conditions'}
+            </div>
+          )}
         </div>
-        {addBtn}
       </div>
-    ) : (
+    )
+  }
+
+  const checksBody = () => {
+    if (sevLayout === 'groups')
+      return (
+        <div className={styles.checksBody}>
+          {renderGroup('fail')}
+          <div className={styles.grpDivider} />
+          {renderGroup('warn')}
+          {addBtn}
+        </div>
+      )
+    return (
       <div className={styles.checksBody}>
         <div className={styles.condList}>{conds.map((c, i) => condRow(c, i))}</div>
         {addBtn}
       </div>
     )
+  }
+
+  /* ---------- récap des conditions DANS LE FORMULAIRE (canvas) ---------- */
+  const formSummary = () => {
+    if (conds.length === 0) return null
+
+    if (formView === 'grouped')
+      return (
+        <div className={styles.fmGrouped}>
+          <span className={styles.fmLabel}>Must match</span>
+          {fails.length > 0 && (
+            <div className={styles.fmGroupRow}>
+              <span className={`${styles.fmTag} ${styles.fmTagFail}`}>
+                <span className={styles.dotFail} />
+                Fails the step
+              </span>
+              <span className={styles.fmGroupConds}>
+                {fails.map((c) => conditionText(c)).join(', ')}
+              </span>
+            </div>
+          )}
+          {warns.length > 0 && (
+            <div className={styles.fmGroupRow}>
+              <span className={`${styles.fmTag} ${styles.fmTagWarn}`}>
+                <span className={styles.dotWarn} />
+                Warning only
+              </span>
+              <span className={styles.fmGroupConds}>
+                {warns.map((c) => conditionText(c)).join(', ')}
+              </span>
+            </div>
+          )}
+        </div>
+      )
+
+    if (formView === 'list')
+      return (
+        <div className={styles.fmList}>
+          <span className={styles.fmLabel}>Must match</span>
+          {conds.map((c) => (
+            <div key={c.id} className={styles.fmListRow}>
+              <span className={c.sev === 'warn' ? styles.dotWarn : styles.dotFail} />
+              <span className={styles.fmListCond}>{conditionText(c)}</span>
+              <span
+                className={`${styles.fmPill} ${c.sev === 'warn' ? styles.fmPillWarn : styles.fmPillFail}`}
+              >
+                {c.sev === 'warn' ? 'Warns' : 'Fails'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )
+
+    // chips (défaut)
+    return (
+      <div className={styles.chipsWrap}>
+        <span className={styles.chipsLabel}>Must match:</span>
+        <div className={styles.chips}>
+          {conds.map((c) => (
+            <span key={c.id} className={styles.chip}>
+              <span
+                className={`${styles.chipDot} ${c.sev === 'warn' ? styles.dotWarn : styles.dotFail}`}
+              />
+              {conditionText(c)}
+              <span
+                className={`${styles.chipCause} ${c.sev === 'warn' ? styles.causeWarn : styles.causeFail}`}
+              >
+                · {c.sev === 'warn' ? 'Warning' : 'Failed'}
+              </span>
+            </span>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   const tabPlaceholder = (label: string) => (
     <div className={styles.tabPlaceholder}>{label}</div>
@@ -532,26 +626,7 @@ const ChecksProto = () => {
                       onChange={(e) => setUrl(e.target.value)}
                       iconRight={<IconBraces size={14} />}
                     />
-                    <div className={styles.chips}>
-                      {conds.length === 0 ? (
-                        <span className={styles.chipEmpty}>No success conditions yet</span>
-                      ) : (
-                        conds.map((c) => (
-                          <span key={c.id} className={styles.chip}>
-                            {triggerText(c)}
-                            <span className={styles.chipArrow}>→</span>
-                            <span
-                              className={`${styles.chipDot} ${c.sev === 'warn' ? styles.dotWarn : styles.dotFail}`}
-                            />
-                            <span
-                              className={`${styles.chipCause} ${c.sev === 'warn' ? styles.causeWarn : styles.causeFail}`}
-                            >
-                              {c.sev === 'warn' ? 'Warning' : 'Failed'}
-                            </span>
-                          </span>
-                        ))
-                      )}
-                    </div>
+                    {formSummary()}
                   </div>
                 </div>
 
@@ -600,20 +675,31 @@ const ChecksProto = () => {
       <div className={styles.fab}>
         <div className={styles.fabHead}>Proto · explore</div>
         <div className={styles.fabRow}>
-          <span className={styles.fabLbl}>Sévérité</span>
+          <span className={styles.fabLbl}>Affichage dans le formulaire (canvas)</span>
+          <div className={styles.segWrap}>
+            {FORM_VIEWS.map((f) => (
+              <button
+                key={f.value}
+                className={formView === f.value ? styles.segBtnActive : styles.segBtn}
+                onClick={() => setFormView(f.value)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className={styles.fabRow}>
+          <span className={styles.fabLbl}>Panneau d'édition (droite)</span>
           <div className={styles.seg}>
-            <button
-              className={sevLayout === 'inline' ? styles.segBtnActive : styles.segBtn}
-              onClick={() => setSevLayout('inline')}
-            >
-              Pastille par ligne
-            </button>
-            <button
-              className={sevLayout === 'groups' ? styles.segBtnActive : styles.segBtn}
-              onClick={() => setSevLayout('groups')}
-            >
-              Deux groupes
-            </button>
+            {SEV_LAYOUTS.map((l) => (
+              <button
+                key={l.value}
+                className={sevLayout === l.value ? styles.segBtnActive : styles.segBtn}
+                onClick={() => setSevLayout(l.value)}
+              >
+                {l.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>

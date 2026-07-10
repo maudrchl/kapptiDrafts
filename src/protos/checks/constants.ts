@@ -113,6 +113,19 @@ export const triggerText = (c: Condition): string => {
   return `${c.subj} ${negPred}${value}`
 }
 
+// Version positive (ce que la condition doit satisfaire).
+export const conditionText = (c: Condition): string => {
+  if (c.kind === 'num' || c.kind === 'time') {
+    return `${c.subj} ${c.op ?? '='} ${c.val}${shortUnit(c.unit)}`
+  }
+  const value = predNeedsValue(c.pred) && c.val ? ` ${c.val}` : ''
+  if (c.kind === 'header') {
+    const name = c.headerName ? ` ${c.headerName}` : ''
+    return `${c.subj}${name} ${c.pred}${value}`
+  }
+  return `${c.subj} ${c.pred}${value}`
+}
+
 export const FRAME_OPTIONS: { value: Frame; label: string }[] = [
   { value: 'sentence', label: 'This step passes when…' },
   { value: 'title', label: 'Success conditions' },

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { SearchInput, BackButton } from '@kapptivate/ui-kit'
 import { GROUPS, ALL_PAGES } from './registry'
@@ -12,6 +12,10 @@ const DesignSystem = () => {
 
   const current = ALL_PAGES.find((p) => p.slug === slug) ?? ALL_PAGES[0]
   const Current = current.Component
+
+  useEffect(() => {
+    document.title = `kapptiDrafts | Design System · ${current.name}`
+  }, [current.name])
 
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase()
