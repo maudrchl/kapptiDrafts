@@ -560,7 +560,21 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 900px;
+  width: 100%;
+}
+
+/* consommation + répartition par signal côte à côte (aligné sur AI Usage) */
+.usageGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .usageGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .cardHead {

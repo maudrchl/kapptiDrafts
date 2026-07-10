@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Button,
   Select,
@@ -7,7 +8,7 @@ import {
   Modal,
   Input,
   Toggle,
-  StatusTag,
+  Tag,
   Card,
   Collapse,
   ActionMenu,
@@ -19,7 +20,6 @@ import {
   PlusSquare,
   LayoutGrid,
   Save,
-  X,
   Calendar,
   ChevronDown,
   Pencil,
@@ -244,7 +244,7 @@ const QUICK_METRICS: { label: string; prompt: string }[] = [
 ]
 
 /* ─── Main Perses view ─── */
-const PersesView = () => {
+const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
   const dashboard = useDashboard()
   const dirty = useDashboardDirty()
 
@@ -453,7 +453,9 @@ const PersesView = () => {
               <span className={styles.grip}><GripVertical size={15} /></span>
               <span className={styles.panelTitle} title={panel.name}>{panel.name}</span>
             </span>
-            <ActionMenu options={menu.options} onClick={menu.onClick} />
+            <span className={styles.panelMenu}>
+              <ActionMenu options={menu.options} onClick={menu.onClick} />
+            </span>
           </div>
           <LineChart panel={panel} height={panel.span === 3 ? 240 : 172} />
         </Card>
@@ -461,13 +463,23 @@ const PersesView = () => {
     )
   }
 
+  {/* Seuls Save/Cancel remontent dans le bandeau du haut (alignés comme les autres tabs). */}
+  const headerActions = (
+    <>
+      <Button color="primary" icon={Save} disabled={!dirty} onClick={save}>Save</Button>
+      <Button color="invisible" onClick={cancel}>Cancel</Button>
+    </>
+  )
+
   return (
     <div className={styles.view}>
-      {/* Toolbar */}
+      {headerSlot ? createPortal(headerActions, headerSlot) : null}
+
+      {/* Dashboard name + build actions (restent dans le body) */}
       <div className={styles.toolbar}>
         <div className={styles.dashName}>
           {dashboard.name}
-          <StatusTag variant="ghost" color="warning">Beta</StatusTag>
+          <Tag color="orange" textColor="orange" weight="semibold">beta</Tag>
         </div>
         <div className={styles.toolbarActions}>
           <Button color="secondary" icon={Sparkles} onClick={() => setAiOpen(true)}>Ask AI</Button>
@@ -476,9 +488,6 @@ const PersesView = () => {
             <Button color="secondary" icon={PlusSquare} onClick={() => setIntentGroup(dashboard.groups[0]?.id ?? null)}>Panel</Button>
             <Button color="secondary" icon={LayoutGrid} onClick={addGroup}>Panel group</Button>
           </ButtonGroup>
-          <span className={styles.actionsDivider} />
-          <Button color="primary" icon={Save} disabled={!dirty} onClick={save}>Save</Button>
-          <Button color="invisible" icon={X} onClick={cancel}>Cancel</Button>
         </div>
       </div>
 
@@ -493,6 +502,7 @@ const PersesView = () => {
       </div>
 
       {/* Groups */}
+      <div className={styles.groupList}>
       <Collapse
         ghost
         expandIconPosition="start"
@@ -536,6 +546,7 @@ const PersesView = () => {
           }
         })}
       />
+      </div>
 
       <EditPanelDrawer
         open={editing !== null}
