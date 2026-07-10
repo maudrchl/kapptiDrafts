@@ -45,7 +45,7 @@ const tag = (value: string): TagValue => ({ value, type: 'tag', color: 'primary'
 
 const Proto = () => {
   const { notification } = useNotification()
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
   const [sending, setSending] = useState(false)
   const [recipients, setRecipients] = useState<TagValue[]>([
     tag('alice@kapptivate.com'),
@@ -62,7 +62,8 @@ const Proto = () => {
   )
   const canSend = committed.length > 0 && !hasInvalid
 
-  const exportExcel = () => notification.info('Report exported as Excel.')
+  const exportExcel = () =>
+    notification.success('Execution details exported successfully')
 
   const openMail = () => setOpen(true)
 
@@ -159,12 +160,12 @@ const Proto = () => {
         <Modal.Content>
           <div style={{ marginBottom: 16 }}>
             <Text size="base" color="primary">
-              The full report for <b>Run #4821</b> will be sent as an Excel
+              The full report for <b>Run #4821</b> will be sent as an
               attachment to each recipient.
             </Text>
           </div>
 
-          <div className={styles.recipientsM}>
+          <div className={styles.recipients}>
             <InputTag
               label="Recipients"
               placeholder="Add an email address…"

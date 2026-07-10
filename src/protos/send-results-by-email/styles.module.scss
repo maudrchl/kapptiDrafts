@@ -1,10 +1,26 @@
 /**
  * `InputTag` n'expose pas de prop `size` : il se rend à 26px (équivalent d'un
- * input `s`). Ici on le cale sur la hauteur d'un input `m` du DS (32px) en
- * ciblant sa zone de saisie `contenteditable` (stable quel que soit le hash
- * de classe généré par la lib).
+ * input `s`). On le cale sur la hauteur d'un input `m` du DS (32px).
+ *
+ * Le composant applique aussi `padding-left: 0` (classe `_noStartPadding`), ce
+ * qui colle le 1er tag au bord. On rétablit un petit padding gauche (3px).
+ *
+ * On masque enfin le suffixe `{}` (affordance variables/suggestions) : on ne
+ * passe pas de `suggestions` ici, et ça n'a pas de sens pour des emails. Du
+ * coup on referme la bordure droite du champ (coins arrondis).
+ *
+ * On cible via le `contenteditable` (stable quel que soit le hash de classe).
  */
-.recipientsM :global([contenteditable='true']) {
-  height: 32px;
-  line-height: 32px;
+.recipients {
+  :global([contenteditable='true']) {
+    height: 32px;
+    line-height: 32px;
+    padding-left: 3px;
+    border-radius: var(--spacing-2);
+  }
+
+  // suffixe `{}` (sibling direct du champ) — non pertinent pour des emails
+  :global([contenteditable='true']) + div {
+    display: none;
+  }
 }
