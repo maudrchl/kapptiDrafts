@@ -11,6 +11,7 @@ import {
   Button,
   Text,
   ExternalLink,
+  useNotification,
   IconFolder,
   IconHelpCircle,
   IconSearch,
@@ -540,3 +541,76 @@ export const LoaderPage = () => (
     />
   </Page>
 )
+
+export const NotificationsPage = () => {
+  const { notification } = useNotification()
+  return (
+    <Page
+      title="Notifications"
+      description="Transient, non-blocking feedback shown in the bottom-right corner. Trigger it from anywhere with the useNotification hook — to confirm an action or surface a background result. Never use it for something the user must act on (reach for a Banner or Alert instead)."
+      importCode={"import { useNotification } from '@kapptivate/ui-kit'"}
+    >
+      <Demo title="Types">
+        <Button color="secondary" onClick={() => notification.success('Changes saved.')}>
+          Success
+        </Button>
+        <Button color="secondary" onClick={() => notification.info('A new version is available.')}>
+          Info
+        </Button>
+        <Button
+          color="secondary"
+          onClick={() => notification.warning('Your session will expire soon.')}
+        >
+          Warning
+        </Button>
+        <Button color="secondary" onClick={() => notification.error("Couldn't save your changes.")}>
+          Error
+        </Button>
+      </Demo>
+
+      <Demo title="Loading & manual dismiss">
+        <Button color="secondary" onClick={() => notification.loading('Running your test…', { key: 'run' })}>
+          Start loading
+        </Button>
+        <Button color="invisible" onClick={() => notification.destroy('run')}>
+          Dismiss it
+        </Button>
+      </Demo>
+
+      <Demo title="Persistent (no close cross)">
+        <Button
+          color="secondary"
+          onClick={() =>
+            notification.info('Read the release notes before continuing.', { canDismiss: false })
+          }
+        >
+          Non-dismissable
+        </Button>
+      </Demo>
+
+      <Demo title="Usage" column>
+        <Text size="s" color="secondary">
+          The hook reads its context from AntdTheme, which is already mounted at the app root in
+          main.tsx — so useNotification() works from any component, no extra provider needed.
+        </Text>
+      </Demo>
+
+      <PropsTable
+        title="useNotification().notification"
+        rows={[
+          { name: 'success / info / warning / error', type: '(message: ReactNode, config?) => void', description: 'Show a toast of that type — each ships its own icon and color' },
+          { name: 'loading', type: '(message: ReactNode, config?) => void', description: 'Spinner toast that stays until you destroy it' },
+          { name: 'destroy', type: '(key?: Key) => void', description: 'Close a specific toast by key, or all of them if no key is passed' },
+        ]}
+      />
+      <PropsTable
+        title="config (NotificationConfig)"
+        rows={[
+          { name: 'key', type: 'React.Key', description: 'Identifier used to update or dismiss (destroy) a specific toast' },
+          { name: 'canDismiss', type: 'boolean', default: 'true', description: 'Set to false to remove the close cross and keep it until destroyed' },
+          { name: 'btn', type: 'ReactNode', description: 'Optional action button rendered inside the toast' },
+        ]}
+      />
+    </Page>
+  )
+}

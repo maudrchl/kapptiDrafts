@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Text,
@@ -87,6 +87,10 @@ const IndexPage = () => {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | ProtoStatus>('all')
+
+  useEffect(() => {
+    document.title = 'kapptiDrafts'
+  }, [])
 
   const open = (p: CatalogEntry) => {
     if (p.kind === 'react') navigate(p.target)

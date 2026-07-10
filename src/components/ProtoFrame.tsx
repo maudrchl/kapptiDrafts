@@ -1,4 +1,4 @@
-import { useState, type ReactNode, type CSSProperties } from 'react'
+import { useEffect, useState, type ReactNode, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { IconCode } from '@kapptivate/ui-kit'
 import logo from '../assets/kapptidrafts-logo.svg'
@@ -22,6 +22,11 @@ const ProtoFrame = ({
   children: ReactNode
 }) => {
   const [codeOpen, setCodeOpen] = useState(false)
+
+  useEffect(() => {
+    document.title = `kapptiDrafts | ${title}`
+  }, [title])
+
   return (
     <>
       {children}

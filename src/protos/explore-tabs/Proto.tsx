@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { notification } from 'antd'
 import {
   Button,
   SearchInput,
@@ -49,8 +48,14 @@ import {
   Copy,
   Check,
   Plus,
+  Pin,
 } from 'lucide-react'
 import styles from './explore-tabs.module.scss'
+import PersesView from './PersesView'
+import { toast, ToastMount } from './toast'
+import { dashboardStore } from './dashboardStore'
+import { interpretPrompt } from './perses'
+import type { PanelSpec } from './perses'
 import type { ExploreTab, PodEntry, SignalKey } from './constants'
 import {
   PAGE_META,
@@ -101,6 +106,7 @@ const NAV_EXPLORE: { key: ExploreTab; icon: React.ComponentType<{ size?: number 
   { key: 'svcmap', icon: IconNetwork, label: 'Service map' },
   { key: 'k8s', icon: IconWrench, label: 'Kubernetes' },
   { key: 'usage', icon: IconBarChartBig, label: 'Usage & ingestion' },
+  { key: 'perses', icon: IconGlobe, label: 'Traces (Perses)' },
 ]
 
 const LOG_LEVEL_CLASSES: Record<string, string> = {
@@ -108,15 +114,6 @@ const LOG_LEVEL_CLASSES: Record<string, string> = {
   warn: styles.logLevelWarn,
   error: styles.logLevelError,
   debug: styles.logLevelDebug,
-}
-
-/* Toast feedback — antd notification, themed by the app's AntdTheme (ConfigProvider).
-   NB: the ui-kit's own useNotification() throws without a NotificationProvider,
-   which the package doesn't export, so we use antd's notification directly. */
-const toast = {
-  success: (m: string) => notification.success({ message: m, placement: 'bottomRight', duration: 3 }),
-  info: (m: string) => notification.info({ message: m, placement: 'bottomRight', duration: 3 }),
-  error: (m: string) => notification.error({ message: m, placement: 'bottomRight', duration: 3 }),
 }
 
 const genKey = () => {
@@ -899,7 +896,7 @@ const UsageView = ({
 /* ─── Main Proto ─── */
 const ExploreTabsProto = () => {
   const [mode, setMode] = useState<'run' | 'obs'>('obs')
-  const [tab, setTab] = useState<ExploreTab>('logs')
+  const [tab, setTab] = useState<ExploreTab>('perses')
 
   // lifted view state (needed by header actions)
   const [logSearch, setLogSearch] = useState('')
@@ -984,6 +981,24 @@ const ExploreTabsProto = () => {
       case 'Adjust quota':
         setQuotaOpen(true)
         break
+      case 'Pin as panel': {
+        const spec: PanelSpec =
+          tab === 'logs'
+            ? {
+                name: logSearch.trim() ? `Logs: ${logSearch.trim()}` : 'Log volume',
+                unit: 'lines/min',
+                queryType: 'clickhouse-sql',
+                sql: 'SELECT toStartOfInterval(Timestamp, INTERVAL 60 SECOND) AS t, count() AS value FROM otel_logs\nWHERE Timestamp BETWEEN {from:DateTime64(3)} AND {to:DateTime64(3)}\nGROUP BY t ORDER BY t',
+                yMin: 0,
+                yMax: 120,
+                yTicks: 7,
+              }
+            : interpretPrompt(traceSearch.trim() || 'spans count').panels[0]
+        dashboardStore.addPanel(spec)
+        toast.success('Pinned to traces-mirror — open Traces (Perses)')
+        setTab('perses')
+        break
+      }
       default:
         break
     }
@@ -1012,6 +1027,8 @@ const ExploreTabsProto = () => {
         return <KubernetesView />
       case 'usage':
         return <UsageView cap={cap} setCap={setCap} quotaOpen={quotaOpen} setQuotaOpen={setQuotaOpen} />
+      case 'perses':
+        return <PersesView />
     }
   }
 
@@ -1019,6 +1036,7 @@ const ExploreTabsProto = () => {
 
   return (
     <div className={styles.page}>
+      <ToastMount />
       {/* Sidebar */}
       <aside className={styles.sidebar}>
         <div className={styles.brand}>
@@ -1091,7 +1109,7 @@ const ExploreTabsProto = () => {
               <Button
                 key={a.label}
                 color={a.primary ? 'primary' : 'secondary'}
-                icon={a.label === 'Export' ? IconDownload : a.label === 'Create alert' ? Plus : undefined}
+                icon={a.label === 'Export' ? IconDownload : a.label === 'Create alert' ? Plus : a.label === 'Pin as panel' ? Pin : undefined}
                 disabled={actionDisabled(a.label)}
                 onClick={() => runAction(a.label)}
               >

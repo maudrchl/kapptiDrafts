@@ -425,6 +425,16 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   font-size: 13px;
   color: $ink-2;
 }
+.chipsWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chipsLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: $ink-2;
+}
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -462,9 +472,17 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   font-weight: 600;
 }
 .dotFail {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
   background: $fail;
 }
 .dotWarn {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
   background: $warn;
 }
 .causeFail {
@@ -1198,4 +1216,102 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   background: $surface;
   color: $ink;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.segWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.segWrap .segBtn,
+.segWrap .segBtnActive {
+  background: $surface-2;
+  border: 1px solid $border;
+}
+.segWrap .segBtnActive {
+  background: $surface;
+  color: $ink;
+  border-color: $border-strong;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================================
+ *  AFFICHAGE DU RÉCAP DANS LE FORMULAIRE (canvas) — variantes
+ * ============================================================ */
+.fmLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: $ink-2;
+}
+
+/* B — groupé par sévérité */
+.fmGrouped {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fmGroupRow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  color: $ink;
+}
+.fmTag {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  min-width: 96px;
+}
+.fmTagFail {
+  color: $fail;
+}
+.fmTagWarn {
+  color: $warn;
+}
+.fmGroupConds {
+  color: $ink-2;
+  line-height: 1.5;
+}
+
+/* C — checklist */
+.fmList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fmList .fmLabel {
+  margin-bottom: 2px;
+}
+.fmListRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: $ink;
+  padding: 3px 0;
+}
+.fmListCond {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.fmPill {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.fmPillFail {
+  color: $fail;
+  background: $fail-soft;
+}
+.fmPillWarn {
+  color: $warn;
+  background: $warn-soft;
 }

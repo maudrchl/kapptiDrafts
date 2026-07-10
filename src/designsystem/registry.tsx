@@ -37,6 +37,7 @@ import {
   PopoverPage,
   EmptyStatePage,
   LoaderPage,
+  NotificationsPage,
 } from './pages/feedback'
 import { TabsPage, BreadcrumbPage, AnchorPage } from './pages/navigation'
 
@@ -94,6 +95,7 @@ export const GROUPS: DsGroup[] = [
     label: 'Feedback',
     pages: [
       { slug: 'banner', name: 'Banner', Component: BannerPage },
+      { slug: 'notifications', name: 'Notifications', Component: NotificationsPage },
       { slug: 'alert', name: 'Alert', Component: AlertPage },
       { slug: 'modal', name: 'Modal', Component: ModalPage },
       { slug: 'drawer', name: 'Drawer', Component: DrawerPage },

@@ -1,0 +1,10 @@
+/**
+ * `InputTag` n'expose pas de prop `size` : il se rend à 26px (équivalent d'un
+ * input `s`). Ici on le cale sur la hauteur d'un input `m` du DS (32px) en
+ * ciblant sa zone de saisie `contenteditable` (stable quel que soit le hash
+ * de classe généré par la lib).
+ */
+.recipientsM :global([contenteditable='true']) {
+  height: 32px;
+  line-height: 32px;
+}
