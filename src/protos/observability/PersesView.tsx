@@ -130,7 +130,7 @@ const EditPanelDrawer = ({
         <div className={styles.editField}>
           <label>Type</label>
           <Select fullWidth value={draft.type} onChange={(_e, v) => set({ type: v as PanelType })} options={PANEL_TYPE_OPTIONS} />
-          <span className={styles.vizHint}><BarChart3 size={12} /> Suggested: {viz.type} — {viz.reason}</span>
+          <span className={styles.vizHint}><BarChart3 size={12} /> Suggested: {viz.type} · {viz.reason}</span>
         </div>
       </div>
 
@@ -583,7 +583,7 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
             <span className={`${styles.intentIcon} ${styles.intentAi}`}><Sparkles size={18} /></span>
             <span className={styles.intentText}>
               <b>Describe it with AI</b>
-              <small>Say what you want in plain English — Kappti AI writes the query.</small>
+              <small>Say what you want in plain English. Kappti AI writes the query.</small>
             </span>
           </button>
           <div className={styles.intentDivider}>or pick a metric</div>

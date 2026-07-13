@@ -21,24 +21,20 @@ export type CurrentUser = {
   color: string
 }
 
-/** Palette d'avatars vive, choisie de façon déterministe par email
- *  (contraste OK avec des initiales blanches). */
-const AVATAR_COLORS = [
-  '#E5322D', // rouge
-  '#EA580C', // orange
-  '#CA8A04', // ambre
-  '#16A34A', // vert
-  '#2563EB', // bleu
-  '#7C3AED', // violet
-  '#DB2777', // rose
-  '#0891B2', // cyan
-]
-
 const hash = (s: string): number => {
   let h = 0
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
   return Math.abs(h)
 }
+
+/**
+ * Couleur d'avatar dérivée de l'email : une teinte sur toute la roue chromatique
+ * plutôt qu'une petite palette figée, pour que chaque personne ait sa propre
+ * couleur (quasi-unique, déterministe et stable). Saturation/luminosité fixées
+ * pour garder un bon contraste avec les initiales blanches sur toutes les teintes.
+ */
+const colorFromEmail = (email: string): string =>
+  `hsl(${hash(email) % 360}, 62%, 45%)`
 
 const cap = (w: string) => (w ? w[0].toUpperCase() + w.slice(1) : w)
 
@@ -52,7 +48,7 @@ export function deriveIdentity(email: string): CurrentUser {
       ? words[0][0] + words[1][0]
       : (words[0] ?? local).slice(0, 2)
     ).toUpperCase() || '?'
-  const color = AVATAR_COLORS[hash(email) % AVATAR_COLORS.length]
+  const color = colorFromEmail(email)
   return { email, name, initials, color }
 }
 

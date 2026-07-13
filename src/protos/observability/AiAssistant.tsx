@@ -34,7 +34,7 @@ const AiAssistant = ({ open, onClose }: { open: boolean; onClose: () => void }) 
     {
       role: 'ai',
       text:
-        "Hi — I'm Kappti AI. Describe the data you want and I'll write the ClickHouse query and build the panel for you. No SQL required.",
+        "Hi, I'm Kappti AI. Describe the data you want and I'll write the ClickHouse query and build the panel for you. No SQL required.",
     },
   ])
   const [input, setInput] = useState('')

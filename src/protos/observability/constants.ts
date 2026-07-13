@@ -1,4 +1,13 @@
-export type ExploreTab = 'logs' | 'traces' | 'svcmap' | 'k8s' | 'usage' | 'perses'
+export type ExploreTab =
+  | 'logs'
+  | 'traces'
+  | 'svcmap'
+  | 'k8s'
+  | 'usage'
+  | 'perses'
+  | 'alerts'
+  | 'incidents'
+  | 'destinations'
 
 export const EXPLORE_TABS: { key: ExploreTab; label: string }[] = [
   { key: 'logs', label: 'Logs explorer' },
@@ -7,6 +16,9 @@ export const EXPLORE_TABS: { key: ExploreTab; label: string }[] = [
   { key: 'k8s', label: 'Kubernetes' },
   { key: 'usage', label: 'Usage & ingestion' },
   { key: 'perses', label: 'Traces (Perses)' },
+  { key: 'alerts', label: 'Alerts' },
+  { key: 'incidents', label: 'Incidents' },
+  { key: 'destinations', label: 'Destinations' },
 ]
 
 export const PAGE_META: Record<
@@ -26,7 +38,7 @@ export const PAGE_META: Record<
     sub: 'Distributed tracing to follow requests across your microservices',
     actions: [
       { label: 'Pin as panel', primary: false },
-      { label: 'Compare traces', primary: true },
+      { label: 'Create alert', primary: true },
     ],
   },
   svcmap: {
@@ -58,10 +70,25 @@ export const PAGE_META: Record<
     sub: 'Build and edit trace dashboards backed by ClickHouse, Perses-powered',
     actions: [],
   },
+  alerts: {
+    title: 'Alerts',
+    sub: 'Rules that watch a query and notify a destination when a condition is met',
+    actions: [{ label: 'Create alert', primary: true }],
+  },
+  incidents: {
+    title: 'Incidents',
+    sub: 'Incidents opened by your alerts, with acknowledge and resolve actions',
+    actions: [],
+  },
+  destinations: {
+    title: 'Destinations',
+    sub: 'Reusable notification targets used by your alerts',
+    actions: [{ label: 'Add destination', primary: true }],
+  },
 }
 
 /* ─────────────────────────────────────────────
- *  Usage & ingestion (mock) — vue "Usage & ingestion"
+ *  Usage & ingestion (mock) - vue "Usage & ingestion"
  * ───────────────────────────────────────────── */
 export const OTLP_ENDPOINT_USAGE = 'https://otlp.eu.kapptivate.com:4317'
 export const OTLP_INTERNAL_ID = '3e8bb916-ff44-5a58-b45d-72ef8b0b76d8'
@@ -91,16 +118,16 @@ export const SIGNALS: SignalDatum[] = [
   { key: 'traces', name: 'Traces', size: '847.3 KB', bytes: 0.847, color: '#f2b338', meta: '1,344 spans · 1,018 traces · 17 errors', share: 0.12 },
 ]
 
-/** Consommation journalière (GB) — mois courant. */
+/** Consommation journalière (GB) - mois courant. */
 export const DAILY_GB = [
   0.9, 1.4, 1.1, 2.1, 1.7, 0.6, 0.4, 1.9, 2.6, 2.2, 1.5, 1.2, 3.4, 2.9, 1.8, 2.4, 2.7, 3.1, 2.0, 1.6, 2.8, 3.6, 2.3,
 ]
 export const DAILY_BUDGET_GB = 3.0
 
 export const RETENTION_LABELS: Record<string, string> = {
-  standard: 'Standard — 15 days',
-  extended: 'Extended — 30 days',
-  long: 'Long-term — 90 days + cold tier',
+  standard: 'Standard - 15 days',
+  extended: 'Extended - 30 days',
+  long: 'Long-term - 90 days + cold tier',
 }
 
 /* Options du flow de création d'alerte. */
@@ -110,14 +137,106 @@ export const ALERT_SEVERITIES = [
   { label: 'Info', value: 'info' },
 ]
 export const ALERT_CHANNELS = [
-  { label: 'Email — on-call', value: 'email' },
-  { label: 'Slack — #alerts', value: 'slack' },
+  { label: 'Email - on-call', value: 'email' },
+  { label: 'Slack - #alerts', value: 'slack' },
   { label: 'PagerDuty', value: 'pagerduty' },
 ]
 export const ALERT_OPERATORS = [
   { label: 'is above', value: 'gt' },
   { label: 'is above or equal', value: 'gte' },
   { label: 'is below', value: 'lt' },
+]
+
+/* Cadence d'évaluation d'une alerte (scheduled), fenêtre de données, anti-spam. */
+export const ALERT_FREQUENCIES = [
+  { label: 'Every 1 min', value: '1' },
+  { label: 'Every 5 min', value: '5' },
+  { label: 'Every 10 min', value: '10' },
+  { label: 'Every 15 min', value: '15' },
+  { label: 'Every 30 min', value: '30' },
+  { label: 'Every hour', value: '60' },
+]
+export const ALERT_LOOKBACKS = [
+  { label: 'Last 5 min', value: '5' },
+  { label: 'Last 15 min', value: '15' },
+  { label: 'Last 30 min', value: '30' },
+  { label: 'Last 1 hour', value: '60' },
+  { label: 'Last 6 hours', value: '360' },
+]
+export const ALERT_COOLDOWNS = [
+  { label: 'No cooldown', value: '0' },
+  { label: '5 min', value: '5' },
+  { label: '15 min', value: '15' },
+  { label: '30 min', value: '30' },
+  { label: '1 hour', value: '60' },
+]
+
+/* ─── Destinations (cibles de notification réutilisables) ─── */
+export type DestinationType = 'slack' | 'email' | 'webhook' | 'teams' | 'pagerduty'
+export const DESTINATION_TYPES: { label: string; value: DestinationType }[] = [
+  { label: 'Slack', value: 'slack' },
+  { label: 'Email', value: 'email' },
+  { label: 'Webhook', value: 'webhook' },
+  { label: 'Microsoft Teams', value: 'teams' },
+  { label: 'PagerDuty', value: 'pagerduty' },
+]
+export type DestinationItem = {
+  key: string
+  name: string
+  type: DestinationType
+  target: string
+  usedBy: number
+}
+export const DESTINATIONS: DestinationItem[] = [
+  { key: 'dst-slack-alerts', name: 'Slack #alerts', type: 'slack', target: '#alerts', usedBy: 3 },
+  { key: 'dst-oncall-email', name: 'On-call email', type: 'email', target: 'oncall@rocketcorp.io', usedBy: 2 },
+  { key: 'dst-pagerduty', name: 'PagerDuty escalation', type: 'pagerduty', target: 'PD service P3XZ9', usedBy: 1 },
+  { key: 'dst-webhook', name: 'Ops webhook', type: 'webhook', target: 'https://hooks.rocketcorp.io/obs', usedBy: 1 },
+]
+
+/* ─── Alerts (règles) ─── */
+export type AlertStatus = 'active' | 'silenced' | 'firing'
+export type AlertItem = {
+  key: string
+  name: string
+  signal: 'logs' | 'traces' | 'metrics'
+  query: string
+  operator: string
+  threshold: number
+  checkEvery: number
+  lookBack: number
+  cooldown: number
+  severity: string
+  destinationKey: string
+  createsIncident: boolean
+  status: AlertStatus
+  lastTriggered: string
+}
+export const ALERTS: AlertItem[] = [
+  { key: 'al-1', name: 'High checkout error rate', signal: 'logs', query: 'level:error svc:demo-site route:/api/order', operator: 'gt', threshold: 5, checkEvery: 5, lookBack: 15, cooldown: 30, severity: 'critical', destinationKey: 'dst-pagerduty', createsIncident: true, status: 'firing', lastTriggered: '8 min ago' },
+  { key: 'al-2', name: 'Payment latency p95 high', signal: 'traces', query: 'service:payment-service p95_ms', operator: 'gt', threshold: 1000, checkEvery: 5, lookBack: 30, cooldown: 15, severity: 'warning', destinationKey: 'dst-slack-alerts', createsIncident: true, status: 'active', lastTriggered: '2 hours ago' },
+  { key: 'al-3', name: 'Login failures spike', signal: 'logs', query: 'level:warn route:/api/login', operator: 'gte', threshold: 20, checkEvery: 10, lookBack: 30, cooldown: 30, severity: 'warning', destinationKey: 'dst-slack-alerts', createsIncident: false, status: 'active', lastTriggered: 'Yesterday' },
+  { key: 'al-4', name: 'Ingestion quota near limit', signal: 'metrics', query: 'observability.usage.bytes', operator: 'gt', threshold: 90, checkEvery: 60, lookBack: 360, cooldown: 60, severity: 'info', destinationKey: 'dst-oncall-email', createsIncident: false, status: 'active', lastTriggered: 'Never' },
+  { key: 'al-5', name: 'Menu service 5xx', signal: 'traces', query: 'service:demo-site status:error route:/api/menu', operator: 'gt', threshold: 3, checkEvery: 5, lookBack: 15, cooldown: 15, severity: 'critical', destinationKey: 'dst-slack-alerts', createsIncident: true, status: 'silenced', lastTriggered: '3 days ago' },
+]
+
+/* ─── Incidents (ouverts par les alertes) ─── */
+export type IncidentStatus = 'open' | 'acknowledged' | 'resolved'
+export type IncidentItem = {
+  key: string
+  title: string
+  alertKey: string
+  severity: string
+  status: IncidentStatus
+  service: string
+  openedAt: string
+  duration: string
+}
+export const INCIDENTS: IncidentItem[] = [
+  { key: 'inc-1', title: 'Checkout errors above threshold', alertKey: 'al-1', severity: 'critical', status: 'open', service: 'demo-site', openedAt: '2026-07-13 08:03', duration: '8 min' },
+  { key: 'inc-2', title: 'Payment latency degraded', alertKey: 'al-2', severity: 'warning', status: 'acknowledged', service: 'payment-service', openedAt: '2026-07-13 06:12', duration: '2 h' },
+  { key: 'inc-3', title: 'Menu service returning 5xx', alertKey: 'al-5', severity: 'critical', status: 'resolved', service: 'demo-site', openedAt: '2026-07-10 14:20', duration: '42 min' },
+  { key: 'inc-4', title: 'Login failures spike', alertKey: 'al-3', severity: 'warning', status: 'resolved', service: 'demo-site', openedAt: '2026-07-12 19:45', duration: '1 h 10 min' },
 ]
 
 export type LogEntry = {
@@ -129,20 +248,20 @@ export type LogEntry = {
 }
 
 export const LOGS: LogEntry[] = [
-  { key: 'l1', ts: '2026-07-13 08:11:35.501', level: 'info', svc: 'demo-site', msg: 'GET /api/admin/orders 200 — 39ms' },
-  { key: 'l2', ts: '2026-07-13 08:11:35.462', level: 'debug', svc: 'demo-site', msg: 'Admin orders list — 24 orders' },
+  { key: 'l1', ts: '2026-07-13 08:11:35.501', level: 'info', svc: 'demo-site', msg: 'GET /api/admin/orders 200 - 39ms' },
+  { key: 'l2', ts: '2026-07-13 08:11:35.462', level: 'debug', svc: 'demo-site', msg: 'Admin orders list - 24 orders' },
   { key: 'l3', ts: '2026-07-13 08:11:35.417', level: 'info', svc: 'demo-site', msg: 'Order ORD-MRIXZUY9 status: ready → delivered' },
-  { key: 'l4', ts: '2026-07-13 08:11:35.417', level: 'info', svc: 'demo-site', msg: 'PATCH /api/orders/ORD-MRIXZUY9/status 200 — 3ms' },
-  { key: 'l5', ts: '2026-07-13 08:11:35.204', level: 'info', svc: 'payment-service', msg: 'Payment captured — ORD-MRIXZUY9 — €42.90 — stripe' },
-  { key: 'l6', ts: '2026-07-13 08:10:48.544', level: 'info', svc: 'demo-site', msg: 'GET /api/menu 200 — 1ms' },
-  { key: 'l7', ts: '2026-07-13 08:10:48.487', level: 'debug', svc: 'demo-site', msg: 'Menu requested — 18 items — cache hit' },
-  { key: 'l8', ts: '2026-07-13 08:10:24.944', level: 'info', svc: 'demo-site', msg: 'POST /api/order 200 — 278ms' },
-  { key: 'l9', ts: '2026-07-13 08:10:24.902', level: 'info', svc: 'demo-site', msg: 'Order ORD-MRIXGHJY created — 3 items — €58.40' },
-  { key: 'l10', ts: '2026-07-13 08:09:20.118', level: 'warn', svc: 'payment-service', msg: 'Payment gateway latency high — stripe p95=1,240ms' },
-  { key: 'l11', ts: '2026-07-13 08:08:34.552', level: 'error', svc: 'payment-service', msg: 'Payment declined — card_declined — ORD-MRIWX7E7' },
-  { key: 'l12', ts: '2026-07-13 08:08:34.510', level: 'info', svc: 'demo-site', msg: 'POST /api/login 200 — 461ms' },
-  { key: 'l13', ts: '2026-07-13 08:08:34.104', level: 'debug', svc: 'demo-site', msg: 'Session created — user_id=u_8823' },
-  { key: 'l14', ts: '2026-07-13 08:07:59.330', level: 'warn', svc: 'demo-site', msg: "Slow query — SELECT orders WHERE status='pending' — 842ms" },
+  { key: 'l4', ts: '2026-07-13 08:11:35.417', level: 'info', svc: 'demo-site', msg: 'PATCH /api/orders/ORD-MRIXZUY9/status 200 - 3ms' },
+  { key: 'l5', ts: '2026-07-13 08:11:35.204', level: 'info', svc: 'payment-service', msg: 'Payment captured - ORD-MRIXZUY9 - €42.90 - stripe' },
+  { key: 'l6', ts: '2026-07-13 08:10:48.544', level: 'info', svc: 'demo-site', msg: 'GET /api/menu 200 - 1ms' },
+  { key: 'l7', ts: '2026-07-13 08:10:48.487', level: 'debug', svc: 'demo-site', msg: 'Menu requested - 18 items - cache hit' },
+  { key: 'l8', ts: '2026-07-13 08:10:24.944', level: 'info', svc: 'demo-site', msg: 'POST /api/order 200 - 278ms' },
+  { key: 'l9', ts: '2026-07-13 08:10:24.902', level: 'info', svc: 'demo-site', msg: 'Order ORD-MRIXGHJY created - 3 items - €58.40' },
+  { key: 'l10', ts: '2026-07-13 08:09:20.118', level: 'warn', svc: 'payment-service', msg: 'Payment gateway latency high - stripe p95=1,240ms' },
+  { key: 'l11', ts: '2026-07-13 08:08:34.552', level: 'error', svc: 'payment-service', msg: 'Payment declined - card_declined - ORD-MRIWX7E7' },
+  { key: 'l12', ts: '2026-07-13 08:08:34.510', level: 'info', svc: 'demo-site', msg: 'POST /api/login 200 - 461ms' },
+  { key: 'l13', ts: '2026-07-13 08:08:34.104', level: 'debug', svc: 'demo-site', msg: 'Session created - user_id=u_8823' },
+  { key: 'l14', ts: '2026-07-13 08:07:59.330', level: 'warn', svc: 'demo-site', msg: "Slow query - SELECT orders WHERE status='pending' - 842ms" },
 ]
 
 export type TraceEntry = {
@@ -212,6 +331,33 @@ export const TRACES: TraceEntry[] = [
       { left: 72, width: 24, color: '#34d399', label: 'notification' },
     ],
   },
+]
+
+/* ─── Compare period-over-period (mock) ───
+ * Agrégats de la fenêtre courante vs la précédente, pour le mode "Compare to
+ * previous period" de la vue Traces. */
+export type CompareMetric = { cur: number; prev: number }
+export const TRACE_COMPARE: {
+  requests: CompareMetric
+  errorRate: CompareMetric
+  avg: CompareMetric
+  p95: CompareMetric
+  p99: CompareMetric
+} = {
+  requests: { cur: 48200, prev: 41000 },
+  errorRate: { cur: 2.1, prev: 1.7 },
+  avg: { cur: 127, prev: 118 },
+  p95: { cur: 445, prev: 418 },
+  p99: { cur: 890, prev: 1010 },
+}
+
+/** Latence moyenne par service, fenêtre courante vs précédente (ms). */
+export const SERVICE_LATENCY_DELTA: { name: string; color: string; prevMs: number; currMs: number }[] = [
+  { name: 'stripe', color: '#a78bfa', prevMs: 210, currMs: 342 },
+  { name: 'payment-service', color: '#1fae7e', prevMs: 96, currMs: 118 },
+  { name: 'postgres', color: '#f59e0b', prevMs: 44, currMs: 39 },
+  { name: 'redis', color: '#06b6d4', prevMs: 12, currMs: 11 },
+  { name: 'demo-site', color: '#6366f1', prevMs: 58, currMs: 55 },
 ]
 
 export type ServiceNode = {

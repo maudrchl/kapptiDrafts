@@ -50,7 +50,7 @@ const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) =
         ))}
         {series.map((s) =>
           segmentsFor(s.points).map((pts, i) => (
-            <polyline key={s.name + i} points={pts} fill="none" stroke={s.color} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />
+            <polyline key={s.name + i} points={pts} fill="none" stroke={s.color} strokeWidth={1.6} strokeDasharray={s.dash ? '4 4' : undefined} opacity={s.opacity ?? 1} strokeLinejoin="round" strokeLinecap="round" />
           )),
         )}
       </svg>
@@ -58,7 +58,7 @@ const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) =
         <div className={styles.legend}>
           {series.map((s) => (
             <span key={s.name} className={styles.legendItem}>
-              <span className={styles.legendDash} style={{ background: s.color }} />
+              <span className={styles.legendDash} style={{ background: s.color, opacity: s.opacity ?? 1 }} />
               {s.name}
             </span>
           ))}
