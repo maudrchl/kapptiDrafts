@@ -559,18 +559,6 @@ const TracesView = ({
         <span>Showing {filtered.length} of {TRACES.length} traces</span>
       </div>
 
-      {legend.length > 0 && (
-        <div className={styles.traceLegend}>
-          <span className={styles.traceLegendLabel}>Time by service</span>
-          {legend.map((l) => (
-            <span key={l.name} className={styles.traceLegendItem}>
-              <span className={styles.traceLegendDot} style={{ background: l.color }} />
-              {l.name}
-            </span>
-          ))}
-        </div>
-      )}
-
       {filtered.length === 0 ? (
         <EmptyState
           icon={<IconSearchX />}
@@ -579,6 +567,19 @@ const TracesView = ({
         />
       ) : (
         <div className={styles.traceList}>
+        {legend.length > 0 && (
+          <div className={styles.traceListHead}>
+            <span className={styles.traceLegendLabel}>Time by service</span>
+            <div className={styles.traceLegendItems}>
+              {legend.map((l) => (
+                <span key={l.name} className={styles.traceLegendItem}>
+                  <span className={styles.traceLegendDot} style={{ background: l.color }} />
+                  {l.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
         {filtered.map((t) => {
           return (
             <div

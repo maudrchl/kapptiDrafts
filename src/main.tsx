@@ -6,6 +6,7 @@ import '@kapptivate/ui-kit/dist/style.css'
 import './index.css'
 import './i18n'
 import App from './App'
+import UpdatePrompt from './components/UpdatePrompt'
 import { CurrentUserProvider } from './context/CurrentUser'
 
 createRoot(document.getElementById('root')!).render(
@@ -14,6 +15,7 @@ createRoot(document.getElementById('root')!).render(
       <AntdTheme>
         <CurrentUserProvider>
           <App />
+          <UpdatePrompt />
         </CurrentUserProvider>
       </AntdTheme>
     </BrowserRouter>

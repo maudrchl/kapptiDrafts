@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
 
+/** Identifiant du build courant, injecté par vite.config (versionPlugin). */
+declare const __BUILD_ID__: string
+
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string
   readonly VITE_SUPABASE_ANON_KEY?: string
