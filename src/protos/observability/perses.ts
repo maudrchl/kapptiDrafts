@@ -14,8 +14,15 @@ export type QueryType =
   | 'clickhouse-timeseries'
   | 'clickhouse-table'
 
-/** Une valeur `null` = trou dans la série (la ligne s'interrompt). */
-export type Series = { name: string; color: string; points: (number | null)[] }
+/** Une valeur `null` = trou dans la série (la ligne s'interrompt).
+    `dash`/`opacity` = tracé fantôme (ex. période précédente en comparaison). */
+export type Series = {
+  name: string
+  color: string
+  points: (number | null)[]
+  dash?: boolean
+  opacity?: number
+}
 
 export type Panel = {
   id: string
@@ -225,6 +232,19 @@ export const TRACE_OVERVIEW_PANELS: Panel[] = [
   },
 ]
 
+/** Courbe p95 superposée pour le compare period-over-period : période courante
+ *  (plein) vs précédente (fantôme pointillé). Pleine largeur, légende visible. */
+export const TRACE_COMPARE_PANEL: Panel = {
+  id: 'cmp_p95', name: 'Request Duration (p95)', description: '', type: 'timeseries',
+  queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES('quantile(0.95)(Duration) / 1e6'),
+  unit: 'ms', showLegend: true, yMin: 300, yMax: 600, yTicks: 7,
+  xLabels: X_LABELS['1h'], span: 3,
+  series: [
+    { name: 'Previous period', color: '#98a2b3', dash: true, opacity: 0.55, points: [400, 420, 415, 430, 410, 425, 418] },
+    { name: 'Current period', color: '#8b5cf6', points: [430, 470, 450, 500, 460, 480, 445] },
+  ],
+}
+
 /** Texte d'aide sous l'éditeur SQL (repris des maquettes). */
 export const SQL_HINT =
   'Bucket column aliased t; numeric columns become series; string columns group into labelled series. {from}/{to}/{tenantId} are bound server-side.'
@@ -320,7 +340,7 @@ export const interpretPrompt = (raw: string): AiProposal => {
     const opMatch = raw.match(/for\s+([a-z0-9\-_.]+)/i)
     const op = opMatch ? opMatch[1] : 'rocket-app'
     return {
-      reply: `Here's a starter RED board for **${op}** — request rate, error rate and p95 latency, all scoped to the operator. Add it, then tweak any panel.`,
+      reply: `Here's a starter RED board for **${op}**: request rate, error rate and p95 latency, all scoped to the operator. Add it, then tweak any panel.`,
       panels: SIGNAL_SEEDS.traces.panels,
     }
   }
@@ -374,7 +394,7 @@ export const interpretPrompt = (raw: string): AiProposal => {
 
   // fallback
   return {
-    reply: `I turned that into a span-count panel to get you started — refine the wording (try "p95 duration by service" or "error rate") and I'll adjust the query.`,
+    reply: `I turned that into a span-count panel to get you started. Refine the wording (try "p95 duration by service" or "error rate") and I'll adjust the query.`,
     panels: [{ name: raw.slice(0, 40) || 'New panel', queryType: 'clickhouse-sql', sql: SQL_TIMESERIES('count()'), yMin: 0, yMax: 20, yTicks: 5, series: series(ramp(4, 15)) }],
   }
 }

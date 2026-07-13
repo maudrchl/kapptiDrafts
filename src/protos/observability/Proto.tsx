@@ -49,6 +49,8 @@ import {
   KeyRound,
   Copy,
   Check,
+  CheckCircle2,
+  XCircle,
   Plus,
   Pin,
 } from 'lucide-react'
@@ -58,14 +60,16 @@ import PersesView from './PersesView'
 import LineChart from './LineChart'
 import { toast, ToastMount } from './toast'
 import { dashboardStore } from './dashboardStore'
-import { interpretPrompt, TRACE_OVERVIEW_PANELS, makePanel } from './perses'
+import { interpretPrompt, TRACE_OVERVIEW_PANELS, TRACE_COMPARE_PANEL, makePanel } from './perses'
 import type { PanelSpec } from './perses'
-import type { ExploreTab, PodEntry, SignalKey, TraceEntry, ServiceNode, LogEntry } from './constants'
+import type { ExploreTab, PodEntry, SignalKey, TraceEntry, ServiceNode, LogEntry, AlertItem, DestinationItem, IncidentItem, DestinationType } from './constants'
 import {
   EXPLORE_TABS,
   PAGE_META,
   LOGS,
   TRACES,
+  TRACE_COMPARE,
+  SERVICE_LATENCY_DELTA,
   SERVICES,
   EDGES,
   PODS,
@@ -80,8 +84,14 @@ import {
   OTLP_KEY_MASKED,
   RETENTION_LABELS,
   ALERT_SEVERITIES,
-  ALERT_CHANNELS,
   ALERT_OPERATORS,
+  ALERT_FREQUENCIES,
+  ALERT_LOOKBACKS,
+  ALERT_COOLDOWNS,
+  DESTINATION_TYPES,
+  ALERTS,
+  DESTINATIONS,
+  INCIDENTS,
 } from './constants'
 
 const LOGO_SRC = "data:image/svg+xml,%3csvg%20width='178'%20height='28'%20viewBox='0%200%20178%2028'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3crect%20width='178'%20height='28'%20fill=''/%3e%3cpath%20d='M46.6496%2022.9253L40.2032%2015.237L45.816%208.59585H40.62L36.0352%2014.3827L33.979%2017.0282H33.8679L33.9513%2014.3276V5.59691C33.9513%204.36156%2032.9498%203.36011%2031.7145%203.36011C30.4791%203.36011%2029.4777%204.36156%2029.4777%205.5969V22.9253H33.7012L37.5913%2018.3233L41.398%2022.9253H46.6496Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M53.9591%208.1825C49.5689%208.1825%2046.7347%209.31233%2046.8736%2013.0325H50.8471C51.0416%2011.8751%2051.8751%2011.4893%2053.7646%2011.4893C55.8208%2011.4893%2056.6822%2011.9578%2056.6822%2013.3356V14.4378H51.6529C47.8739%2014.4378%2046.1234%2015.8708%2046.1234%2018.7642C46.1234%2021.823%2048.0684%2023.3386%2051.2083%2023.3386C53.5979%2023.3386%2056.2654%2022.4568%2057.488%2020.4176L56.9878%2021.4372L57.3768%2022.9253H61.1558V12.8671C61.1558%209.78079%2058.9606%208.1825%2053.9591%208.1825ZM52.8199%2020.0043C51.2638%2020.0043%2050.6803%2019.4256%2050.6803%2018.5438C50.6803%2017.6344%2051.2638%2017.1384%2052.3753%2017.1384H56.6822V18.8193C55.7374%2019.5909%2054.4315%2020.0043%2053.0144%2020.0043H52.8199Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M72.3795%208.21006C70.1566%208.21006%2068.2949%209.09187%2066.8222%2011.5995L67.628%2010.0839L67.5447%208.59585H63.1544V27.7201H67.628V21.1616C68.795%2022.7324%2070.49%2023.3386%2072.3795%2023.3386C76.7141%2023.3386%2079.4928%2019.9767%2079.4928%2015.7606C79.4928%2011.572%2076.7141%208.21006%2072.3795%208.21006ZM71.3236%2019.4531C69.0173%2019.4531%2067.5724%2017.91%2067.5724%2015.7606C67.5724%2013.6111%2069.0173%2012.068%2071.3236%2012.068C73.6298%2012.068%2075.047%2013.6111%2075.047%2015.7606C75.047%2017.91%2073.6298%2019.4531%2071.3236%2019.4531Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M89.9912%208.21006C87.7683%208.21006%2085.9066%209.09187%2084.4339%2011.5995L85.2397%2010.0839L85.1564%208.59585H80.7662V27.7201H85.2397V21.1616C86.4068%2022.7324%2088.1017%2023.3386%2089.9912%2023.3386C94.3259%2023.3386%2097.1045%2019.9767%2097.1045%2015.7606C97.1045%2011.572%2094.3259%208.21006%2089.9912%208.21006ZM88.9353%2019.4531C86.6291%2019.4531%2085.1842%2017.91%2085.1842%2015.7606C85.1842%2013.6111%2086.6291%2012.068%2088.9353%2012.068C91.2416%2012.068%2092.6587%2013.6111%2092.6587%2015.7606C92.6587%2017.91%2091.2416%2019.4531%2088.9353%2019.4531Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M109.055%2012.3711V8.59585H105.026V3.63567H100.552V8.59585H97.3569V12.3711H100.552V17.8549C100.552%2021.1065%20102.108%2023.063%20106.276%2023.063H109.055V19.0949H107.11C105.721%2019.0949%20105.026%2018.5989%20105.026%2017.1384V12.3711H109.055Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M110.536%2022.9253H115.01V8.59585C113.603%209.30728%20111.942%209.30728%20110.536%208.59585V22.9253Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M121.912%2022.9253H126.691L132.86%208.59585H128.22L124.385%2017.9651H124.218L120.412%208.59585H115.771L121.912%2022.9253Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M139.875%208.1825C135.485%208.1825%20132.651%209.31233%20132.79%2013.0325H136.763C136.958%2011.8751%20137.791%2011.4893%20139.681%2011.4893C141.737%2011.4893%20142.598%2011.9578%20142.598%2013.3356V14.4378H137.569C133.79%2014.4378%20132.039%2015.8708%20132.039%2018.7642C132.039%2021.823%20133.984%2023.3386%20137.124%2023.3386C139.514%2023.3386%20142.181%2022.4568%20143.404%2020.4176L142.904%2021.4372L143.293%2022.9253H147.072V12.8671C147.072%209.78079%20144.877%208.1825%20139.875%208.1825ZM138.736%2020.0043C137.18%2020.0043%20136.596%2019.4256%20136.596%2018.5438C136.596%2017.6344%20137.18%2017.1384%20138.291%2017.1384H142.598V18.8193C141.653%2019.5909%20140.348%2020.0043%20138.93%2020.0043H138.736Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M159.449%2012.3711V8.59585H155.42V3.63567H150.946V8.59585H147.751V12.3711H150.946V17.8549C150.946%2021.1065%20152.503%2023.063%20156.67%2023.063H159.449V19.0949H157.504C156.115%2019.0949%20155.42%2018.5989%20155.42%2017.1384V12.3711H159.449Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M164.573%2017.0833H175.855C176.299%2011.4893%20173.187%208.1825%20168.075%208.1825C162.934%208.1825%20160.072%2011.4893%20160.072%2015.7606C160.072%2020.0318%20163.156%2023.3386%20168.325%2023.3386C171.253%2023.3386%20173.608%2022.2729%20174.993%2020.8479C175.985%2019.8266%20174.987%2018.4887%20173.563%2018.4887C172.645%2018.4887%20171.783%2019.0976%20170.949%2019.4815C170.264%2019.7967%20169.383%2019.9492%20168.575%2019.9492C166.352%2019.9492%20164.935%2018.8744%20164.573%2017.0833ZM168.075%2011.4342C169.936%2011.4342%20171.048%2012.2609%20171.464%2014.4103H164.546C164.879%2012.4538%20166.018%2011.4342%20168.075%2011.4342Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M3.23836%2015.5791C3.77117%2017.0253%204.65214%2017.5873%205.93234%2017.9525L6.18218%2017.5697C6.45474%2017.1389%206.55844%2016.5424%206.58749%2015.9993C6.59931%2015.7022%206.64682%2015.3922%206.99197%2015.2681C7.33711%2015.144%207.6791%2015.3405%207.79606%2015.658C7.83505%2015.7638%207.88055%2015.9605%207.86655%2016.1785C7.83964%2016.6542%207.70142%2017.596%207.23525%2018.2696L6.49976%2019.3462C5.71019%2020.4955%205.36527%2021.3519%205.71181%2022.2924C6.34425%2024.009%207.94592%2024.698%209.386%2024.1802C9.99297%2023.9619%2010.8087%2023.3225%2011.2845%2022.4191L12.5304%2020.0938C12.8278%2019.5475%2012.9498%2018.5982%2012.9355%2018.0841C12.9268%2017.7676%2013.036%2017.5153%2013.3454%2017.4041C13.6787%2017.2843%2014.0401%2017.4605%2014.1658%2017.8015C14.2134%2017.9308%2014.2102%2018.1051%2014.207%2018.2793C14.2039%2018.6%2014.2258%2019.5374%2013.6072%2020.7851C15.8549%2021.6545%2016.5918%2021.6426%2017.532%2021.3045C18.8769%2020.8209%2019.7886%2019.1617%2019.2211%2017.6215C18.9439%2016.8691%2018.4547%2016.4192%2017.5175%2015.9972L15.919%2015.2804C15.2697%2014.9813%2014.6333%2014.571%2014.0359%2014.1201C13.8887%2014.0133%2013.7902%2013.9288%2013.7209%2013.7407C13.6039%2013.4233%2013.7824%2013.0662%2014.0918%2012.955C14.3179%2012.8736%2014.5235%2012.9195%2014.7075%2013.0531C15.4933%2013.6494%2016.2758%2014.1269%2016.8677%2014.3801L18.7482%2013.704C20.6286%2013.0279%2021.4916%2011.3462%2020.8202%209.52384C20.1444%207.68974%2018.3891%206.94947%2016.5086%207.62559L5.40457%2011.6181C3.52413%2012.2942%202.64924%2013.9802%203.23836%2015.5791Z'%20fill='%23FFF9D4'/%3e%3cellipse%20cx='8.35869'%20cy='5.28086'%20rx='3.43657'%20ry='3.39487'%20fill='%23FFF9D4'/%3e%3cellipse%20cx='112.738'%20cy='4.55001'%20rx='3.33041'%20ry='3.29'%20fill='%23ED7846'/%3e%3c/svg%3e"
@@ -105,21 +115,44 @@ const NAV_RUN = [
   ]},
 ]
 
-const NAV_EXPLORE: { key: ExploreTab; icon: React.ComponentType<{ size?: number }>; label: string }[] = [
-  { key: 'logs', icon: IconFile, label: 'Logs explorer' },
-  { key: 'traces', icon: IconBookOpen, label: 'Traces' },
-  { key: 'perses', icon: IconGlobe, label: 'Traces (Perses)' },
-  { key: 'svcmap', icon: IconNetwork, label: 'Service map' },
-  { key: 'k8s', icon: IconWrench, label: 'Kubernetes' },
-  { key: 'usage', icon: IconBarChartBig, label: 'Usage & ingestion' },
+const NAV_EXPLORE: { section: string; items: { key: ExploreTab; icon: React.ComponentType<{ size?: number }>; label: string }[] }[] = [
+  {
+    section: 'Explore',
+    items: [
+      { key: 'logs', icon: IconFile, label: 'Logs explorer' },
+      { key: 'traces', icon: IconBookOpen, label: 'Traces' },
+      { key: 'perses', icon: IconGlobe, label: 'Traces (Perses)' },
+      { key: 'svcmap', icon: IconNetwork, label: 'Service map' },
+      { key: 'k8s', icon: IconWrench, label: 'Kubernetes' },
+    ],
+  },
+  {
+    section: 'Alerting',
+    items: [
+      { key: 'alerts', icon: IconBell, label: 'Alerts' },
+      { key: 'incidents', icon: IconAlertTriangle, label: 'Incidents' },
+      { key: 'destinations', icon: IconServer, label: 'Destinations' },
+    ],
+  },
+  {
+    section: 'Data',
+    items: [{ key: 'usage', icon: IconBarChartBig, label: 'Usage & ingestion' }],
+  },
 ]
 
-const LOG_LEVEL_CLASSES: Record<string, string> = {
-  info: styles.logLevelInfo,
-  warn: styles.logLevelWarn,
-  error: styles.logLevelError,
-  debug: styles.logLevelDebug,
+/* Sévérité (DA unifiée logs) — pastille colorée + label mono discret. */
+const SEV_COLOR: Record<LogEntry['level'], string> = {
+  error: '#e0372e',
+  warn: '#f2b338',
+  info: '#7B9F7F',
+  debug: '#AEC6B1',
 }
+const SeverityTag = ({ level }: { level: LogEntry['level'] }) => (
+  <span className={styles.sevTag}>
+    <span className={styles.sevDot} style={{ background: SEV_COLOR[level] }} />
+    {level.toUpperCase()}
+  </span>
+)
 
 /* Id hexadécimal déterministe (pas de Math.random → stable au re-render). */
 const idFrom = (seed: string, len: number) => {
@@ -131,7 +164,7 @@ const idFrom = (seed: string, len: number) => {
 
 /* Extrait des attributs HTTP d'un message de log type "GET /api/x 200 — 39ms". */
 const httpAttrs = (msg: string): { method: string; route: string; status: string; dur: string } | null => {
-  const m = msg.match(/^(GET|POST|PATCH|PUT|DELETE)\s+(\S+)\s+(\d{3})\s+—\s+(\d+)ms/)
+  const m = msg.match(/^(GET|POST|PATCH|PUT|DELETE)\s+(\S+)\s+(\d{3})\s+-\s+(\d+)ms/)
   if (!m) return null
   return { method: m[1], route: m[2], status: m[3], dur: m[4] }
 }
@@ -151,62 +184,86 @@ type AlertDraft = {
   query: string
   operator: string
   threshold: string
+  checkEvery: string
+  lookBack: string
+  cooldown: string
   severity: string
-  channel: string
+  destinationKey: string
+  createsIncident: boolean
 }
 
-/* Log volume — bar chart empilé (ERROR/WARN/INFO/DEBUG) sur 24 h. */
-const LOG_VOLUME = Array.from({ length: 24 }, (_, i) => {
-  const dip = i === 8 || i === 15 || i === 23
-  return {
-    error: i % 6 === 0 ? 2 : 1,
-    warn: i % 4 === 0 ? 2 : 1,
-    info: dip ? (i === 23 ? 22 : 64) : 86,
-    debug: dip ? (i === 23 ? 6 : 16) : 27,
-  }
-})
-const LOG_VOLUME_LABELS = Array.from({ length: 24 }, (_, i) => `${String((11 + i) % 24).padStart(2, '0')}:00`)
+/* Log volume — le time range régénère buckets + labels → le contrôle scope
+   vraiment le graph (SVG maison, Highcharts absent du proto). */
+/* Fenêtre plus courte = buckets plus fins = moins de logs par barre (amplitude
+   plus basse). Chaque range a donc une forme + une échelle Y distinctes. */
+const VOLUME_RANGES: Record<string, { n: number; base: number; yMax: number; labels: string[] }> = {
+  '15m': { n: 15, base: 7, yMax: 20, labels: ['08:01', '08:04', '08:07', '08:10', '08:13'] },
+  '1h': { n: 20, base: 22, yMax: 60, labels: ['08:15', '08:30', '08:45', '09:00', '09:15'] },
+  '6h': { n: 18, base: 48, yMax: 90, labels: ['04:00', '05:30', '07:00', '08:30', '10:00'] },
+  '24h': { n: 24, base: 74, yMax: 120, labels: ['11:00', '15:00', '19:00', '23:00', '03:00', '07:00'] },
+}
 
-const LogVolumeBars = () => {
-  const W = 1040, H = 200, padL = 30, padR = 8, padT = 10, padB = 24
+const LogVolumeBars = ({ range }: { range: string }) => {
+  const [hover, setHover] = useState<number | null>(null)
+  const cfg = VOLUME_RANGES[range] ?? VOLUME_RANGES['24h']
+  const spread = Math.max(6, Math.round(cfg.base * 0.3))
+  const bars = Array.from({ length: cfg.n }, (_, i) => {
+    const dip = i % 7 === 6
+    return {
+      error: cfg.base > 30 && i % 6 === 0 ? 1 : 0,
+      warn: i % 4 === 0 ? 1 : 0,
+      info: (dip ? Math.round(cfg.base * 0.7) : cfg.base) + ((i * 13) % spread),
+      debug: Math.round(cfg.base * 0.3) + ((i * 5) % Math.max(3, Math.round(cfg.base * 0.15))),
+    }
+  })
+  const W = 1040, H = 150, padL = 28, padR = 8, padT = 8, padB = 20
   const plotW = W - padL - padR, plotH = H - padT - padB
-  const yMax = 120
+  const yMax = cfg.yMax
   const yFor = (v: number) => padT + plotH - (v / yMax) * plotH
-  const bw = (plotW / LOG_VOLUME.length) * 0.66
-  const yTicks = [0, 20, 40, 60, 80, 100, 120]
+  const colW = plotW / bars.length
+  const bw = colW * 0.62
+  const yTicks = [0, Math.round(yMax / 3), Math.round((yMax * 2) / 3), yMax]
   const parts: { key: 'error' | 'warn' | 'info' | 'debug'; color: string }[] = [
     { key: 'error', color: '#e0372e' },
     { key: 'warn', color: '#f2b338' },
-    { key: 'info', color: '#0577ff' },
-    { key: 'debug', color: '#98a2b3' },
+    { key: 'info', color: '#7B9F7F' },
+    { key: 'debug', color: '#AEC6B1' },
   ]
   return (
-    <svg className={styles.miniChart} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Log volume">
+    <svg className={styles.volumeChart} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Log volume">
       {yTicks.map((t) => (
         <g key={t}>
           <line x1={padL} y1={yFor(t)} x2={W - padR} y2={yFor(t)} stroke="#eef0f3" strokeWidth={1} />
           <text x={padL - 6} y={yFor(t) + 3} textAnchor="end" fontSize={9} fill="#98a2b3" fontFamily="Geist Mono, monospace">{t}</text>
         </g>
       ))}
-      {LOG_VOLUME.map((b, i) => {
-        const cx = padL + (i + 0.5) * (plotW / LOG_VOLUME.length)
+      {bars.map((b, i) => {
+        const cx = padL + (i + 0.5) * colW
+        const dim = hover !== null && hover !== i
         let acc = 0
         return (
-          <g key={i}>
+          <g
+            key={i}
+            opacity={dim ? 0.2 : 1}
+            style={{ transition: 'opacity 0.18s ease' }}
+            onMouseEnter={() => setHover(i)}
+            onMouseLeave={() => setHover(null)}
+          >
+            <rect x={cx - colW / 2} y={padT} width={colW} height={plotH} fill="transparent" />
             {parts.map((p) => {
               const v = b[p.key]
               if (!v) return null
               const y0 = yFor(acc)
               const y1 = yFor(acc + v)
               acc += v
-              return <rect key={p.key} x={cx - bw / 2} y={y1} width={bw} height={y0 - y1} fill={p.color} />
+              return <rect key={p.key} x={cx - bw / 2} y={y1} width={bw} height={y0 - y1} fill={p.color} rx={0.5} />
             })}
-            {i % 2 === 0 && (
-              <text x={cx} y={H - 6} textAnchor="middle" fontSize={9} fill="#98a2b3" fontFamily="Geist Mono, monospace">{LOG_VOLUME_LABELS[i]}</text>
-            )}
           </g>
         )
       })}
+      {cfg.labels.map((lbl, li) => (
+        <text key={lbl + li} x={padL + ((li + 0.5) / cfg.labels.length) * plotW} y={H - 5} textAnchor="middle" fontSize={9} fill="#5b6b6a" fontFamily="Geist Mono, monospace">{lbl}</text>
+      ))}
     </svg>
   )
 }
@@ -226,6 +283,7 @@ const LogsView = ({
   onOpenLog: (l: LogEntry) => void
 }) => {
   const [live, setLive] = useState(false)
+  const [range, setRange] = useState('24h')
 
   const q = search.trim().toLowerCase()
   const filtered = LOGS.filter(
@@ -236,6 +294,37 @@ const LogsView = ({
 
   return (
     <>
+      <div className={styles.kpiRow}>
+        <CounterCardGroup>
+          <CounterCard title="Total logs" value="1.2M" trend={<TrendTag current={118} previous={100} />} />
+          <CounterCard title="Errors" value="847" trend={<TrendTag current={105.2} previous={100} />} />
+          <CounterCard title="Warnings" value="3,241" trend={<TrendTag current={88} previous={100} invertColor />} />
+          <CounterCard title="Services" value="14" trend={<StatusTag variant="ghost" color="success">All reporting</StatusTag>} />
+        </CounterCardGroup>
+      </div>
+
+      {/* Vue d'ensemble : le time range scope le graph */}
+      <div className={styles.volumeCard}>
+        <div className={styles.volumeHead}>
+          <div className={styles.overviewTitle}>Log volume</div>
+          <Select
+            options={[
+              { label: 'Last 15 min', value: '15m' },
+              { label: 'Last 1 hour', value: '1h' },
+              { label: 'Last 6 hours', value: '6h' },
+              { label: 'Last 24 hours', value: '24h' },
+            ]}
+            value={range}
+            onChange={(_e, v) => setRange(v)}
+            icon={IconTimer}
+            minWidth="160px"
+          />
+        </div>
+        <LogVolumeBars range={range} />
+        <MiniLegend items={[{ label: 'Error', color: '#e0372e' }, { label: 'Warning', color: '#f2b338' }, { label: 'Info', color: '#7B9F7F' }, { label: 'Debug', color: '#AEC6B1' }]} />
+      </div>
+
+      {/* Liste : la recherche + le niveau filtrent le tableau */}
       <div className={styles.searchRow}>
         <div className={styles.searchFlex}>
           <SearchInput
@@ -246,17 +335,6 @@ const LogsView = ({
           />
         </div>
         <div className={styles.filterGroup}>
-          <Select
-            options={[
-              { label: 'Last 15 min', value: '15m' },
-              { label: 'Last 1 hour', value: '1h' },
-              { label: 'Last 6 hours', value: '6h' },
-              { label: 'Last 24 hours', value: '24h' },
-            ]}
-            defaultValue="1h"
-            icon={IconTimer}
-            minWidth="140px"
-          />
           <Select
             options={[
               { label: 'All levels', value: 'all' },
@@ -283,21 +361,6 @@ const LogsView = ({
         </div>
       </div>
 
-      <div className={styles.kpiRow}>
-        <CounterCardGroup>
-          <CounterCard title="Total logs" value="1.2M" trend={<TrendTag current={118} previous={100} />} />
-          <CounterCard title="Errors" value="847" trend={<TrendTag current={105.2} previous={100} />} />
-          <CounterCard title="Warnings" value="3,241" trend={<TrendTag current={88} previous={100} invertColor />} />
-          <CounterCard title="Services" value="14" trend={<StatusTag variant="ghost" color="success">All reporting</StatusTag>} />
-        </CounterCardGroup>
-      </div>
-
-      <Card className={styles.volumeCard}>
-        <div className={styles.overviewTitle}>Log volume</div>
-        <LogVolumeBars />
-        <MiniLegend items={[{ label: 'ERROR', color: '#e0372e' }, { label: 'INFO', color: '#0577ff' }, { label: 'WARN', color: '#f2b338' }, { label: 'DEBUG', color: '#98a2b3' }]} />
-      </Card>
-
       <div className={styles.resultBar}>
         <span>Showing {filtered.length} of {LOGS.length} lines</span>
         {live && <span className={styles.liveDot}>● live</span>}
@@ -317,18 +380,14 @@ const LogsView = ({
             <span>Resource</span>
             <span>Body</span>
             <span>Trace</span>
-            <span>Execution</span>
           </div>
           {filtered.map((l) => (
             <div key={l.key} className={styles.logRow} onClick={() => onOpenLog(l)}>
-              <span className={LOG_LEVEL_CLASSES[l.level]}>{l.level.toUpperCase()}</span>
+              <span><SeverityTag level={l.level} /></span>
               <span className={styles.logCellTime}>{l.ts.slice(11)}</span>
               <span className={styles.logCellSvc}>{l.svc}</span>
               <span className={styles.logCellBody}>{l.msg}</span>
               <span className={styles.logCellTrace}>{idFrom(l.key, 8)}…</span>
-              <span>
-                <button className={styles.logViewBtn} onClick={(e) => { e.stopPropagation(); onOpenLog(l) }}>View</button>
-              </span>
             </div>
           ))}
         </div>
@@ -337,28 +396,62 @@ const LogsView = ({
   )
 }
 
+/* Part du temps passé par service dans une trace : on agrège les spans par
+   service (libellé nettoyé de ses parenthèses) et on normalise à 100 %.
+   La couleur du service vient de la donnée (stable d'une trace à l'autre). */
+const serviceBreakdown = (t: TraceEntry) => {
+  const agg = new Map<string, { name: string; color: string; w: number }>()
+  for (const b of t.bars) {
+    const name = b.label.split(' (')[0]
+    const cur = agg.get(name)
+    if (cur) cur.w += b.width
+    else agg.set(name, { name, color: b.color, w: b.width })
+  }
+  const total = Array.from(agg.values()).reduce((s, x) => s + x.w, 0) || 1
+  return Array.from(agg.values())
+    .map((x) => ({ name: x.name, color: x.color, pct: (x.w / total) * 100 }))
+    .sort((a, b) => b.pct - a.pct)
+}
+
 /* ─── Traces View ─── */
+const RANGE_LABEL: Record<string, string> = { '15m': '15 minutes', '1h': '1 hour', '6h': '6 hours' }
+
 const TracesView = ({
   search,
   setSearch,
   svc,
   setSvc,
-  selected,
-  toggleSelected,
   onOpenTrace,
 }: {
   search: string
   setSearch: (v: string) => void
   svc: string
   setSvc: (v: string) => void
-  selected: string[]
-  toggleSelected: (key: string) => void
   onOpenTrace: (t: TraceEntry) => void
 }) => {
+  const [range, setRange] = useState('1h')
+  const [comparePrev, setComparePrev] = useState(false)
   const q = search.trim().toLowerCase()
   const filtered = TRACES.filter(
     (t) => (svc === 'all' || t.svc === svc) && (q === '' || `${t.name} ${t.svc}`.toLowerCase().includes(q)),
   )
+  // Delta de latence par service, trié par plus gros écart (régression en tête).
+  const svcDeltas = [...SERVICE_LATENCY_DELTA].sort(
+    (a, b) => Math.abs(b.currMs - b.prevMs) - Math.abs(a.currMs - a.prevMs),
+  )
+  // Légende unique au-dessus de la liste : chaque service présent une seule
+  // fois, dans l'ordre de première apparition. Évite de répéter les libellés
+  // sur chaque ligne tout en gardant les couleurs signifiantes.
+  const legend: { name: string; color: string }[] = []
+  const seen = new Set<string>()
+  for (const t of filtered)
+    for (const b of t.bars) {
+      const name = b.label.split(' (')[0]
+      if (!seen.has(name)) {
+        seen.add(name)
+        legend.push({ name, color: b.color })
+      }
+    }
 
   return (
     <>
@@ -378,7 +471,8 @@ const TracesView = ({
               { label: 'Last 1 hour', value: '1h' },
               { label: 'Last 6 hours', value: '6h' },
             ]}
-            defaultValue="1h"
+            value={range}
+            onChange={(_e, v) => setRange(v)}
             icon={IconTimer}
             minWidth="140px"
           />
@@ -394,33 +488,88 @@ const TracesView = ({
             icon={IconServer}
             minWidth="140px"
           />
+          <Toggle title="Compare to previous period" value={comparePrev} onChange={setComparePrev} />
         </div>
       </div>
 
       <div className={styles.kpiRow}>
         <CounterCardGroup>
-          <CounterCard title="Traces" value="48.2K" trend={<span style={{ fontSize: 12, color: '#98a2b3' }}>Last hour</span>} />
-          <CounterCard title="Avg duration" value="127ms" trend={<TrendTag current={127} previous={135} invertColor />} />
-          <CounterCard title="Error rate" value="2.1%" trend={<TrendTag current={2.1} previous={1.7} />} />
-          <CounterCard title="P99 latency" value="890ms" trend={<TrendTag current={890} previous={1010} invertColor />} />
+          <CounterCard
+            title="Traces"
+            value={`${(TRACE_COMPARE.requests.cur / 1000).toFixed(1)}K`}
+            trend={<TrendTag current={TRACE_COMPARE.requests.cur} previous={TRACE_COMPARE.requests.prev} />}
+          />
+          <CounterCard
+            title="Avg duration"
+            value={`${TRACE_COMPARE.avg.cur}ms`}
+            trend={<TrendTag current={TRACE_COMPARE.avg.cur} previous={TRACE_COMPARE.avg.prev} invertColor />}
+          />
+          <CounterCard
+            title="Error rate"
+            value={`${TRACE_COMPARE.errorRate.cur}%`}
+            trend={<TrendTag current={TRACE_COMPARE.errorRate.cur} previous={TRACE_COMPARE.errorRate.prev} />}
+          />
+          <CounterCard
+            title="P99 latency"
+            value={`${TRACE_COMPARE.p99.cur}ms`}
+            trend={<TrendTag current={TRACE_COMPARE.p99.cur} previous={TRACE_COMPARE.p99.prev} invertColor />}
+          />
         </CounterCardGroup>
       </div>
 
-      <div className={styles.overviewRow}>
-        {TRACE_OVERVIEW_PANELS.map((p) => (
-          <Card key={p.id} className={styles.overviewCard}>
-            <div className={styles.overviewTitle}>
-              {p.name} <span>{p.unit}</span>
-            </div>
-            <LineChart panel={p} height={150} />
-          </Card>
-        ))}
-      </div>
+      {comparePrev ? (
+        <Card className={styles.cmpPanel}>
+          <div className={styles.cmpPanelTitle}>
+            Compared to previous {RANGE_LABEL[range]}
+          </div>
+          <LineChart panel={TRACE_COMPARE_PANEL} height={220} />
+          <div className={styles.cmpDeltaList}>
+            {svcDeltas.map((s) => {
+              const d = s.currMs - s.prevMs
+              return (
+                <div key={s.name} className={styles.cmpDeltaRow}>
+                  <span className={styles.traceLegendDot} style={{ background: s.color }} />
+                  <span className={styles.cmpDeltaName}>{s.name}</span>
+                  <span className={styles.cmpDeltaVals}>
+                    {s.prevMs}ms <span className={styles.cmpArrow}>→</span> {s.currMs}ms
+                  </span>
+                  <span className={d > 0 ? styles.cmpBad : styles.cmpGood}>
+                    {d > 0 ? '+' : ''}
+                    {d}ms
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      ) : (
+        <div className={styles.overviewRow}>
+          {TRACE_OVERVIEW_PANELS.map((p) => (
+            <Card key={p.id} className={styles.overviewCard}>
+              <div className={styles.overviewTitle}>
+                {p.name} <span>{p.unit}</span>
+              </div>
+              <LineChart panel={p} height={150} />
+            </Card>
+          ))}
+        </div>
+      )}
 
       <div className={styles.resultBar}>
         <span>Showing {filtered.length} of {TRACES.length} traces</span>
-        <span>{selected.length}/2 selected to compare</span>
       </div>
+
+      {legend.length > 0 && (
+        <div className={styles.traceLegend}>
+          <span className={styles.traceLegendLabel}>Time by service</span>
+          {legend.map((l) => (
+            <span key={l.name} className={styles.traceLegendItem}>
+              <span className={styles.traceLegendDot} style={{ background: l.color }} />
+              {l.name}
+            </span>
+          ))}
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <EmptyState
@@ -429,52 +578,43 @@ const TracesView = ({
           description="Try a broader search or pick another service."
         />
       ) : (
-        filtered.map((t) => {
-          const isSel = selected.includes(t.key)
+        <div className={styles.traceList}>
+        {filtered.map((t) => {
           return (
             <div
               key={t.key}
-              className={isSel ? styles.traceRowSelected : styles.traceRow}
-              onClick={() => toggleSelected(t.key)}
+              className={styles.traceRow}
+              onClick={() => onOpenTrace(t)}
             >
               <div className={styles.traceHead}>
                 <div className={styles.traceName}>
-                  {isSel && <Check size={15} color="#ed7846" />}
-                  <StatusTag variant="filled" color={t.status === 'error' ? 'failed' : 'success'}>
-                    {t.status === 'error' ? 'Error' : 'OK'}
-                  </StatusTag>
-                  {t.name}
+                  {t.status === 'error' ? (
+                    <XCircle size={16} className={styles.traceStatusErr} aria-label="Error" />
+                  ) : (
+                    <CheckCircle2 size={16} className={styles.traceStatusOk} aria-label="OK" />
+                  )}
+                  <span className={styles.traceNameText}>{t.name}</span>
+                  <span className={styles.traceKey}>{t.key}</span>
                 </div>
                 <div className={styles.traceMeta}>
-                  <span>{t.spans} spans</span>
-                  <Tag mono>{t.dur}</Tag>
-                  <Tag color="grey" mono>{t.key}</Tag>
-                  <Button
-                    color="secondary"
-                    size="small"
-                    icon={IconEye}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onOpenTrace(t)
-                    }}
-                  >
-                    View
-                  </Button>
+                  <span className={styles.traceSpans}>{t.spans} spans</span>
+                  <span className={styles.traceDur}>{t.dur}</span>
+                  <div className={styles.traceMiniBar}>
+                    {serviceBreakdown(t).map((s) => (
+                      <div
+                        key={s.name}
+                        className={styles.traceSeg}
+                        style={{ width: `${s.pct}%`, background: s.color }}
+                        title={`${s.name} · ${Math.round(s.pct)}%`}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className={styles.traceWaterfall}>
-                {t.bars.map((b, i) => (
-                  <div
-                    key={i}
-                    className={styles.traceSpan}
-                    style={{ left: `${b.left}%`, width: `${b.width}%`, background: b.color }}
-                    title={b.label}
-                  />
-                ))}
               </div>
             </div>
           )
-        })
+        })}
+        </div>
       )}
     </>
   )
@@ -569,7 +709,7 @@ const TelemetryLogs = () => {
   const bw = (plotW / LOG_BARS.length) * 0.7
   const yTicks = [0, 30, 60, 90, 120]
   const parts: { key: 'debug' | 'info' | 'warn' | 'error'; color: string }[] = [
-    { key: 'debug', color: '#98a2b3' }, { key: 'info', color: '#0577ff' }, { key: 'warn', color: '#f2b338' }, { key: 'error', color: '#e0372e' },
+    { key: 'debug', color: '#AEC6B1' }, { key: 'info', color: '#7B9F7F' }, { key: 'warn', color: '#f2b338' }, { key: 'error', color: '#e0372e' },
   ]
   return (
     <svg className={styles.miniChart} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Logs">
@@ -867,7 +1007,7 @@ const ServiceMapView = () => {
                       logs.map((l) => (
                         <div key={l.key} className={styles.svcLogRow}>
                           <span className={styles.svcLogTime}>{l.ts.slice(11, 19)}</span>
-                          <span className={LOG_LEVEL_CLASSES[l.level]}>{l.level.toUpperCase()}</span>
+                          <SeverityTag level={l.level} />
                           <span className={styles.svcLogMsg}>{l.msg}</span>
                         </div>
                       ))
@@ -897,12 +1037,12 @@ const ServiceMapView = () => {
                     <div>
                       <div className={styles.overviewTitle}>Spans <span>{s.spans.toLocaleString()} spans</span></div>
                       <TelemetrySpans />
-                      <MiniLegend items={[{ label: 'ERROR', color: '#e0372e' }, { label: 'OK & UNSET', color: '#98a2b3' }]} />
+                      <MiniLegend items={[{ label: 'Error', color: '#e0372e' }, { label: 'OK & unset', color: '#98a2b3' }]} />
                     </div>
                     <div>
                       <div className={styles.overviewTitle}>Logs <span>{logs.length} entries</span></div>
                       <TelemetryLogs />
-                      <MiniLegend items={[{ label: 'ERROR & FATAL', color: '#e0372e' }, { label: 'WARN', color: '#f2b338' }, { label: 'INFO', color: '#0577ff' }, { label: 'TRACE & DEBUG', color: '#98a2b3' }]} />
+                      <MiniLegend items={[{ label: 'Error & fatal', color: '#e0372e' }, { label: 'Warning', color: '#f2b338' }, { label: 'Info', color: '#7B9F7F' }, { label: 'Trace & debug', color: '#98a2b3' }]} />
                     </div>
                     <div>
                       <div className={styles.overviewTitle}>Metrics <span>26 discovered</span></div>
@@ -1084,7 +1224,7 @@ const KubernetesView = () => {
 /* ─── Usage & ingestion View ─── */
 type Period = '7' | '14' | 'month'
 type SignalFilter = 'all' | SignalKey
-type KeyState = { status: 'active' | 'revoked'; created: string; lastUsed: string }
+type KeyState = { status: 'active' | 'revoked' }
 
 const UsageView = ({
   cap,
@@ -1104,7 +1244,7 @@ const UsageView = ({
   const [retention, setRetention] = useState('standard')
   const [retDraft, setRetDraft] = useState('standard')
 
-  const [keyState, setKeyState] = useState<KeyState>({ status: 'active', created: 'Jun 12, 2025', lastUsed: '2 hours ago' })
+  const [keyState, setKeyState] = useState<KeyState>({ status: 'active' })
   const [keyStep, setKeyStep] = useState<'none' | 'issue' | 'reveal' | 'revoke'>('none')
   const [newKey, setNewKey] = useState('')
   const [keyCopied, setKeyCopied] = useState(false)
@@ -1139,7 +1279,7 @@ const UsageView = ({
 
   const issueKey = () => {
     setNewKey(genKey())
-    setKeyState({ status: 'active', created: 'Just now', lastUsed: 'Never' })
+    setKeyState({ status: 'active' })
     setKeyCopied(false)
     setKeyStep('reveal')
   }
@@ -1163,184 +1303,209 @@ const UsageView = ({
       )}
 
       {/* Quota & consumption */}
-      <div className={styles.detailCard}>
-        <div className={styles.cardHead}>
-          <div className={styles.detailCardTitle}>Quota usage</div>
-          <StatusTag variant="ghost" color={status.color}>{status.label}</StatusTag>
-        </div>
-        <div className={styles.usageHero}>
-          <span className={styles.usageHeroNum}>{fmtGB(USAGE_INGESTED_GB)}</span>
-          <span className={styles.usageHeroSub}>/ {fmtGB(cap)} included</span>
-        </div>
-        <div className={styles.k8sBar} style={{ height: 10 }}>
-          <div className={styles.k8sBarFill} style={{ width: `${Math.min(pct, 100)}%`, background: pct >= 90 ? '#e0372e' : '#ed7846' }} />
-        </div>
-        <div className={styles.quotaMeta}>
-          <span>{pct.toFixed(0)}% of monthly quota used</span>
-          <span>{left >= 0 ? `${fmtLeft(left)} left` : `${fmtLeft(left)} over`} · renews Aug 1</span>
-        </div>
-        <div style={{ marginTop: 16 }}>
-          <CounterCardGroup>
-            <CounterCard title="Data ingested" value={fmtGB(USAGE_INGESTED_GB)} />
-            <CounterCard title="Monthly quota" value={fmtGB(cap)} />
-            <CounterCard
-              title="End-of-month forecast"
-              value={fmtGB(forecast)}
-              renderValue={(f) => <span style={{ color: overForecast ? '#e0372e' : undefined }}>{f}</span>}
-              trend={
-                <StatusTag variant="ghost" color={overForecast ? 'failed' : 'success'}>{overForecast ? 'over quota' : 'within quota'}</StatusTag>
-              }
-            />
-          </CounterCardGroup>
-        </div>
-      </div>
+      <Card className={styles.usageCard}>
+        <Card.Header
+          title="Quota usage"
+          icon={IconBarChartBig}
+          asideContent={<StatusTag variant="ghost" color={status.color}>{status.label}</StatusTag>}
+        />
+        <Card.Content>
+          <div className={styles.usageCardBody}>
+          <div className={styles.usageHero}>
+            <span className={styles.usageHeroNum}>{fmtGB(USAGE_INGESTED_GB)}</span>
+            <span className={styles.usageHeroSub}>/ {fmtGB(cap)} included</span>
+          </div>
+          <div className={styles.k8sBar} style={{ height: 10 }}>
+            <div className={styles.k8sBarFill} style={{ width: `${Math.min(pct, 100)}%`, background: pct >= 90 ? '#e0372e' : '#ed7846' }} />
+          </div>
+          <div className={styles.quotaMeta}>
+            <span>{pct.toFixed(0)}% of monthly quota used</span>
+            <span>{left >= 0 ? `${fmtLeft(left)} left` : `${fmtLeft(left)} over`} · renews Aug 1</span>
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <CounterCardGroup>
+              <CounterCard title="Data ingested" value={fmtGB(USAGE_INGESTED_GB)} />
+              <CounterCard title="Monthly quota" value={fmtGB(cap)} />
+              <CounterCard
+                title="End-of-month forecast"
+                value={fmtGB(forecast)}
+                renderValue={(f) => <span style={{ color: overForecast ? '#e0372e' : undefined }}>{f}</span>}
+                trend={
+                  <StatusTag variant="ghost" color={overForecast ? 'failed' : 'success'}>{overForecast ? 'over quota' : 'within quota'}</StatusTag>
+                }
+              />
+            </CounterCardGroup>
+          </div>
+          </div>
+        </Card.Content>
+      </Card>
 
       {/* Consumption chart + signal breakdown, side by side (comme AI Usage) */}
       <div className={styles.usageGrid}>
       {/* Daily consumption chart */}
-      <div className={styles.detailCard}>
-        <div className={styles.cardHead}>
-          <div>
-            <div className={styles.detailCardTitle}>Daily consumption</div>
-            <div className={styles.cardSub}>Ingested bytes per day vs daily budget · current month (UTC)</div>
-          </div>
-          <div className={styles.segRow}>
-            <Segmented<SignalFilter>
-              size="small"
-              value={signalFilter}
-              onChange={setSignalFilter}
-              options={[
-                { label: 'All', value: 'all' },
-                { label: 'Metrics', value: 'metrics' },
-                { label: 'Logs', value: 'logs' },
-                { label: 'Traces', value: 'traces' },
-              ]}
-            />
-            <Segmented<Period>
-              size="small"
-              value={period}
-              onChange={setPeriod}
-              options={[
-                { label: '7d', value: '7' },
-                { label: '14d', value: '14' },
-                { label: 'Month', value: 'month' },
-              ]}
-            />
-          </div>
-        </div>
-        <div className={styles.chart}>
-          {showBudget && (
-            <div className={styles.chartBudget} style={{ bottom: `${(DAILY_BUDGET_GB / chartMax) * 100}%` }}>
-              <span>Daily budget {DAILY_BUDGET_GB} GB</span>
+      <Card className={styles.usageCard}>
+        <Card.Header
+          title="Daily consumption"
+          icon={IconActivity}
+          asideContent={
+            <div className={styles.segRow}>
+              <Segmented<SignalFilter>
+                size="small"
+                value={signalFilter}
+                onChange={setSignalFilter}
+                options={[
+                  { label: 'All', value: 'all' },
+                  { label: 'Metrics', value: 'metrics' },
+                  { label: 'Logs', value: 'logs' },
+                  { label: 'Traces', value: 'traces' },
+                ]}
+              />
+              <Segmented<Period>
+                size="small"
+                value={period}
+                onChange={setPeriod}
+                options={[
+                  { label: '7d', value: '7' },
+                  { label: '14d', value: '14' },
+                  { label: 'Month', value: 'month' },
+                ]}
+              />
             </div>
-          )}
-          <div className={styles.chartBars}>
-            {series.map((v, i) => {
-              const over = showBudget && v > DAILY_BUDGET_GB
-              return (
-                <div
-                  key={i}
-                  className={styles.chartBar}
-                  title={`${v.toFixed(2)} GB`}
-                  style={{
-                    height: `${(v / chartMax) * 100}%`,
-                    background: sig ? sig.color : over ? '#ed7846' : '#1fae7e',
-                    opacity: over ? 1 : 0.85,
-                  }}
-                />
-              )
-            })}
+          }
+        />
+        <Card.Content>
+          <div className={styles.usageCardBody}>
+          <div className={styles.cardSub} style={{ marginBottom: 12 }}>Ingested bytes per day vs daily budget · current month (UTC)</div>
+          <div className={styles.chart}>
+            {showBudget && (
+              <div className={styles.chartBudget} style={{ bottom: `${(DAILY_BUDGET_GB / chartMax) * 100}%` }}>
+                <span>Daily budget {DAILY_BUDGET_GB} GB</span>
+              </div>
+            )}
+            <div className={styles.chartBars}>
+              {series.map((v, i) => {
+                const over = showBudget && v > DAILY_BUDGET_GB
+                return (
+                  <div
+                    key={i}
+                    className={styles.chartBar}
+                    title={`${v.toFixed(2)} GB`}
+                    style={{
+                      height: `${(v / chartMax) * 100}%`,
+                      background: sig ? sig.color : over ? '#ed7846' : '#1fae7e',
+                      opacity: over ? 1 : 0.85,
+                    }}
+                  />
+                )
+              })}
+            </div>
           </div>
-        </div>
-      </div>
+          </div>
+        </Card.Content>
+      </Card>
 
       {/* Usage by signal */}
-      <div className={styles.detailCard}>
-        <div className={styles.detailCardTitle} style={{ marginBottom: 14 }}>Usage by signal</div>
-        {SIGNALS.map((s) => {
-          const sp = (s.bytes / totalBytes) * 100
-          return (
-            <div key={s.key} className={styles.sigRow}>
-              <div className={styles.sigHead}>
-                <span className={styles.sigName}><span className={styles.sigDot} style={{ background: s.color }} />{s.name}</span>
-                <span className={styles.sigVals}><b>{s.size}</b> <span className={styles.detailLabel}>{sp.toFixed(1)}%</span></span>
+      <Card className={styles.usageCard}>
+        <Card.Header title="Usage by signal" icon={IconLayers} />
+        <Card.Content>
+          <div className={styles.usageCardBody}>
+          {SIGNALS.map((s) => {
+            const sp = (s.bytes / totalBytes) * 100
+            return (
+              <div key={s.key} className={styles.sigRow}>
+                <div className={styles.sigHead}>
+                  <span className={styles.sigName}><span className={styles.sigDot} style={{ background: s.color }} />{s.name}</span>
+                  <span className={styles.sigVals}><b>{s.size}</b> <span className={styles.detailLabel}>{sp.toFixed(1)}%</span></span>
+                </div>
+                <div className={styles.sigTrack}><div className={styles.sigFill} style={{ width: `${Math.max(sp, 1)}%`, background: s.color }} /></div>
+                <div className={styles.sigMeta}>{s.meta}</div>
               </div>
-              <div className={styles.sigTrack}><div className={styles.sigFill} style={{ width: `${Math.max(sp, 1)}%`, background: s.color }} /></div>
-              <div className={styles.sigMeta}>{s.meta}</div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+          </div>
+        </Card.Content>
+      </Card>
       </div>
 
       {/* Connection & OTLP key */}
-      <div className={styles.detailCard}>
-        <div className={styles.cardHead}>
-          <div className={styles.detailCardTitle}>OTLP connection & key</div>
-          <StatusTag variant="ghost" color={revoked ? 'failed' : 'success'}>{revoked ? 'Revoked' : 'Active'}</StatusTag>
-        </div>
-        <div className={styles.field}>
-          <label>Ingestion endpoint</label>
-          <Input value={OTLP_ENDPOINT_USAGE} canCopy mono disabled fullWidth size="m" />
-        </div>
-        <div className={styles.field}>
-          <label>Internal ID</label>
-          <Input value={OTLP_INTERNAL_ID} canCopy mono disabled fullWidth size="m" />
-        </div>
-        <div className={styles.field}>
-          <label>API key</label>
-          <Input value={revoked ? '—' : OTLP_KEY_MASKED} canCopy={!revoked} mono disabled fullWidth size="m" />
-        </div>
-        <div className={styles.detailRow} style={{ marginTop: 6 }}><span className={styles.detailLabel}>Created</span><span>{keyState.created}</span></div>
-        <div className={styles.detailRow}><span className={styles.detailLabel}>Last used</span><span>{keyState.lastUsed}</span></div>
-        <div className={styles.cardFooter}>
-          <Button color="danger-s" disabled={revoked} onClick={() => setKeyStep('revoke')}>Revoke key</Button>
-          <Button color={revoked ? 'primary' : 'secondary'} icon={KeyRound} onClick={() => setKeyStep('issue')}>
-            {revoked ? 'Issue key' : 'Issue new key'}
-          </Button>
-        </div>
-      </div>
+      <Card className={styles.usageCard}>
+        <Card.Header
+          title="OTLP connection & key"
+          icon={IconServer}
+          asideContent={<StatusTag variant="ghost" color={revoked ? 'failed' : 'success'}>{revoked ? 'Revoked' : 'Active'}</StatusTag>}
+        />
+        <Card.Content>
+          <div className={styles.usageCardBody}>
+          <p className={styles.cardSub} style={{ marginBottom: 12 }}>
+            {revoked
+              ? 'No active key. Ingestion is disabled until you issue a new one.'
+              : 'A single active key secures your OTLP ingestion. Issuing a new key replaces the current one.'}
+          </p>
+          <div className={styles.field}>
+            <label>Ingestion endpoint</label>
+            <Input value={OTLP_ENDPOINT_USAGE} canCopy mono disabled fullWidth size="m" />
+          </div>
+          <div className={styles.field}>
+            <label>Internal ID</label>
+            <Input value={OTLP_INTERNAL_ID} canCopy mono disabled fullWidth size="m" />
+          </div>
+          <div className={styles.field}>
+            <label>API key</label>
+            <Input value={revoked ? '' : OTLP_KEY_MASKED} canCopy={!revoked} mono disabled fullWidth size="m" />
+          </div>
+          <div className={styles.cardFooter}>
+            <Button color="primary" icon={KeyRound} onClick={() => setKeyStep('issue')}>Issue key</Button>
+            <Button color="danger-s" disabled={revoked} onClick={() => setKeyStep('revoke')}>Revoke key</Button>
+          </div>
+          </div>
+        </Card.Content>
+      </Card>
 
       {/* Retention */}
-      <div className={styles.detailCard}>
-        <div className={styles.cardHead}>
-          <div className={styles.detailCardTitle}>Data retention</div>
-          <StatusTag variant="ghost" color="info">{retTier}</StatusTag>
-        </div>
-        <div className={styles.cardSub} style={{ marginBottom: 12 }}>
-          How long ingested signals stay queryable. Current tier {RETENTION_LABELS[retention]}.
-        </div>
-        <div style={{ maxWidth: 360 }}>
-          <Select
-            fullWidth
-            value={retDraft}
-            onChange={(_e, v) => setRetDraft(v)}
-            options={[
-              { label: 'Standard — 15 days', value: 'standard' },
-              { label: 'Extended — 30 days', value: 'extended' },
-              { label: 'Long-term — 90 days + cold tier', value: 'long' },
-            ]}
-          />
-        </div>
-        <div className={styles.cardFooter}>
-          <Button
-            color="secondary"
-            disabled={retDraft === retention}
-            onClick={() => {
-              setRetention(retDraft)
-              toast.success('Retention updated successfully')
-            }}
-          >
-            Save retention
-          </Button>
-        </div>
-      </div>
+      <Card className={styles.usageCard}>
+        <Card.Header
+          title="Data retention"
+          icon={IconBox}
+          asideContent={<StatusTag variant="ghost" color="info">{retTier}</StatusTag>}
+        />
+        <Card.Content>
+          <div className={styles.usageCardBody}>
+          <div className={styles.cardSub} style={{ marginBottom: 12 }}>
+            How long ingested signals stay queryable. Current tier {RETENTION_LABELS[retention]}.
+          </div>
+          <div style={{ maxWidth: 360 }}>
+            <Select
+              fullWidth
+              value={retDraft}
+              onChange={(_e, v) => setRetDraft(v)}
+              options={[
+                { label: 'Standard - 15 days', value: 'standard' },
+                { label: 'Extended - 30 days', value: 'extended' },
+                { label: 'Long-term - 90 days + cold tier', value: 'long' },
+              ]}
+            />
+          </div>
+          <div className={styles.cardFooter}>
+            <Button
+              color="secondary"
+              disabled={retDraft === retention}
+              onClick={() => {
+                setRetention(retDraft)
+                toast.success('Retention updated successfully')
+              }}
+            >
+              Save retention
+            </Button>
+          </div>
+          </div>
+        </Card.Content>
+      </Card>
 
       {/* Adjust quota modal (triggered from the page header) */}
       <Modal open={quotaOpen} onCancel={() => setQuotaOpen(false)} title="Adjust monthly quota" width={440}>
         <Modal.Content>
           <div className={styles.cardSub} style={{ marginBottom: 14 }}>
-            Ingestion keeps working above the cap — you are alerted and billed for overage.
+            Ingestion keeps working above the cap. You are alerted and billed for overage.
           </div>
           <Input
             label="Monthly cap"
@@ -1376,7 +1541,7 @@ const UsageView = ({
       <Modal open={keyStep === 'reveal'} onCancel={() => setKeyStep('none')} maskClosable={false} title="Your new API key" width={480}>
         <Modal.Content>
           <div className={styles.cardSub} style={{ marginBottom: 12 }}>
-            Copy it now — for security it's shown only once and never again.
+            Copy it now. For security it's shown only once and never again.
           </div>
           <Input value={newKey} canCopy mono disabled fullWidth size="m" />
           <div style={{ marginTop: 12 }}>
@@ -1402,7 +1567,7 @@ const UsageView = ({
                 toast.success('API key issued successfully')
               }}
             >
-              {keyCopied ? "I've stored it — done" : 'Copy the key first'}
+              {keyCopied ? "I've stored it, done" : 'Copy the key first'}
             </Button>
           </div>
         </Modal.Footer>
@@ -1417,13 +1582,97 @@ const UsageView = ({
         cancelText="Keep key"
         onCancel={() => setKeyStep('none')}
         onOk={() => {
-          setKeyState((k) => ({ ...k, status: 'revoked', lastUsed: 'revoked' }))
+          setKeyState({ status: 'revoked' })
           setKeyStep('none')
           toast.success('API key revoked successfully')
         }}
       >
         If you revoke this key, ingestion stops until you issue a new one. This action cannot be undone.
       </Alert>
+    </div>
+  )
+}
+
+/* ─── Alerting (Alerts / Incidents / Destinations) ─── */
+const sevColor = (s: string): 'failed' | 'warning' | 'info' | 'neutral' =>
+  s === 'critical' ? 'failed' : s === 'warning' ? 'warning' : s === 'info' ? 'info' : 'neutral'
+const sevDotColor = (s: string) =>
+  s === 'critical' ? 'var(--color-error, #e0372e)' : s === 'warning' ? '#f2b338' : 'var(--color-accent-blue, #0577ff)'
+const alertStatusColor = (s: AlertItem['status']): 'failed' | 'neutral' | 'success' =>
+  s === 'firing' ? 'failed' : s === 'silenced' ? 'neutral' : 'success'
+const incidentStatusColor = (s: IncidentItem['status']): 'failed' | 'warning' | 'success' =>
+  s === 'open' ? 'failed' : s === 'acknowledged' ? 'warning' : 'success'
+const opText = (op: string) => ALERT_OPERATORS.find((o) => o.value === op)?.label ?? op
+const destTypeLabel = (t: DestinationType) => DESTINATION_TYPES.find((x) => x.value === t)?.label ?? t
+
+const AlertsView = ({
+  alerts,
+  destinations,
+  onOpen,
+}: {
+  alerts: AlertItem[]
+  destinations: DestinationItem[]
+  onOpen: (a: AlertItem) => void
+}) => {
+  const destName = (k: string) => destinations.find((d) => d.key === k)?.name ?? 'None'
+  const columns = [
+    {
+      title: 'Alert',
+      dataIndex: 'name',
+      key: 'name',
+      render: (v: string, r: AlertItem) => (
+        <span className={styles.alertName}>
+          <span className={styles.sevDot} style={{ background: sevDotColor(r.severity) }} />
+          {v}
+        </span>
+      ),
+    },
+    { title: 'Signal', dataIndex: 'signal', key: 'signal', width: 90, render: (v: string) => <Tag mono>{v}</Tag> },
+    { title: 'Condition', key: 'cond', width: 160, render: (_v: unknown, r: AlertItem) => <span className={styles.mono}>{`count ${opText(r.operator)} ${r.threshold}`}</span> },
+    { title: 'Schedule', key: 'sched', width: 200, render: (_v: unknown, r: AlertItem) => <span className={styles.cardSub}>{`every ${r.checkEvery}m · ${r.lookBack}m window`}</span> },
+    { title: 'Destination', key: 'dest', render: (_v: unknown, r: AlertItem) => destName(r.destinationKey) },
+    { title: 'Status', dataIndex: 'status', key: 'status', width: 100, render: (v: AlertItem['status']) => <StatusTag variant="ghost" color={alertStatusColor(v)}>{v}</StatusTag> },
+    { title: 'Last triggered', dataIndex: 'lastTriggered', key: 'last', width: 130 },
+  ]
+  return (
+    <div className={styles.usageStack}>
+      <Table rowKey="key" columns={columns} data={alerts} showHeader onClickRow={onOpen} />
+    </div>
+  )
+}
+
+const IncidentsView = ({
+  incidents,
+  onOpen,
+}: {
+  incidents: IncidentItem[]
+  onOpen: (i: IncidentItem) => void
+}) => {
+  const columns = [
+    { title: 'Incident', dataIndex: 'title', key: 'title', render: (v: string) => <span className={styles.cellName}>{v}</span> },
+    { title: 'Severity', dataIndex: 'severity', key: 'severity', width: 120, render: (v: string) => <span className={styles.sevCell}><span className={styles.sevDot} style={{ background: sevDotColor(v) }} />{v}</span> },
+    { title: 'Status', dataIndex: 'status', key: 'status', width: 130, render: (v: IncidentItem['status']) => <StatusTag variant="ghost" color={incidentStatusColor(v)}>{v}</StatusTag> },
+    { title: 'Service', dataIndex: 'service', key: 'service', width: 150, render: (v: string) => <Tag mono>{v}</Tag> },
+    { title: 'Opened', dataIndex: 'openedAt', key: 'openedAt', width: 150, render: (v: string) => <span className={styles.mono}>{v}</span> },
+    { title: 'Duration', dataIndex: 'duration', key: 'duration', width: 110 },
+  ]
+  return (
+    <div className={styles.usageStack}>
+      <Table rowKey="key" columns={columns} data={incidents} showHeader onClickRow={onOpen} />
+    </div>
+  )
+}
+
+const DestinationsView = ({ destinations }: { destinations: DestinationItem[] }) => {
+  const columns = [
+    { title: 'Name', dataIndex: 'name', key: 'name', render: (v: string) => <span className={styles.cellName}>{v}</span> },
+    { title: 'Type', dataIndex: 'type', key: 'type', width: 170, render: (v: DestinationType) => <StatusTag variant="ghost" color="info">{destTypeLabel(v)}</StatusTag> },
+    { title: 'Target', dataIndex: 'target', key: 'target', render: (v: string) => <span className={styles.mono}>{v}</span> },
+    { title: 'Used by', dataIndex: 'usedBy', key: 'usedBy', width: 120, align: 'right' as const, render: (v: number) => `${v} alert${v === 1 ? '' : 's'}` },
+  ]
+  return (
+    <div className={styles.usageStack}>
+      <Table rowKey="key" columns={columns} data={destinations} showHeader />
     </div>
   )
 }
@@ -1449,9 +1698,13 @@ const ExploreTabsProto = () => {
   const [logLevel, setLogLevel] = useState('all')
   const [traceSearch, setTraceSearch] = useState('')
   const [traceSvc, setTraceSvc] = useState('all')
-  const [selectedTraces, setSelectedTraces] = useState<string[]>([])
   const [traceDetail, setTraceDetail] = useState<TraceEntry | null>(null)
   const [logDetail, setLogDetail] = useState<LogEntry | null>(null)
+  const [logTab, setLogTab] = useState('body')
+  const openLog = (l: LogEntry) => {
+    setLogDetail(l)
+    setLogTab('body')
+  }
 
   // usage
   const [cap, setCap] = useState(9)
@@ -1460,7 +1713,6 @@ const ExploreTabsProto = () => {
   // flows
   const [alertOpen, setAlertOpen] = useState(false)
   const [connectOpen, setConnectOpen] = useState(false)
-  const [compareOpen, setCompareOpen] = useState(false)
   const [configureOpen, setConfigureOpen] = useState(false)
   const [connectMethod, setConnectMethod] = useState<'helm' | 'kubectl'>('helm')
   const [clusterName, setClusterName] = useState('')
@@ -1470,19 +1722,54 @@ const ExploreTabsProto = () => {
   const [cfgLatencies, setCfgLatencies] = useState(true)
   const [cfgErrors, setCfgErrors] = useState(true)
 
-  const emptyAlert: AlertDraft = { name: '', signal: 'logs', query: '', operator: 'gt', threshold: '', severity: 'warning', channel: 'slack' }
+  const emptyAlert: AlertDraft = { name: '', signal: 'logs', query: '', operator: 'gt', threshold: '', checkEvery: '5', lookBack: '15', cooldown: '15', severity: 'warning', destinationKey: DESTINATIONS[0].key, createsIncident: false }
   const [alertDraft, setAlertDraft] = useState<AlertDraft>(emptyAlert)
+
+  // alerting (mutable mock state)
+  const [alerts, setAlerts] = useState<AlertItem[]>(ALERTS)
+  const [destinations, setDestinations] = useState<DestinationItem[]>(DESTINATIONS)
+  const [incidents, setIncidents] = useState<IncidentItem[]>(INCIDENTS)
+  const [alertDetail, setAlertDetail] = useState<AlertItem | null>(null)
+  const [incidentDetail, setIncidentDetail] = useState<IncidentItem | null>(null)
+  const [destOpen, setDestOpen] = useState(false)
+  const [destDraft, setDestDraft] = useState<{ name: string; type: DestinationType; target: string }>({ name: '', type: 'slack', target: '' })
 
   const meta = PAGE_META[tab]
 
-  const toggleTrace = (key: string) =>
-    setSelectedTraces((cur) => {
-      if (cur.includes(key)) return cur.filter((k) => k !== key)
-      if (cur.length >= 2) return [cur[1], key] // keep the 2 most recent
-      return [...cur, key]
-    })
+  const toggleSilence = (key: string) => {
+    setAlerts((cur) => cur.map((a) => (a.key === key ? { ...a, status: a.status === 'silenced' ? 'active' : 'silenced' } : a)))
+    setAlertDetail((d) => (d && d.key === key ? { ...d, status: d.status === 'silenced' ? 'active' : 'silenced' } : d))
+    toast.success('Alert updated successfully')
+  }
+  const deleteAlert = (key: string) => {
+    setAlerts((cur) => cur.filter((a) => a.key !== key))
+    setAlertDetail(null)
+    toast.success('Alert deleted successfully')
+  }
+  const setIncidentStatus = (key: string, status: IncidentItem['status']) => {
+    setIncidents((cur) => cur.map((i) => (i.key === key ? { ...i, status } : i)))
+    setIncidentDetail((d) => (d && d.key === key ? { ...d, status } : d))
+    toast.success(status === 'resolved' ? 'Incident resolved successfully' : 'Incident acknowledged')
+  }
+  const addDestination = () => {
+    if (!destDraft.name.trim()) {
+      toast.error('Enter a name for your destination. Try again.')
+      return
+    }
+    setDestinations((cur) => [{ key: `dst-${Date.now()}`, name: destDraft.name.trim(), type: destDraft.type, target: destDraft.target.trim() || '-', usedBy: 0 }, ...cur])
+    setDestOpen(false)
+    setDestDraft({ name: '', type: 'slack', target: '' })
+    toast.success('Destination added successfully')
+  }
 
   const openAlert = () => {
+    // Depuis Logs/Traces : query pré-remplie depuis la vue courante (alert-from-query).
+    // Depuis l'onglet Alerts (ou ailleurs) : formulaire vierge.
+    if (tab !== 'logs' && tab !== 'traces') {
+      setAlertDraft(emptyAlert)
+      setAlertOpen(true)
+      return
+    }
     const signal: 'logs' | 'traces' = tab === 'traces' ? 'traces' : 'logs'
     const query =
       signal === 'traces'
@@ -1497,6 +1784,23 @@ const ExploreTabsProto = () => {
       toast.error("Enter a name for your alert. Try again.")
       return
     }
+    const newAlert: AlertItem = {
+      key: `al-${Date.now()}`,
+      name: alertDraft.name.trim(),
+      signal: alertDraft.signal,
+      query: alertDraft.query,
+      operator: alertDraft.operator,
+      threshold: Number(alertDraft.threshold) || 0,
+      checkEvery: Number(alertDraft.checkEvery) || 5,
+      lookBack: Number(alertDraft.lookBack) || 15,
+      cooldown: Number(alertDraft.cooldown) || 0,
+      severity: alertDraft.severity,
+      destinationKey: alertDraft.destinationKey,
+      createsIncident: alertDraft.createsIncident,
+      status: 'active',
+      lastTriggered: 'Never',
+    }
+    setAlerts((cur) => [newAlert, ...cur])
     setAlertOpen(false)
     toast.success('Alert created successfully')
   }
@@ -1508,10 +1812,6 @@ const ExploreTabsProto = () => {
         break
       case 'Create alert':
         openAlert()
-        break
-      case 'Compare traces':
-        if (selectedTraces.length === 2) setCompareOpen(true)
-        else toast.info('Select two traces to compare')
         break
       case 'Connect cluster':
         setConnectOpen(true)
@@ -1529,6 +1829,9 @@ const ExploreTabsProto = () => {
       case 'Adjust quota':
         setQuotaOpen(true)
         break
+      case 'Add destination':
+        setDestOpen(true)
+        break
       case 'Pin as panel': {
         const spec: PanelSpec =
           tab === 'logs'
@@ -1543,7 +1846,7 @@ const ExploreTabsProto = () => {
               }
             : interpretPrompt(traceSearch.trim() || 'spans count').panels[0]
         dashboardStore.addPanel(spec)
-        toast.success('Pinned to traces-mirror — open Traces (Perses)')
+        toast.success('Pinned to traces-mirror. Open Traces (Perses)')
         setTab('perses')
         break
       }
@@ -1552,12 +1855,10 @@ const ExploreTabsProto = () => {
     }
   }
 
-  const actionDisabled = (label: string) => label === 'Compare traces' && selectedTraces.length !== 2
-
   const renderView = () => {
     switch (tab) {
       case 'logs':
-        return <LogsView search={logSearch} setSearch={setLogSearch} level={logLevel} setLevel={setLogLevel} onOpenLog={setLogDetail} />
+        return <LogsView search={logSearch} setSearch={setLogSearch} level={logLevel} setLevel={setLogLevel} onOpenLog={openLog} />
       case 'traces':
         return (
           <TracesView
@@ -1565,8 +1866,6 @@ const ExploreTabsProto = () => {
             setSearch={setTraceSearch}
             svc={traceSvc}
             setSvc={setTraceSvc}
-            selected={selectedTraces}
-            toggleSelected={toggleTrace}
             onOpenTrace={setTraceDetail}
           />
         )
@@ -1576,12 +1875,16 @@ const ExploreTabsProto = () => {
         return <KubernetesView />
       case 'usage':
         return <UsageView cap={cap} setCap={setCap} quotaOpen={quotaOpen} setQuotaOpen={setQuotaOpen} />
+      case 'alerts':
+        return <AlertsView alerts={alerts} destinations={destinations} onOpen={setAlertDetail} />
+      case 'incidents':
+        return <IncidentsView incidents={incidents} onOpen={setIncidentDetail} />
+      case 'destinations':
+        return <DestinationsView destinations={destinations} />
       case 'perses':
         return <PersesView headerSlot={persesHeaderSlot} />
     }
   }
-
-  const compareTraces = TRACES.filter((t) => selectedTraces.includes(t.key))
 
   return (
     <div className={styles.page}>
@@ -1627,16 +1930,21 @@ const ExploreTabsProto = () => {
             ))}
           </div>
           <div className={mode === 'obs' ? undefined : styles.hidden}>
-            <div className={styles.navLabel}>Explore</div>
-            {NAV_EXPLORE.map((item) => (
-              <button
-                key={item.key}
-                className={tab === item.key ? styles.navItemActive : styles.navItem}
-                onClick={() => setTab(item.key)}
-              >
-                <item.icon size={14} />
-                {item.label}
-              </button>
+            {NAV_EXPLORE.map((section, si) => (
+              <div key={section.section}>
+                {si > 0 && <div className={styles.navSep} />}
+                <div className={styles.navLabel}>{section.section}</div>
+                {section.items.map((item) => (
+                  <button
+                    key={item.key}
+                    className={tab === item.key ? styles.navItemActive : styles.navItem}
+                    onClick={() => setTab(item.key)}
+                  >
+                    <item.icon size={14} />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         </div>
@@ -1648,32 +1956,29 @@ const ExploreTabsProto = () => {
 
       {/* Content */}
       <div className={styles.content}>
-        <div className={styles.contentHead}>
-          <div>
-            <div className={styles.contentTitle}>{meta.title}</div>
-            <div className={styles.contentSub}>{meta.sub}</div>
+        <div className={styles.contentBody}>
+          <div className={styles.pageHead}>
+            <h1 className={styles.pageTitle}>{meta.title}</h1>
+            {tab === 'perses' ? (
+              // Le cluster d'actions Perses est téléporté ici depuis PersesView (portal).
+              <div className={styles.contentActions} ref={setPersesHeaderSlot} />
+            ) : (
+              <div className={styles.contentActions}>
+                {meta.actions.map((a) => (
+                  <Button
+                    key={a.label}
+                    color={a.primary ? 'primary' : 'secondary'}
+                    icon={a.label === 'Export' ? IconDownload : a.label === 'Create alert' ? Plus : a.label === 'Pin as panel' ? Pin : undefined}
+                    onClick={() => runAction(a.label)}
+                  >
+                    {a.label}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
-          {tab === 'perses' ? (
-            // Le cluster d'actions Perses est téléporté ici depuis PersesView (portal),
-            // pour être aligné en haut comme les actions des autres tabs.
-            <div className={styles.contentActions} ref={setPersesHeaderSlot} />
-          ) : (
-            <div className={styles.contentActions}>
-              {meta.actions.map((a) => (
-                <Button
-                  key={a.label}
-                  color={a.primary ? 'primary' : 'secondary'}
-                  icon={a.label === 'Export' ? IconDownload : a.label === 'Create alert' ? Plus : a.label === 'Pin as panel' ? Pin : undefined}
-                  disabled={actionDisabled(a.label)}
-                  onClick={() => runAction(a.label)}
-                >
-                  {a.label === 'Compare traces' && selectedTraces.length > 0 ? `Compare traces (${selectedTraces.length})` : a.label}
-                </Button>
-              ))}
-            </div>
-          )}
+          {renderView()}
         </div>
-        <div className={styles.contentBody}>{renderView()}</div>
       </div>
 
       {/* Create alert modal */}
@@ -1712,13 +2017,35 @@ const ExploreTabsProto = () => {
           </div>
           <div className={styles.formRow}>
             <div className={styles.field} style={{ flex: 1 }}>
+              <label>Check every</label>
+              <Select fullWidth value={alertDraft.checkEvery} onChange={(_e, v) => setAlertDraft((d) => ({ ...d, checkEvery: v }))} options={ALERT_FREQUENCIES} />
+            </div>
+            <div className={styles.field} style={{ flex: 1 }}>
+              <label>Look back</label>
+              <Select fullWidth value={alertDraft.lookBack} onChange={(_e, v) => setAlertDraft((d) => ({ ...d, lookBack: v }))} options={ALERT_LOOKBACKS} />
+            </div>
+          </div>
+          <div className={styles.formRow}>
+            <div className={styles.field} style={{ flex: 1 }}>
               <label>Severity</label>
               <Select fullWidth value={alertDraft.severity} onChange={(_e, v) => setAlertDraft((d) => ({ ...d, severity: v }))} options={ALERT_SEVERITIES} />
             </div>
             <div className={styles.field} style={{ flex: 1 }}>
-              <label>Notify</label>
-              <Select fullWidth value={alertDraft.channel} onChange={(_e, v) => setAlertDraft((d) => ({ ...d, channel: v }))} options={ALERT_CHANNELS} />
+              <label>Destination</label>
+              <Select fullWidth value={alertDraft.destinationKey} onChange={(_e, v) => setAlertDraft((d) => ({ ...d, destinationKey: v }))} options={destinations.map((dst) => ({ label: dst.name, value: dst.key }))} />
             </div>
+          </div>
+          <div className={styles.field}>
+            <label>Cooldown</label>
+            <Select fullWidth value={alertDraft.cooldown} onChange={(_e, v) => setAlertDraft((d) => ({ ...d, cooldown: v }))} options={ALERT_COOLDOWNS} />
+          </div>
+          <div className={styles.drawerToggles}>
+            <Toggle
+              title="Create an incident when this alert fires"
+              description="Opens an incident you can acknowledge and resolve, on top of notifying the destination."
+              value={alertDraft.createsIncident}
+              onChange={(v) => setAlertDraft((d) => ({ ...d, createsIncident: v }))}
+            />
           </div>
         </Modal.Content>
         <Modal.Footer>
@@ -1728,6 +2055,122 @@ const ExploreTabsProto = () => {
           </div>
         </Modal.Footer>
       </Modal>
+
+      {/* Add destination modal */}
+      <Modal open={destOpen} onCancel={() => setDestOpen(false)} title="Add destination" width={460}>
+        <Modal.Content>
+          <div className={styles.field}>
+            <label>Name</label>
+            <Input value={destDraft.name} size="m" fullWidth onChange={(e) => setDestDraft((d) => ({ ...d, name: e.target.value }))} placeholder="e.g. Slack #incidents" />
+          </div>
+          <div className={styles.field}>
+            <label>Type</label>
+            <Select fullWidth value={destDraft.type} onChange={(_e, v) => setDestDraft((d) => ({ ...d, type: v as DestinationType }))} options={DESTINATION_TYPES} />
+          </div>
+          <div className={styles.field}>
+            <label>Target</label>
+            <Input value={destDraft.target} size="m" mono fullWidth onChange={(e) => setDestDraft((d) => ({ ...d, target: e.target.value }))} placeholder="#channel, email address or webhook URL" />
+          </div>
+        </Modal.Content>
+        <Modal.Footer>
+          <div className={styles.modalFoot}>
+            <Button color="invisible" onClick={() => setDestOpen(false)}>Cancel</Button>
+            <Button color="primary" onClick={addDestination}>Add destination</Button>
+          </div>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Alert detail drawer */}
+      <Drawer open={!!alertDetail} onClose={() => setAlertDetail(null)} title={alertDetail?.name ?? 'Alert'} width={460}>
+        {alertDetail &&
+          (() => {
+            const a = alertDetail
+            const dest = destinations.find((d) => d.key === a.destinationKey)
+            return (
+              <div>
+                <div className={styles.field}>
+                  <label>Status</label>
+                  <div><StatusTag variant="ghost" color={alertStatusColor(a.status)}>{a.status}</StatusTag></div>
+                </div>
+                <div className={styles.field}>
+                  <label>Query</label>
+                  <div className={styles.mono}>{a.query}</div>
+                </div>
+                <div className={styles.field}>
+                  <label>Condition</label>
+                  <div>{`count ${opText(a.operator)} ${a.threshold}`}</div>
+                </div>
+                <div className={styles.field}>
+                  <label>Evaluation</label>
+                  <div>{`Checked every ${a.checkEvery} min over the last ${a.lookBack} min`}</div>
+                </div>
+                <div className={styles.field}>
+                  <label>Cooldown</label>
+                  <div>{a.cooldown === 0 ? 'No cooldown' : `${a.cooldown} min`}</div>
+                </div>
+                <div className={styles.field}>
+                  <label>Severity</label>
+                  <div><StatusTag variant="ghost" color={sevColor(a.severity)}>{a.severity}</StatusTag></div>
+                </div>
+                <div className={styles.field}>
+                  <label>Destination</label>
+                  <div>{dest ? `${dest.name} (${destTypeLabel(dest.type)})` : 'None'}</div>
+                </div>
+                <div className={styles.field}>
+                  <label>Creates incident</label>
+                  <div>{a.createsIncident ? 'Yes' : 'No'}</div>
+                </div>
+                <div className={styles.cardFooter}>
+                  <Button color="secondary" onClick={() => toggleSilence(a.key)}>{a.status === 'silenced' ? 'Enable' : 'Silence'}</Button>
+                  <Button color="danger-s" onClick={() => deleteAlert(a.key)}>Delete</Button>
+                </div>
+              </div>
+            )
+          })()}
+      </Drawer>
+
+      {/* Incident detail drawer */}
+      <Drawer open={!!incidentDetail} onClose={() => setIncidentDetail(null)} title={incidentDetail?.title ?? 'Incident'} width={460}>
+        {incidentDetail &&
+          (() => {
+            const i = incidentDetail
+            const src = alerts.find((a) => a.key === i.alertKey)
+            return (
+              <div>
+                <div className={styles.field}>
+                  <label>Status</label>
+                  <div><StatusTag variant="ghost" color={incidentStatusColor(i.status)}>{i.status}</StatusTag></div>
+                </div>
+                <div className={styles.field}>
+                  <label>Severity</label>
+                  <div><StatusTag variant="ghost" color={sevColor(i.severity)}>{i.severity}</StatusTag></div>
+                </div>
+                <div className={styles.field}>
+                  <label>Service</label>
+                  <div className={styles.mono}>{i.service}</div>
+                </div>
+                <div className={styles.field}>
+                  <label>Opened at</label>
+                  <div className={styles.mono}>{i.openedAt}</div>
+                </div>
+                <div className={styles.field}>
+                  <label>Duration</label>
+                  <div>{i.duration}</div>
+                </div>
+                <div className={styles.field}>
+                  <label>Triggered by alert</label>
+                  <div>{src?.name ?? i.alertKey}</div>
+                </div>
+                {i.status !== 'resolved' && (
+                  <div className={styles.cardFooter}>
+                    {i.status === 'open' && <Button color="secondary" onClick={() => setIncidentStatus(i.key, 'acknowledged')}>Acknowledge</Button>}
+                    <Button color="primary" onClick={() => setIncidentStatus(i.key, 'resolved')}>Resolve</Button>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+      </Drawer>
 
       {/* Connect cluster modal */}
       <Modal open={connectOpen} onCancel={() => setConnectOpen(false)} title="Connect a Kubernetes cluster" width={540}>
@@ -1779,7 +2222,6 @@ helm install kapp-agent kapptivate/agent \\
         </Modal.Footer>
       </Modal>
 
-      {/* Compare traces drawer */}
       {/* Trace detail drawer */}
       <Drawer
         open={!!traceDetail}
@@ -1794,54 +2236,51 @@ helm install kapp-agent kapptivate/agent \\
             const ticks = Array.from({ length: 6 }, (_, i) => Math.round((t.durMs * i) / 5))
             return (
               <>
-                <div className={styles.detailStats}>
-                  <div className={styles.detailStat}>
-                    <span className={styles.detailStatLabel}>Duration</span>
-                    <span className={styles.detailStatValue}>{t.dur}</span>
-                  </div>
-                  <div className={styles.detailStat}>
-                    <span className={styles.detailStatLabel}>Spans</span>
-                    <span className={styles.detailStatValue}>{t.spans}</span>
-                  </div>
-                  <div className={styles.detailStat}>
-                    <span className={styles.detailStatLabel}>Services</span>
-                    <span className={styles.detailStatValue}>{services.length}</span>
-                  </div>
-                  <div className={styles.detailStat}>
-                    <span className={styles.detailStatLabel}>Status</span>
-                    <span>
-                      <StatusTag variant="ghost" color={t.status === 'error' ? 'failed' : 'success'}>
-                        {t.status === 'error' ? 'Error' : 'OK'}
-                      </StatusTag>
-                    </span>
-                  </div>
+                <div className={styles.kpiRow}>
+                  <CounterCardGroup>
+                    <CounterCard title="Duration" value={t.dur} />
+                    <CounterCard title="Spans" value={t.spans} />
+                    <CounterCard title="Services" value={services.length} />
+                    <CounterCard
+                      title="Status"
+                      value={t.status === 'error' ? 'Error' : 'OK'}
+                      renderValue={() => (
+                        <StatusTag variant="ghost" color={t.status === 'error' ? 'failed' : 'success'}>
+                          {t.status === 'error' ? 'Error' : 'OK'}
+                        </StatusTag>
+                      )}
+                    />
+                  </CounterCardGroup>
                 </div>
 
                 <div className={styles.tlSection}>Timeline</div>
-                <div className={styles.tlAxis}>
-                  {ticks.map((ms, i) => (
-                    <span key={i} className={styles.tlTick} style={{ left: `${(i / 5) * 100}%` }}>
-                      {ms}ms
-                    </span>
-                  ))}
-                </div>
-                <div className={styles.tlBars}>
-                  {t.bars.map((b, i) => (
-                    <div key={i} className={styles.tlRow}>
-                      <div
-                        className={styles.tlBar}
-                        style={{ left: `${b.left}%`, width: `${b.width}%`, background: b.color }}
-                      >
-                        <span className={styles.tlBarLabel}>{i === 0 ? `${b.label} · ${t.name}` : b.label}</span>
+                <div className={styles.tlBox}>
+                  <div className={styles.tlAxis}>
+                    {ticks.map((ms, i) => (
+                      <span key={i} className={styles.tlTick} style={{ left: `${(i / 5) * 100}%` }}>
+                        {ms}ms
+                      </span>
+                    ))}
+                  </div>
+                  <div className={styles.tlBars}>
+                    {t.bars.map((b, i) => (
+                      <div key={i} className={styles.tlRow}>
+                        <div
+                          className={styles.tlBar}
+                          style={{ left: `${b.left}%`, width: `${b.width}%`, background: b.color }}
+                        >
+                          <span className={styles.tlBarLabel}>{i === 0 ? `${b.label} · ${t.name}` : b.label}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
-                <div className={styles.tlLegend}>
+                <div className={styles.traceLegend}>
+                  <span className={styles.traceLegendLabel}>Time by service</span>
                   {services.map((s) => (
-                    <span key={s} className={styles.tlLegendItem}>
-                      <span className={styles.tlDot} style={{ background: t.bars.find((b) => b.label === s)?.color }} />
+                    <span key={s} className={styles.traceLegendItem}>
+                      <span className={styles.traceLegendDot} style={{ background: t.bars.find((b) => b.label === s)?.color }} />
                       {s}
                     </span>
                   ))}
@@ -1865,41 +2304,102 @@ helm install kapp-agent kapptivate/agent \\
             const spanId = idFrom(l.key, 16)
             const traceId = idFrom(l.key + 't', 32)
             const taskId = `${idFrom(l.key, 8)}-${idFrom(l.key + '1', 4)}-${idFrom(l.key + '2', 4)}-${idFrom(l.key + '3', 4)}-${idFrom(l.key + '4', 12)}`
+            const headers: [string, string][] = a
+              ? [
+                  ['content-type', 'application/json'],
+                  ['content-length', String(140 + ((l.key.length * 37) % 820))],
+                  ['x-request-id', taskId],
+                  ['x-kapptivate-region', 'eu-west-1'],
+                  ['server', 'kappti-edge/1.24'],
+                  ['cache-control', a.method === 'GET' ? 'private, max-age=0' : 'no-store'],
+                ]
+              : []
+            const total = a ? parseInt(a.dur, 10) || 0 : 0
+            const phases = a
+              ? (() => {
+                  const queue = Math.max(1, Math.round(total * 0.08))
+                  const db = Math.round(total * 0.34)
+                  const serialize = Math.max(1, Math.round(total * 0.06))
+                  const server = Math.max(0, total - queue - db - serialize)
+                  return [
+                    { label: 'Queued', ms: queue, color: '#98a2b3' },
+                    { label: 'Server', ms: server, color: '#7B9F7F' },
+                    { label: 'Database', ms: db, color: '#f2b338' },
+                    { label: 'Serialize', ms: serialize, color: '#AEC6B1' },
+                  ]
+                })()
+              : []
             return (
               <>
                 <div className={styles.logDetailHead}>
-                  <span className={LOG_LEVEL_CLASSES[l.level]}>{l.level.toUpperCase()}</span>
+                  <SeverityTag level={l.level} />
                   <span className={styles.svcLogTime}>{l.ts}</span>
                 </div>
                 <div className={styles.logBody}>{l.msg}</div>
 
-                <div className={styles.tlSection}>Attributes</div>
-                {a && (
+                <Tabs
+                  tabs={[
+                    { key: 'body', label: 'Body' },
+                    { key: 'headers', label: `Headers${headers.length ? ` (${headers.length})` : ''}` },
+                    { key: 'performance', label: 'Performance' },
+                  ]}
+                  activeKey={logTab}
+                  onChange={setLogTab}
+                />
+
+                {logTab === 'body' && (
                   <>
-                    <div className={styles.detailRow}><span className={styles.detailLabel}>http.method</span><span className={styles.mono}>{a.method}</span></div>
-                    <div className={styles.detailRow}><span className={styles.detailLabel}>http.route</span><span className={styles.mono}>{a.route}</span></div>
-                    <div className={styles.detailRow}><span className={styles.detailLabel}>http.status_code</span><span className={styles.mono}>{a.status}</span></div>
-                    <div className={styles.detailRow}><span className={styles.detailLabel}>http.duration_ms</span><span className={styles.mono}>{a.dur}</span></div>
+                    {a && (
+                      <div className={styles.logJson}>
+                        {`{\n  "status": ${a.status},\n  "route": "${a.route}",\n  "method": "${a.method}",\n  "duration_ms": ${a.dur}\n}`}
+                      </div>
+                    )}
+                    <div className={styles.kvTable}>
+                      <div className={styles.kvRow}><span className={styles.kvKey}>service.name</span><span className={styles.kvVal}>{l.svc}</span></div>
+                      <div className={styles.kvRow}><span className={styles.kvKey}>trace.id</span><span className={styles.kvVal}>{traceId}</span></div>
+                      <div className={styles.kvRow}><span className={styles.kvKey}>span.id</span><span className={styles.kvVal}>{spanId}</span></div>
+                      <div className={styles.kvRow}><span className={styles.kvKey}>kapptivate.task_id</span><span className={styles.kvVal}>{taskId}</span></div>
+                      <div className={styles.kvRow}><span className={styles.kvKey}>deployment.environment</span><span className={styles.kvVal}>production</span></div>
+                      <div className={styles.kvRow}><span className={styles.kvKey}>k8s.namespace</span><span className={styles.kvVal}>rocket-corp</span></div>
+                      <div className={styles.kvRow}><span className={styles.kvKey}>k8s.pod.name</span><span className={styles.kvVal}>{l.svc}-{idFrom(l.key, 5)}</span></div>
+                    </div>
                   </>
                 )}
-                <div className={styles.detailRow}><span className={styles.detailLabel}>service.name</span><span className={styles.mono}>{l.svc}</span></div>
-                <div className={styles.detailRow}><span className={styles.detailLabel}>kapptivate.task_id</span><span className={styles.mono}>{taskId}</span></div>
 
-                <div className={styles.tlSection}>Span context</div>
-                <div className={styles.detailRow}><span className={styles.detailLabel}>Span ID</span><span className={styles.mono}>{spanId}</span></div>
-                <div className={styles.detailRow}><span className={styles.detailLabel}>Trace ID</span><span className={styles.mono}>{traceId}</span></div>
-                {a && (
-                  <div className={styles.tlRow} style={{ marginTop: 12 }}>
-                    <div className={styles.tlBar} style={{ left: '0%', width: '100%', background: '#6366f1' }}>
-                      <span className={styles.tlBarLabel}>{l.svc} {a.method} {a.route}</span>
+                {logTab === 'headers' && (
+                  a ? (
+                    <div className={styles.kvTable}>
+                      {headers.map(([k, v]) => (
+                        <div key={k} className={styles.kvRow}><span className={styles.kvKey}>{k}</span><span className={styles.kvVal}>{v}</span></div>
+                      ))}
                     </div>
-                  </div>
+                  ) : (
+                    <div className={styles.tabEmpty}>No HTTP headers for this log line.</div>
+                  )
                 )}
 
-                <div className={styles.tlSection}>Resource</div>
-                <div className={styles.detailRow}><span className={styles.detailLabel}>deployment.environment</span><span className={styles.mono}>production</span></div>
-                <div className={styles.detailRow}><span className={styles.detailLabel}>k8s.namespace</span><span className={styles.mono}>rocket-corp</span></div>
-                <div className={styles.detailRow}><span className={styles.detailLabel}>k8s.pod.name</span><span className={styles.mono}>{l.svc}-{idFrom(l.key, 5)}</span></div>
+                {logTab === 'performance' && (
+                  a ? (
+                    <>
+                      <div className={styles.perfTotal}>{total}<small>ms total</small></div>
+                      <div className={styles.perfBar}>
+                        {phases.map((p) => (
+                          <div key={p.label} className={styles.perfSeg} style={{ width: `${total ? (p.ms / total) * 100 : 0}%`, background: p.color }} title={`${p.label} · ${p.ms}ms`} />
+                        ))}
+                      </div>
+                      <div className={styles.kvTable}>
+                        {phases.map((p) => (
+                          <div key={p.label} className={styles.kvRow}>
+                            <span className={styles.kvKey}><span className={styles.perfDot} style={{ background: p.color }} />{p.label}</span>
+                            <span className={styles.kvVal}>{p.ms}ms</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className={styles.tabEmpty}>No timing data for this log line.</div>
+                  )
+                )}
 
                 <div className={styles.drawerLinks}>
                   <Button color="secondary" icon={IconEye} onClick={() => toast.info('Opening test result details')}>Test result details</Button>
@@ -1910,27 +2410,6 @@ helm install kapp-agent kapptivate/agent \\
           })()}
       </Drawer>
 
-      <Drawer open={compareOpen} onClose={() => setCompareOpen(false)} title="Compare traces" width={560}>
-        <div className={styles.compareGrid}>
-          {compareTraces.map((t) => (
-            <div key={t.key} className={styles.detailCard}>
-              <div className={styles.traceName} style={{ marginBottom: 10 }}>
-                <StatusTag variant="filled" color={t.status === 'error' ? 'failed' : 'success'}>{t.status === 'error' ? 'Error' : 'OK'}</StatusTag>
-                {t.name}
-              </div>
-              <div className={styles.detailRow}><span className={styles.detailLabel}>Service</span><b>{t.svc}</b></div>
-              <div className={styles.detailRow}><span className={styles.detailLabel}>Duration</span><b>{t.dur}</b></div>
-              <div className={styles.detailRow}><span className={styles.detailLabel}>Spans</span><b>{t.spans}</b></div>
-              <div className={styles.detailRow}><span className={styles.detailLabel}>Trace ID</span><span className={styles.mono}>{t.key}</span></div>
-              <div className={styles.traceWaterfall} style={{ marginTop: 12 }}>
-                {t.bars.map((b, i) => (
-                  <div key={i} className={styles.traceSpan} style={{ left: `${b.left}%`, width: `${b.width}%`, background: b.color }} title={b.label} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Drawer>
 
       {/* Service map settings drawer */}
       <Drawer
