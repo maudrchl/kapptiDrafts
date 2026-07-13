@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { IconCode } from '@kapptivate/ui-kit'
 import logo from '../assets/kapptidrafts-logo.svg'
 import CodeDrawer from './CodeDrawer'
+import { ScreenProvider } from '../context/ScreenContext'
+import CollabLayer from './collab/CollabLayer'
 
 /**
  * Chrome léger autour d'un prototype (effet « mise en abyme ») :
@@ -28,8 +30,11 @@ const ProtoFrame = ({
   }, [title])
 
   return (
-    <>
+    <ScreenProvider>
       {children}
+
+      {/* Collaboration : présence, commentaires épinglés, historique */}
+      <CollabLayer slug={slug} />
 
       {/* Liseré (décoratif, ne capte pas les clics) */}
       <div style={styles.ring} aria-hidden />
@@ -58,7 +63,7 @@ const ProtoFrame = ({
       </button>
 
       <CodeDrawer slug={slug} open={codeOpen} onClose={() => setCodeOpen(false)} />
-    </>
+    </ScreenProvider>
   )
 }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
+import { useReportScreen } from '../../context/ScreenContext'
 import styles from './locations.module.scss'
 import { LOCATIONS, type Location } from './constants'
 import MainSidebar from './MainSidebar'
@@ -14,6 +15,11 @@ const LocationsPage = () => {
   const [modalScreen, setModalScreen] = useState<'options' | 'public'>('options')
 
   const detail = detailId ? locations.find((l) => l.id === detailId) : null
+
+  // Déclare la vue courante pour ancrer les commentaires au bon écran.
+  useReportScreen(
+    modalOpen ? `modal-${modalScreen}` : detail ? `detail:${detailId}` : 'list',
+  )
 
   const openModal = (screen: 'options' | 'public') => {
     setModalScreen(screen)

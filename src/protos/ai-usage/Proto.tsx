@@ -7,6 +7,7 @@ import {
   IconBan,
 } from '@kapptivate/ui-kit'
 import { ShieldCheck } from 'lucide-react'
+import { useReportScreen } from '../../context/ScreenContext'
 import styles from './ai-usage.module.scss'
 import type { BudgetState, PolicyMode } from './constants'
 import SettingsSidebar from './SettingsSidebar'
@@ -21,6 +22,8 @@ const AIUsagePage = () => {
   const [budgetState, setBudgetState] = useState<BudgetState>('warn')
   const [policyMode, setPolicyMode] = useState<PolicyMode>('post')
   const [drawerOpen, setDrawerOpen] = useState(false)
+
+  useReportScreen(drawerOpen ? 'manage-budget' : 'main')
 
   return (
     <div style={{ flex: '1 1 auto', minWidth: 0, overflow: 'hidden' }}>

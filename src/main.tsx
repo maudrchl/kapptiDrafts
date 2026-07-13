@@ -6,12 +6,15 @@ import '@kapptivate/ui-kit/dist/style.css'
 import './index.css'
 import './i18n'
 import App from './App'
+import { CurrentUserProvider } from './context/CurrentUser'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AntdTheme>
-        <App />
+        <CurrentUserProvider>
+          <App />
+        </CurrentUserProvider>
       </AntdTheme>
     </BrowserRouter>
   </StrictMode>,
