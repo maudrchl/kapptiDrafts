@@ -456,8 +456,8 @@
 /* Colonnes de droite à largeur fixe pour s'aligner d'une ligne à l'autre. */
 /* Durée = info dominante de la card. */
 .traceDur {
-  font-size: 14px;
-  font-weight: 650;
+  font-size: 13px;
+  font-weight: 600;
   font-family: 'Geist Mono', ui-monospace, monospace;
   color: var(--color-text-primary, #101828);
   width: 68px;
@@ -830,10 +830,10 @@
 
 .perfTotal {
   font-family: 'Geist Mono', ui-monospace, monospace;
-  font-size: 26px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--color-text-primary, #24292f);
-  margin: 18px 0 12px;
+  margin: 14px 0 10px;
 
   small {
     font-family: inherit;

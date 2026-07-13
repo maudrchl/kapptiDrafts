@@ -1,10 +1,13 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
   type ReactNode,
 } from 'react'
+
+const GUEST_KEY = 'ktm_guest_name'
 
 /**
  * Identité de l'utilisateur courant, dérivée de l'email renvoyé par /api/me.
@@ -60,39 +63,73 @@ export function deriveIdentity(email: string): CurrentUser {
  */
 const devEmail = (): string | null => {
   if (!import.meta.env.DEV) return null
-  const as = new URLSearchParams(window.location.search).get('as')
+  const params = new URLSearchParams(window.location.search)
+  // `?guest` force le parcours invité (pour tester les liens de partage en local).
+  if (params.has('guest')) return null
+  const as = params.get('as')
   return `${as || 'mood'}@kapptivate.com`
+}
+
+/** Identité « invité » (lien de partage, sans compte Kapptivate). */
+export const guestIdentity = (name: string): CurrentUser => {
+  const clean = name.trim() || 'Guest'
+  const email = `guest:${clean.toLowerCase()}`
+  const words = clean.split(/\s+/).filter(Boolean)
+  const initials =
+    (words.length >= 2 ? words[0][0] + words[1][0] : clean.slice(0, 2)).toUpperCase() || 'G'
+  return { email, name: clean, initials, color: colorFromEmail(email) }
 }
 
 type CurrentUserState = {
   user: CurrentUser | null
   loading: boolean
+  /** Définit une identité invité (persistée localement) — utilisé par les liens de partage. */
+  setGuest: (name: string) => void
 }
 
 const CurrentUserContext = createContext<CurrentUserState>({
   user: null,
   loading: true,
+  setGuest: () => {},
 })
 
 export const CurrentUserProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<CurrentUserState>({
-    user: null,
-    loading: true,
-  })
+  const [user, setUser] = useState<CurrentUser | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const setGuest = useCallback((name: string) => {
+    try {
+      localStorage.setItem(GUEST_KEY, name)
+    } catch {
+      // localStorage indisponible : identité conservée en mémoire seulement
+    }
+    setUser(guestIdentity(name))
+    setLoading(false)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
+    // Repli invité : identité posée précédemment sur ce navigateur (lien de partage).
+    const guest = (() => {
+      try {
+        return localStorage.getItem(GUEST_KEY)
+      } catch {
+        return null
+      }
+    })()
     fetch('/api/me', { credentials: 'same-origin' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { email?: string } | null) => {
         if (cancelled) return
         const email = data?.email ?? devEmail()
-        setState({ user: email ? deriveIdentity(email) : null, loading: false })
+        setUser(email ? deriveIdentity(email) : guest ? guestIdentity(guest) : null)
+        setLoading(false)
       })
       .catch(() => {
         if (cancelled) return
         const email = devEmail()
-        setState({ user: email ? deriveIdentity(email) : null, loading: false })
+        setUser(email ? deriveIdentity(email) : guest ? guestIdentity(guest) : null)
+        setLoading(false)
       })
     return () => {
       cancelled = true
@@ -100,7 +137,7 @@ export const CurrentUserProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   return (
-    <CurrentUserContext.Provider value={state}>
+    <CurrentUserContext.Provider value={{ user, loading, setGuest }}>
       {children}
     </CurrentUserContext.Provider>
   )

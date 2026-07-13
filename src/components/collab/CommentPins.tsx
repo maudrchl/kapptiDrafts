@@ -10,15 +10,20 @@ import { Button, Text, IconCheck, IconTrash } from '@kapptivate/ui-kit'
 import { deriveIdentity, type CurrentUser } from '../../context/CurrentUser'
 import { FONT, type Comment, type Reply } from './types'
 import { fullDate, timeAgo } from './time'
+import { captureAnchor, resolveAnchorPoint } from './anchor'
 import UserAvatar from './UserAvatar'
+
+export type PlacementMode = 'off' | 'comment' | 'emoji'
 
 type Props = {
   activeScreen: string
   me: CurrentUser | null
   comments: Comment[]
   replies: Reply[]
-  commentMode: boolean
+  mode: PlacementMode
+  activeEmoji: string
   showResolved: boolean
+  showEmojis: boolean
   selectedId: string | null
   onSelect: (id: string | null) => void
   addComment: (input: {
@@ -27,6 +32,15 @@ type Props = {
     y: number
     body: string
     author_email: string
+    anchor?: string | null
+  }) => Promise<Comment | null>
+  addStamp: (input: {
+    screen_id: string
+    x: number
+    y: number
+    emoji: string
+    author_email: string
+    anchor?: string | null
   }) => Promise<Comment | null>
   addReply: (commentId: string, body: string, authorEmail: string) => void
   setResolved: (id: string, resolved: boolean) => void
@@ -35,8 +49,6 @@ type Props = {
 
 const Z = 2147483646
 
-// Rend cliquables les URLs d'un texte (ouverture nouvel onglet), sans toucher
-// au reste. Gère http(s):// et www., et ne « mange » pas la ponctuation finale.
 const URL_RE = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi
 const linkify = (text: string): ReactNode[] => {
   const out: ReactNode[] = []
@@ -79,26 +91,38 @@ const CommentPins = ({
   me,
   comments,
   replies,
-  commentMode,
+  mode,
+  activeEmoji,
   showResolved,
+  showEmojis,
   selectedId,
   onSelect,
   addComment,
+  addStamp,
   addReply,
   setResolved,
   deleteComment,
 }: Props) => {
-  const [draft, setDraft] = useState<{ x: number; y: number } | null>(null)
+  const [draft, setDraft] = useState<{ anchor: string | null; x: number; y: number } | null>(null)
+  const layerRef = useRef<HTMLDivElement>(null)
 
-  // Ne montrer que les pins de l'écran affiché.
-  const visible = comments.filter(
-    (c) => c.screen_id === activeScreen && (showResolved || !c.resolved),
-  )
-
-  // Sortie du mode / Échap : on ferme le brouillon et le thread ouvert.
+  // Suivi live des positions : les pins sont ancrés à des éléments dont la
+  // position change (scroll, resize, ouverture de drawer). Un tick par frame
+  // relit les rects — coût négligeable pour une poignée de pins.
+  const [, setTick] = useState(0)
   useEffect(() => {
-    if (!commentMode) setDraft(null)
-  }, [commentMode])
+    let raf = 0
+    const loop = () => {
+      setTick((t) => (t + 1) % 1_000_000)
+      raf = requestAnimationFrame(loop)
+    }
+    raf = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  useEffect(() => {
+    if (mode === 'off') setDraft(null)
+  }, [mode])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -111,60 +135,122 @@ const CommentPins = ({
     return () => window.removeEventListener('keydown', onKey)
   }, [onSelect])
 
-  const placePin = (e: MouseEvent<HTMLDivElement>) => {
-    if (!commentMode) return
-    setDraft({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight })
+  // Clic en dehors du thread ouvert (et hors d'un pin) → ferme le thread.
+  useEffect(() => {
+    if (!selectedId) return
+    const onDown = (e: globalThis.MouseEvent) => {
+      const t = e.target as HTMLElement | null
+      if (t?.closest('[data-comment-card]') || t?.closest('[data-comment-pin]')) return
+      onSelect(null)
+    }
+    window.addEventListener('mousedown', onDown, true)
+    return () => window.removeEventListener('mousedown', onDown, true)
+  }, [selectedId, onSelect])
+
+  // Un marqueur est-il affichable ? (bon type + écran/ancre présents)
+  const isVisible = (c: Comment) => {
+    if (c.kind === 'emoji') return showEmojis
+    if (c.resolved && !showResolved) return false
+    return true
+  }
+
+  const placed = comments
+    .filter(isVisible)
+    .map((c) => {
+      // Ancré : visible seulement si l'élément est dans le DOM. Legacy : filtre écran.
+      if (!c.anchor && c.screen_id !== activeScreen) return null
+      const pt = resolveAnchorPoint(c)
+      if (!pt) return null
+      return { c, pt }
+    })
+    .filter((v): v is { c: Comment; pt: { left: number; top: number } } => v !== null)
+
+  const onLayerClick = (e: MouseEvent<HTMLDivElement>) => {
+    if (mode === 'off') return
+    const hit = captureAnchor(e.clientX, e.clientY, layerRef.current)
+    if (mode === 'emoji') {
+      if (me) {
+        addStamp({
+          screen_id: activeScreen,
+          x: hit.x,
+          y: hit.y,
+          anchor: hit.anchor,
+          emoji: activeEmoji,
+          author_email: me.email,
+        })
+      }
+      return
+    }
+    // comment
+    setDraft(hit)
     onSelect(null)
   }
 
-  const selected = visible.find((c) => c.id === selectedId) ?? null
+  const selectedEntry = placed.find((p) => p.c.id === selectedId && p.c.kind === 'comment') ?? null
+  const draftPt = draft ? resolveAnchorPoint(draft) : null
 
   return (
     <div
+      ref={layerRef}
       style={{
         ...styles.layer,
-        pointerEvents: commentMode ? 'auto' : 'none',
-        cursor: commentMode ? 'crosshair' : 'default',
+        pointerEvents: mode !== 'off' ? 'auto' : 'none',
+        cursor: mode !== 'off' ? 'crosshair' : 'default',
       }}
-      onClick={placePin}
+      onClick={onLayerClick}
     >
-      {visible.map((c) => (
-        <Pin
-          key={c.id}
-          comment={c}
-          selected={c.id === selectedId}
-          onClick={(e) => {
-            e.stopPropagation()
-            setDraft(null)
-            onSelect(c.id === selectedId ? null : c.id)
-          }}
-        />
-      ))}
+      {placed.map(({ c, pt }) =>
+        c.kind === 'emoji' ? (
+          <EmojiStamp
+            key={c.id}
+            comment={c}
+            pt={pt}
+            canRemove={c.author_email === me?.email}
+            onRemove={(e) => {
+              e.stopPropagation()
+              deleteComment(c.id)
+            }}
+          />
+        ) : (
+          <Pin
+            key={c.id}
+            comment={c}
+            pt={pt}
+            selected={c.id === selectedId}
+            onClick={(e) => {
+              e.stopPropagation()
+              setDraft(null)
+              onSelect(c.id === selectedId ? null : c.id)
+            }}
+          />
+        ),
+      )}
 
-      {selected && me && (
+      {selectedEntry && me && (
         <ThreadCard
-          comment={selected}
-          replies={replies.filter((r) => r.comment_id === selected.id)}
+          comment={selectedEntry.c}
+          pt={selectedEntry.pt}
+          replies={replies.filter((r) => r.comment_id === selectedEntry.c.id)}
           me={me}
           onClose={() => onSelect(null)}
-          onReply={(body) => addReply(selected.id, body, me.email)}
-          onToggleResolved={() => setResolved(selected.id, !selected.resolved)}
+          onReply={(body) => addReply(selectedEntry.c.id, body, me.email)}
+          onToggleResolved={() => setResolved(selectedEntry.c.id, !selectedEntry.c.resolved)}
           onDelete={() => {
-            deleteComment(selected.id)
+            deleteComment(selectedEntry.c.id)
             onSelect(null)
           }}
         />
       )}
 
-      {draft && me && (
+      {draft && draftPt && me && (
         <Composer
-          x={draft.x}
-          y={draft.y}
+          pt={draftPt}
           me={me}
           onCancel={() => setDraft(null)}
           onSubmit={async (body) => {
             const created = await addComment({
               screen_id: activeScreen,
+              anchor: draft.anchor,
               x: draft.x,
               y: draft.y,
               body,
@@ -183,10 +269,12 @@ const CommentPins = ({
 
 const Pin = ({
   comment,
+  pt,
   selected,
   onClick,
 }: {
   comment: Comment
+  pt: { left: number; top: number }
   selected: boolean
   onClick: (e: MouseEvent) => void
 }) => {
@@ -194,12 +282,13 @@ const Pin = ({
   return (
     <button
       type="button"
+      data-comment-pin
       onClick={onClick}
       title={`${who.name} · ${timeAgo(comment.created_at)}`}
       style={{
         ...styles.pin,
-        left: `${comment.x * 100}%`,
-        top: `${comment.y * 100}%`,
+        left: pt.left,
+        top: pt.top,
         opacity: comment.resolved ? 0.55 : 1,
         boxShadow: selected
           ? '0 0 0 3px rgba(210,99,52,0.9), 0 4px 12px rgba(16,24,40,0.25)'
@@ -216,14 +305,40 @@ const Pin = ({
   )
 }
 
+/* ------------------------------ Emoji stamp ------------------------------- */
+
+const EmojiStamp = ({
+  comment,
+  pt,
+  canRemove,
+  onRemove,
+}: {
+  comment: Comment
+  pt: { left: number; top: number }
+  canRemove: boolean
+  onRemove: (e: MouseEvent) => void
+}) => {
+  const who = deriveIdentity(comment.author_email)
+  return (
+    <button
+      type="button"
+      onClick={canRemove ? onRemove : (e) => e.stopPropagation()}
+      title={canRemove ? `${who.name} · click to remove` : `${who.name} · ${timeAgo(comment.created_at)}`}
+      style={{ ...styles.stamp, left: pt.left, top: pt.top, cursor: canRemove ? 'pointer' : 'default' }}
+    >
+      <span style={styles.stampEmoji}>{comment.emoji}</span>
+    </button>
+  )
+}
+
 /* ------------------------------- Thread card ------------------------------ */
 
-const anchorStyle = (x: number, y: number): CSSProperties => {
-  const flipX = x > 0.6
-  const flipY = y > 0.6
+const anchorStyle = (pt: { left: number; top: number }): CSSProperties => {
+  const flipX = pt.left > window.innerWidth * 0.6
+  const flipY = pt.top > window.innerHeight * 0.6
   return {
-    left: `${x * 100}%`,
-    top: `${y * 100}%`,
+    left: pt.left,
+    top: pt.top,
     transform: `translate(${flipX ? 'calc(-100% - 20px)' : '20px'}, ${
       flipY ? 'calc(-100% + 4px)' : '-4px'
     })`,
@@ -232,6 +347,7 @@ const anchorStyle = (x: number, y: number): CSSProperties => {
 
 const ThreadCard = ({
   comment,
+  pt,
   replies,
   me,
   onClose,
@@ -240,6 +356,7 @@ const ThreadCard = ({
   onDelete,
 }: {
   comment: Comment
+  pt: { left: number; top: number }
   replies: Reply[]
   me: CurrentUser
   onClose: () => void
@@ -255,25 +372,13 @@ const ThreadCard = ({
     setText('')
   }
   return (
-    <div
-      style={{ ...styles.card, ...anchorStyle(comment.x, comment.y) }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <Message
-        authorEmail={comment.author_email}
-        body={comment.body}
-        createdAt={comment.created_at}
-      />
+    <div data-comment-card style={{ ...styles.card, ...anchorStyle(pt) }} onClick={(e) => e.stopPropagation()}>
+      <Message authorEmail={comment.author_email} body={comment.body} createdAt={comment.created_at} />
 
       {replies.length > 0 && (
         <div style={styles.replies}>
           {replies.map((r) => (
-            <Message
-              key={r.id}
-              authorEmail={r.author_email}
-              body={r.body}
-              createdAt={r.created_at}
-            />
+            <Message key={r.id} authorEmail={r.author_email} body={r.body} createdAt={r.created_at} />
           ))}
         </div>
       )}
@@ -290,12 +395,7 @@ const ThreadCard = ({
       />
 
       <div style={styles.actions}>
-        <Button
-          size="s"
-          color={comment.resolved ? 'secondary' : 'primary'}
-          icon={IconCheck}
-          onClick={onToggleResolved}
-        >
+        <Button size="s" color="secondary" icon={IconCheck} onClick={onToggleResolved}>
           {comment.resolved ? 'Reopen' : 'Resolve'}
         </Button>
         <div style={{ flex: 1 }} />
@@ -349,14 +449,12 @@ const Message = ({
 /* -------------------------------- Composer -------------------------------- */
 
 const Composer = ({
-  x,
-  y,
+  pt,
   me,
   onCancel,
   onSubmit,
 }: {
-  x: number
-  y: number
+  pt: { left: number; top: number }
   me: CurrentUser
   onCancel: () => void
   onSubmit: (body: string) => void
@@ -370,14 +468,8 @@ const Composer = ({
   }
   return (
     <>
-      <span
-        style={{ ...styles.draftDot, left: `${x * 100}%`, top: `${y * 100}%` }}
-        aria-hidden
-      />
-      <div
-        style={{ ...styles.card, ...anchorStyle(x, y) }}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <span style={{ ...styles.draftDot, left: pt.left, top: pt.top }} aria-hidden />
+      <div style={{ ...styles.card, ...anchorStyle(pt) }} onClick={(e) => e.stopPropagation()}>
         <div style={styles.composerHead}>
           <UserAvatar email={me.email} size="small" />
           <Text size="s" weight="bold">
@@ -436,6 +528,22 @@ const styles: Record<string, CSSProperties> = {
     color: '#fff',
     boxShadow: '0 0 0 2px #fff',
   },
+  stamp: {
+    position: 'absolute',
+    transform: 'translate(-50%, -50%)',
+    pointerEvents: 'auto',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 28,
+    height: 28,
+    padding: 0,
+    background: 'rgba(255,255,255,0.92)',
+    border: '1px solid #ececf0',
+    borderRadius: '999px 999px 999px 3px',
+    boxShadow: '0 2px 8px rgba(16,24,40,0.22)',
+  },
+  stampEmoji: { fontSize: 16, lineHeight: 1 },
   card: {
     position: 'absolute',
     pointerEvents: 'auto',

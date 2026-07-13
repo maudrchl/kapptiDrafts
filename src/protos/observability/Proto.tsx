@@ -54,7 +54,7 @@ import {
   Plus,
   Pin,
 } from 'lucide-react'
-import { useReportScreen } from '../../context/ScreenContext'
+import { useReportScreen, useScreenNavigation } from '../../context/ScreenContext'
 import styles from './explore-tabs.module.scss'
 import PersesView from './PersesView'
 import LineChart from './LineChart'
@@ -382,7 +382,7 @@ const LogsView = ({
             <span>Trace</span>
           </div>
           {filtered.map((l) => (
-            <div key={l.key} className={styles.logRow} onClick={() => onOpenLog(l)}>
+            <div key={l.key} data-anchor={`log:${l.key}:row`} className={styles.logRow} onClick={() => onOpenLog(l)}>
               <span><SeverityTag level={l.level} /></span>
               <span className={styles.logCellTime}>{l.ts.slice(11)}</span>
               <span className={styles.logCellSvc}>{l.svc}</span>
@@ -584,6 +584,7 @@ const TracesView = ({
           return (
             <div
               key={t.key}
+              data-anchor={`trace:${t.key}:row`}
               className={styles.traceRow}
               onClick={() => onOpenTrace(t)}
             >
@@ -1571,7 +1572,6 @@ const ExploreTabsProto = () => {
     url.searchParams.set('tab', tab)
     window.history.replaceState(null, '', url)
   }, [tab])
-  useReportScreen(`${mode}:${tab}`)
   const [persesHeaderSlot, setPersesHeaderSlot] = useState<HTMLDivElement | null>(null)
 
   // lifted view state (needed by header actions)
@@ -1581,6 +1581,7 @@ const ExploreTabsProto = () => {
   const [traceSvc, setTraceSvc] = useState('all')
   const [traceDetail, setTraceDetail] = useState<TraceEntry | null>(null)
   const [logDetail, setLogDetail] = useState<LogEntry | null>(null)
+
   const [logTab, setLogTab] = useState('body')
   const openLog = (l: LogEntry) => {
     setLogDetail(l)
@@ -1614,6 +1615,94 @@ const ExploreTabsProto = () => {
   const [incidentDetail, setIncidentDetail] = useState<IncidentItem | null>(null)
   const [destOpen, setDestOpen] = useState(false)
   const [destDraft, setDestDraft] = useState<{ name: string; type: DestinationType; target: string }>({ name: '', type: 'slack', target: '' })
+
+  // Écran courant, à granularité modal / drawer : un commentaire posé sur un
+  // modal (Create alert…) ou un drawer s'ancre à cet écran précis, n'apparaît
+  // que quand il est ouvert, et le clic depuis l'historique le ré-ouvre.
+  const reportedScreen = alertOpen
+    ? 'obs:modal:create-alert'
+    : quotaOpen
+      ? 'obs:modal:adjust-quota'
+      : connectOpen
+        ? 'obs:modal:connect-cluster'
+        : destOpen
+          ? 'obs:modal:add-destination'
+          : configureOpen
+            ? 'obs:drawer:configure'
+            : alertDetail
+              ? `obs:drawer:alert:${alertDetail.key}`
+              : incidentDetail
+                ? `obs:drawer:incident:${incidentDetail.key}`
+                : logDetail
+                  ? `obs:log:${logDetail.key}`
+                  : traceDetail
+                    ? `obs:trace:${traceDetail.key}`
+                    : `${mode}:${tab}`
+  useReportScreen(reportedScreen)
+
+  // Clic sur un commentaire (historique) → rétablit l'écran où il a été posé
+  // (onglet + modal/drawer). Ferme d'abord tout, puis ré-ouvre la bonne cible.
+  const { pendingScreen, clearPendingScreen } = useScreenNavigation()
+  useEffect(() => {
+    if (!pendingScreen) return
+    const p = pendingScreen
+    // Reset des overlays avant de rétablir la cible.
+    setAlertOpen(false)
+    setQuotaOpen(false)
+    setConnectOpen(false)
+    setDestOpen(false)
+    setConfigureOpen(false)
+    setLogDetail(null)
+    setTraceDetail(null)
+    setAlertDetail(null)
+    setIncidentDetail(null)
+    if (p === 'obs:modal:create-alert') {
+      setMode('obs')
+      setAlertOpen(true)
+    } else if (p === 'obs:modal:adjust-quota') {
+      setMode('obs')
+      setTab('usage')
+      setQuotaOpen(true)
+    } else if (p === 'obs:modal:connect-cluster') {
+      setMode('obs')
+      setTab('k8s')
+      setConnectOpen(true)
+    } else if (p === 'obs:modal:add-destination') {
+      setMode('obs')
+      setTab('destinations')
+      setDestOpen(true)
+    } else if (p === 'obs:drawer:configure') {
+      setMode('obs')
+      setTab('svcmap')
+      setConfigureOpen(true)
+    } else if (p.startsWith('obs:drawer:alert:')) {
+      const a = alerts.find((x) => x.key === p.slice('obs:drawer:alert:'.length))
+      setMode('obs')
+      setTab('alerts')
+      if (a) setAlertDetail(a)
+    } else if (p.startsWith('obs:drawer:incident:')) {
+      const inc = incidents.find((x) => x.key === p.slice('obs:drawer:incident:'.length))
+      setMode('obs')
+      setTab('incidents')
+      if (inc) setIncidentDetail(inc)
+    } else if (p.startsWith('obs:log:')) {
+      const log = LOGS.find((l) => l.key === p.slice('obs:log:'.length))
+      setMode('obs')
+      setTab('logs')
+      if (log) setLogDetail(log)
+    } else if (p.startsWith('obs:trace:')) {
+      const tr = TRACES.find((t) => t.key === p.slice('obs:trace:'.length))
+      setMode('obs')
+      setTab('traces')
+      if (tr) setTraceDetail(tr)
+    } else {
+      const [m, t] = p.split(':')
+      if (m === 'run' || m === 'obs') setMode(m)
+      if (EXPLORE_TABS.some((x) => x.key === t)) setTab(t as ExploreTab)
+    }
+    clearPendingScreen()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingScreen, clearPendingScreen])
 
   const meta = PAGE_META[tab]
 
@@ -2216,7 +2305,7 @@ helm install kapp-agent kapptivate/agent \\
                   <SeverityTag level={l.level} />
                   <span className={styles.svcLogTime}>{l.ts}</span>
                 </div>
-                <div className={styles.logBody}>{l.msg}</div>
+                <div data-anchor={`log:${l.key}:message`} className={styles.logBody}>{l.msg}</div>
 
                 <Tabs
                   tabs={[
@@ -2235,7 +2324,7 @@ helm install kapp-agent kapptivate/agent \\
                         {`{\n  "status": ${a.status},\n  "route": "${a.route}",\n  "method": "${a.method}",\n  "duration_ms": ${a.dur}\n}`}
                       </div>
                     )}
-                    <div className={styles.kvTable}>
+                    <div data-anchor={`log:${l.key}:attributes`} className={styles.kvTable}>
                       <div className={styles.kvRow}><span className={styles.kvKey}>service.name</span><span className={styles.kvVal}>{l.svc}</span></div>
                       <div className={styles.kvRow}><span className={styles.kvKey}>trace.id</span><span className={styles.kvVal}>{traceId}</span></div>
                       <div className={styles.kvRow}><span className={styles.kvKey}>span.id</span><span className={styles.kvVal}>{spanId}</span></div>
