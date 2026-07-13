@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Button,
   SearchInput,
@@ -52,13 +52,15 @@ import {
   Plus,
   Pin,
 } from 'lucide-react'
+import { useReportScreen } from '../../context/ScreenContext'
 import styles from './explore-tabs.module.scss'
 import PersesView from './PersesView'
+import LineChart from './LineChart'
 import { toast, ToastMount } from './toast'
 import { dashboardStore } from './dashboardStore'
-import { interpretPrompt } from './perses'
+import { interpretPrompt, TRACE_OVERVIEW_PANELS, makePanel } from './perses'
 import type { PanelSpec } from './perses'
-import type { ExploreTab, PodEntry, SignalKey } from './constants'
+import type { ExploreTab, PodEntry, SignalKey, TraceEntry, ServiceNode, LogEntry } from './constants'
 import {
   EXPLORE_TABS,
   PAGE_META,
@@ -119,6 +121,21 @@ const LOG_LEVEL_CLASSES: Record<string, string> = {
   debug: styles.logLevelDebug,
 }
 
+/* Id hexadécimal déterministe (pas de Math.random → stable au re-render). */
+const idFrom = (seed: string, len: number) => {
+  const hex = 'abcdef0123456789'
+  let out = ''
+  for (let i = 0; i < len; i++) out += hex[(seed.charCodeAt(i % seed.length) * (i + 7)) % 16]
+  return out
+}
+
+/* Extrait des attributs HTTP d'un message de log type "GET /api/x 200 — 39ms". */
+const httpAttrs = (msg: string): { method: string; route: string; status: string; dur: string } | null => {
+  const m = msg.match(/^(GET|POST|PATCH|PUT|DELETE)\s+(\S+)\s+(\d{3})\s+—\s+(\d+)ms/)
+  if (!m) return null
+  return { method: m[1], route: m[2], status: m[3], dur: m[4] }
+}
+
 const genKey = () => {
   const hex = '0123456789abcdef'
   let s = ''
@@ -138,17 +155,75 @@ type AlertDraft = {
   channel: string
 }
 
+/* Log volume — bar chart empilé (ERROR/WARN/INFO/DEBUG) sur 24 h. */
+const LOG_VOLUME = Array.from({ length: 24 }, (_, i) => {
+  const dip = i === 8 || i === 15 || i === 23
+  return {
+    error: i % 6 === 0 ? 2 : 1,
+    warn: i % 4 === 0 ? 2 : 1,
+    info: dip ? (i === 23 ? 22 : 64) : 86,
+    debug: dip ? (i === 23 ? 6 : 16) : 27,
+  }
+})
+const LOG_VOLUME_LABELS = Array.from({ length: 24 }, (_, i) => `${String((11 + i) % 24).padStart(2, '0')}:00`)
+
+const LogVolumeBars = () => {
+  const W = 1040, H = 200, padL = 30, padR = 8, padT = 10, padB = 24
+  const plotW = W - padL - padR, plotH = H - padT - padB
+  const yMax = 120
+  const yFor = (v: number) => padT + plotH - (v / yMax) * plotH
+  const bw = (plotW / LOG_VOLUME.length) * 0.66
+  const yTicks = [0, 20, 40, 60, 80, 100, 120]
+  const parts: { key: 'error' | 'warn' | 'info' | 'debug'; color: string }[] = [
+    { key: 'error', color: '#e0372e' },
+    { key: 'warn', color: '#f2b338' },
+    { key: 'info', color: '#0577ff' },
+    { key: 'debug', color: '#98a2b3' },
+  ]
+  return (
+    <svg className={styles.miniChart} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Log volume">
+      {yTicks.map((t) => (
+        <g key={t}>
+          <line x1={padL} y1={yFor(t)} x2={W - padR} y2={yFor(t)} stroke="#eef0f3" strokeWidth={1} />
+          <text x={padL - 6} y={yFor(t) + 3} textAnchor="end" fontSize={9} fill="#98a2b3" fontFamily="Geist Mono, monospace">{t}</text>
+        </g>
+      ))}
+      {LOG_VOLUME.map((b, i) => {
+        const cx = padL + (i + 0.5) * (plotW / LOG_VOLUME.length)
+        let acc = 0
+        return (
+          <g key={i}>
+            {parts.map((p) => {
+              const v = b[p.key]
+              if (!v) return null
+              const y0 = yFor(acc)
+              const y1 = yFor(acc + v)
+              acc += v
+              return <rect key={p.key} x={cx - bw / 2} y={y1} width={bw} height={y0 - y1} fill={p.color} />
+            })}
+            {i % 2 === 0 && (
+              <text x={cx} y={H - 6} textAnchor="middle" fontSize={9} fill="#98a2b3" fontFamily="Geist Mono, monospace">{LOG_VOLUME_LABELS[i]}</text>
+            )}
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
 /* ─── Logs View ─── */
 const LogsView = ({
   search,
   setSearch,
   level,
   setLevel,
+  onOpenLog,
 }: {
   search: string
   setSearch: (v: string) => void
   level: string
   setLevel: (v: string) => void
+  onOpenLog: (l: LogEntry) => void
 }) => {
   const [live, setLive] = useState(false)
 
@@ -166,7 +241,7 @@ const LogsView = ({
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search logs... e.g. level:error service:api-gateway"
+            placeholder="Search logs... e.g. level:error service:payment-service"
             fullwidth
           />
         </div>
@@ -217,6 +292,12 @@ const LogsView = ({
         </CounterCardGroup>
       </div>
 
+      <Card className={styles.volumeCard}>
+        <div className={styles.overviewTitle}>Log volume</div>
+        <LogVolumeBars />
+        <MiniLegend items={[{ label: 'ERROR', color: '#e0372e' }, { label: 'INFO', color: '#0577ff' }, { label: 'WARN', color: '#f2b338' }, { label: 'DEBUG', color: '#98a2b3' }]} />
+      </Card>
+
       <div className={styles.resultBar}>
         <span>Showing {filtered.length} of {LOGS.length} lines</span>
         {live && <span className={styles.liveDot}>● live</span>}
@@ -229,13 +310,25 @@ const LogsView = ({
           description="Try a broader search or reset the level filter."
         />
       ) : (
-        <div className={styles.logStream}>
+        <div className={styles.logTable}>
+          <div className={styles.logTableHead}>
+            <span>Severity</span>
+            <span>Time</span>
+            <span>Resource</span>
+            <span>Body</span>
+            <span>Trace</span>
+            <span>Execution</span>
+          </div>
           {filtered.map((l) => (
-            <div key={l.key} className={styles.logLine}>
-              <span className={styles.logTs}>{l.ts}</span>
+            <div key={l.key} className={styles.logRow} onClick={() => onOpenLog(l)}>
               <span className={LOG_LEVEL_CLASSES[l.level]}>{l.level.toUpperCase()}</span>
-              <span className={styles.logSvc}>{l.svc}</span>
-              <span className={styles.logMsg}>{l.msg}</span>
+              <span className={styles.logCellTime}>{l.ts.slice(11)}</span>
+              <span className={styles.logCellSvc}>{l.svc}</span>
+              <span className={styles.logCellBody}>{l.msg}</span>
+              <span className={styles.logCellTrace}>{idFrom(l.key, 8)}…</span>
+              <span>
+                <button className={styles.logViewBtn} onClick={(e) => { e.stopPropagation(); onOpenLog(l) }}>View</button>
+              </span>
             </div>
           ))}
         </div>
@@ -252,6 +345,7 @@ const TracesView = ({
   setSvc,
   selected,
   toggleSelected,
+  onOpenTrace,
 }: {
   search: string
   setSearch: (v: string) => void
@@ -259,6 +353,7 @@ const TracesView = ({
   setSvc: (v: string) => void
   selected: string[]
   toggleSelected: (key: string) => void
+  onOpenTrace: (t: TraceEntry) => void
 }) => {
   const q = search.trim().toLowerCase()
   const filtered = TRACES.filter(
@@ -272,7 +367,7 @@ const TracesView = ({
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search traces... e.g. service:api-gateway duration:>100ms"
+            placeholder="Search traces... e.g. service:demo-site duration:>100ms"
             fullwidth
           />
         </div>
@@ -290,9 +385,9 @@ const TracesView = ({
           <Select
             options={[
               { label: 'All services', value: 'all' },
-              { label: 'api-gateway', value: 'api-gateway' },
-              { label: 'kappticentral', value: 'kappticentral' },
-              { label: 'screenshot-svc', value: 'screenshot-svc' },
+              { label: 'demo-site', value: 'demo-site' },
+              { label: 'payment-service', value: 'payment-service' },
+              { label: 'postgres', value: 'postgres' },
             ]}
             value={svc}
             onChange={(_e, v) => setSvc(v)}
@@ -309,6 +404,17 @@ const TracesView = ({
           <CounterCard title="Error rate" value="2.1%" trend={<TrendTag current={2.1} previous={1.7} />} />
           <CounterCard title="P99 latency" value="890ms" trend={<TrendTag current={890} previous={1010} invertColor />} />
         </CounterCardGroup>
+      </div>
+
+      <div className={styles.overviewRow}>
+        {TRACE_OVERVIEW_PANELS.map((p) => (
+          <Card key={p.id} className={styles.overviewCard}>
+            <div className={styles.overviewTitle}>
+              {p.name} <span>{p.unit}</span>
+            </div>
+            <LineChart panel={p} height={150} />
+          </Card>
+        ))}
       </div>
 
       <div className={styles.resultBar}>
@@ -343,6 +449,17 @@ const TracesView = ({
                   <span>{t.spans} spans</span>
                   <Tag mono>{t.dur}</Tag>
                   <Tag color="grey" mono>{t.key}</Tag>
+                  <Button
+                    color="secondary"
+                    size="small"
+                    icon={IconEye}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onOpenTrace(t)
+                    }}
+                  >
+                    View
+                  </Button>
                 </div>
               </div>
               <div className={styles.traceWaterfall}>
@@ -363,16 +480,233 @@ const TracesView = ({
   )
 }
 
+/* Panels RED (Requests / Errors / Duration) dérivés d'un service, rendus via LineChart. */
+const wobble = (base: number, seed: number) =>
+  [-4, 3, 0, 6, -2, 4, 1].map((d, i) => Math.max(0, Math.round(base + d + ((seed + i) % 3))))
+
+const serviceRedPanels = (s: ServiceNode) => {
+  const avg = parseFloat(s.lat) || 40
+  const p95 = Math.round(avg * 1.7)
+  const errPct = parseFloat(s.err) || 0
+  const errPts = [0, 1, 0, 2, 0, 1, 0].map((x) => Math.round(x * errPct))
+  return {
+    requests: {
+      id: 'red_req',
+      ...makePanel({
+        name: 'Requests', unit: 'Count', yMin: 0, yMax: 60, yTicks: 7,
+        series: [{ name: s.label, color: s.color, points: wobble(48, s.label.length) }],
+      }),
+    },
+    errors: {
+      id: 'red_err',
+      ...makePanel({
+        name: 'Errors', unit: 'Count', yMin: 0, yMax: Math.max(2, Math.ceil(errPct * 2)), yTicks: 5,
+        series: [{ name: 'errors', color: '#e0372e', points: errPts }],
+      }),
+    },
+    duration: {
+      id: 'red_dur',
+      ...makePanel({
+        name: 'Duration', unit: 'ms', showLegend: true, yMin: 0, yMax: Math.max(50, Math.ceil((p95 * 1.4) / 50) * 50), yTicks: 6,
+        series: [
+          { name: 'avg', color: '#3b82f6', points: wobble(avg, 2) },
+          { name: 'p95', color: '#8b5cf6', points: wobble(p95, 5) },
+        ],
+      }),
+    },
+  }
+}
+
+/* Telemetry (onglet du drawer service) — scatter spans, bars logs, table metrics */
+const SPAN_DOTS: { x: number; y: number; err?: boolean }[] = [
+  { x: 0.02, y: 360 }, { x: 0.05, y: 355 }, { x: 0.06, y: 110 }, { x: 0.07, y: 130 }, { x: 0.08, y: 105 },
+  { x: 0.1, y: 20 }, { x: 0.12, y: 8 }, { x: 0.15, y: 5 }, { x: 0.2, y: 9 }, { x: 0.25, y: 6 },
+  { x: 0.3, y: 505 }, { x: 0.32, y: 405 }, { x: 0.4, y: 215 }, { x: 0.42, y: 165 }, { x: 0.43, y: 80 },
+  { x: 0.44, y: 30, err: true }, { x: 0.45, y: 12 }, { x: 0.5, y: 7 }, { x: 0.55, y: 5 },
+  { x: 0.62, y: 490 }, { x: 0.66, y: 310 }, { x: 0.68, y: 320 }, { x: 0.7, y: 15 }, { x: 0.71, y: 18 }, { x: 0.72, y: 10 },
+  { x: 0.8, y: 8 }, { x: 0.85, y: 6 }, { x: 0.9, y: 560 }, { x: 0.93, y: 360 }, { x: 0.95, y: 290 },
+  { x: 0.96, y: 110 }, { x: 0.97, y: 20 }, { x: 0.98, y: 14, err: true },
+]
+
+const TelemetrySpans = () => {
+  const W = 520, H = 172, padL = 34, padR = 8, padT = 8, padB = 24
+  const plotW = W - padL - padR, plotH = H - padT - padB
+  const yMax = 600
+  const yFor = (v: number) => padT + plotH - (v / yMax) * plotH
+  const xFor = (f: number) => padL + f * plotW
+  const yTicks = [0, 100, 200, 300, 400, 500, 600]
+  const xLabels = ['14:10', '14:20', '14:30', '14:40', '14:50']
+  return (
+    <svg className={styles.miniChart} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Spans">
+      {yTicks.map((t) => (
+        <g key={t}>
+          <line x1={padL} y1={yFor(t)} x2={W - padR} y2={yFor(t)} stroke="#eef0f3" strokeWidth={1} />
+          <text x={padL - 6} y={yFor(t) + 3} textAnchor="end" fontSize={9.5} fill="#98a2b3" fontFamily="Geist Mono, monospace">{t}</text>
+        </g>
+      ))}
+      {xLabels.map((l, i) => (
+        <text key={l} x={xFor((i + 0.5) / xLabels.length)} y={H - 6} textAnchor="middle" fontSize={9.5} fill="#98a2b3" fontFamily="Geist Mono, monospace">{l}</text>
+      ))}
+      {SPAN_DOTS.map((d, i) => (
+        <circle key={i} cx={xFor(d.x)} cy={yFor(d.y)} r={2.6} fill={d.err ? '#e0372e' : '#98a2b3'} opacity={0.85} />
+      ))}
+    </svg>
+  )
+}
+
+const LOG_BARS = Array.from({ length: 16 }, (_, i) => ({
+  debug: 18 + ((i * 3) % 12),
+  info: 60 + ((i * 7) % 40),
+  warn: i % 5 === 0 ? 3 : 0,
+  error: i % 8 === 0 ? 2 : 0,
+}))
+
+const TelemetryLogs = () => {
+  const W = 520, H = 172, padL = 34, padR = 8, padT = 8, padB = 24
+  const plotW = W - padL - padR, plotH = H - padT - padB
+  const yMax = 120
+  const yFor = (v: number) => padT + plotH - (v / yMax) * plotH
+  const bw = (plotW / LOG_BARS.length) * 0.7
+  const yTicks = [0, 30, 60, 90, 120]
+  const parts: { key: 'debug' | 'info' | 'warn' | 'error'; color: string }[] = [
+    { key: 'debug', color: '#98a2b3' }, { key: 'info', color: '#0577ff' }, { key: 'warn', color: '#f2b338' }, { key: 'error', color: '#e0372e' },
+  ]
+  return (
+    <svg className={styles.miniChart} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Logs">
+      {yTicks.map((t) => (
+        <g key={t}>
+          <line x1={padL} y1={yFor(t)} x2={W - padR} y2={yFor(t)} stroke="#eef0f3" strokeWidth={1} />
+          <text x={padL - 6} y={yFor(t) + 3} textAnchor="end" fontSize={9.5} fill="#98a2b3" fontFamily="Geist Mono, monospace">{t}</text>
+        </g>
+      ))}
+      {LOG_BARS.map((b, i) => {
+        const cx = padL + (i + 0.5) * (plotW / LOG_BARS.length)
+        let acc = 0
+        return (
+          <g key={i}>
+            {parts.map((p) => {
+              const v = b[p.key]
+              if (!v) return null
+              const y0 = yFor(acc)
+              const y1 = yFor(acc + v)
+              acc += v
+              return <rect key={p.key} x={cx - bw / 2} y={y1} width={bw} height={y0 - y1} fill={p.color} />
+            })}
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+/* Line chart à viewBox large (520) → texte d'axe à taille normale même en pleine
+   largeur de drawer (le LineChart partagé, viewBox 360, grossit trop ici). */
+const MiniLineChart = ({
+  panel,
+  height = 132,
+}: {
+  panel: { yMin: number; yMax: number; yTicks: number; xLabels: string[]; showLegend?: boolean; series: { name: string; color: string; points: (number | null)[] }[] }
+  height?: number
+}) => {
+  const W = 520, H = height, padL = 40, padR = 12, padT = 8, padB = 24
+  const plotW = W - padL - padR, plotH = H - padT - padB
+  const { yMin, yMax, yTicks, xLabels, series } = panel
+  const yFor = (v: number) => padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH
+  const xFor = (i: number) => padL + (xLabels.length === 1 ? 0 : (i / (xLabels.length - 1)) * plotW)
+  const ticks = Array.from({ length: yTicks }, (_, i) => yMin + ((yMax - yMin) / (yTicks - 1)) * i)
+  const seg = (points: (number | null)[]) => {
+    const segs: string[] = []
+    let cur: string[] = []
+    points.forEach((p, i) => {
+      if (p === null || p === undefined) {
+        if (cur.length) segs.push(cur.join(' '))
+        cur = []
+      } else cur.push(`${xFor(i).toFixed(1)},${yFor(p).toFixed(1)}`)
+    })
+    if (cur.length) segs.push(cur.join(' '))
+    return segs
+  }
+  return (
+    <div>
+      <svg className={styles.miniChart} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="chart">
+        {ticks.map((t, i) => (
+          <g key={i}>
+            <line x1={padL} y1={yFor(t)} x2={W - padR} y2={yFor(t)} stroke="#eef0f3" strokeWidth={1} />
+            <text x={padL - 6} y={yFor(t) + 3} textAnchor="end" fontSize={9.5} fill="#98a2b3" fontFamily="Geist Mono, monospace">{t.toFixed(0)}</text>
+          </g>
+        ))}
+        {xLabels.map((lbl, i) => (
+          <text key={lbl + i} x={xFor(i)} y={H - 6} textAnchor="middle" fontSize={9.5} fill="#98a2b3" fontFamily="Geist Mono, monospace">{lbl}</text>
+        ))}
+        {series.map((s) =>
+          seg(s.points).map((pts, i) => (
+            <polyline key={s.name + i} points={pts} fill="none" stroke={s.color} strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round" />
+          )),
+        )}
+      </svg>
+      {panel.showLegend && (
+        <MiniLegend items={series.map((s) => ({ label: s.name, color: s.color }))} />
+      )}
+    </div>
+  )
+}
+
+const MiniLegend = ({ items }: { items: { label: string; color: string }[] }) => (
+  <div className={styles.miniLegend}>
+    {items.map((it) => (
+      <span key={it.label} className={styles.miniLegendItem}>
+        <span className={styles.miniDot} style={{ background: it.color }} />
+        {it.label}
+      </span>
+    ))}
+  </div>
+)
+
+const telemetryMetrics = (svc: string) => {
+  const p = svc.replace(/-/g, '_')
+  return [
+    { type: 'SUM', name: 'observability.usage.trace_count', unit: '{span}' },
+    { type: 'SUM', name: 'observability.usage.rows', unit: '{record}' },
+    { type: 'SUM', name: 'observability.usage.bytes', unit: 'By' },
+    { type: 'SUM', name: `${p}.http.request.count`, unit: '{request}' },
+    { type: 'SUM', name: 'observability.usage.error_count', unit: '{span}' },
+    { type: 'GAUGE', name: `${p}.http.server.duration`, unit: 'ms' },
+    { type: 'SUM', name: `${p}.order.revenue`, unit: 'EUR' },
+    { type: 'GAUGE', name: `${p}.runtime.memory.rss`, unit: 'By' },
+  ]
+}
+
 /* ─── Service Map View ─── */
 const ServiceMapView = () => {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string | null>(SERVICES[0]?.id ?? null)
-  const sel = SERVICES.find((s) => s.id === selected)
+  const [drawerSvc, setDrawerSvc] = useState<ServiceNode | null>(null)
+  const [svcTab, setSvcTab] = useState('overview')
   const q = search.trim().toLowerCase()
   const matches = (label: string) => q === '' || label.toLowerCase().includes(q)
+  const byId = (id: string) => SERVICES.find((s) => s.id === id)!
+  const outCount = (id: string) => EDGES.filter((e) => e.from === id).length
+  const inCount = (id: string) => EDGES.filter((e) => e.to === id).length
 
-  const W = 600
-  const H = 400
+  // pan + zoom + fullscreen
+  const [view, setView] = useState({ x: 0, y: 0, scale: 1 })
+  const [fullscreen, setFullscreen] = useState(false)
+  const drag = useRef<{ x: number; y: number } | null>(null)
+  const clamp = (n: number) => Math.min(1.8, Math.max(0.5, +n.toFixed(2)))
+  const startPan = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('[data-svcnode]')) return
+    drag.current = { x: e.clientX, y: e.clientY }
+  }
+  const onPan = (e: React.MouseEvent) => {
+    if (!drag.current) return
+    const dx = e.clientX - drag.current.x
+    const dy = e.clientY - drag.current.y
+    drag.current = { x: e.clientX, y: e.clientY }
+    setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }))
+  }
+  const endPan = () => {
+    drag.current = null
+  }
 
   return (
     <>
@@ -394,98 +728,226 @@ const ServiceMapView = () => {
         </div>
       </div>
 
-      <div className={styles.svcMapContainer}>
-        <div className={styles.svcMapCanvas}>
-          <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
+      <div
+        className={fullscreen ? `${styles.svcMapCanvas} ${styles.svcMapFullscreen}` : styles.svcMapCanvas}
+        onMouseDown={startPan}
+        onMouseMove={onPan}
+        onMouseUp={endPan}
+        onMouseLeave={endPan}
+        style={{ cursor: drag.current ? 'grabbing' : 'grab' }}
+      >
+        <div className={styles.svcCanvasBar}>
+          <button className={styles.zoomBtn} onClick={() => setView((v) => ({ ...v, scale: clamp(v.scale - 0.2) }))} title="Zoom out">−</button>
+          <button className={styles.zoomBtn} onClick={() => setView((v) => ({ ...v, scale: clamp(v.scale + 0.2) }))} title="Zoom in">+</button>
+          <button className={styles.zoomBtn} onClick={() => setView({ x: 0, y: 0, scale: 1 })} title="Reset view">⟲</button>
+          <button className={styles.zoomBtn} onClick={() => { setFullscreen((f) => !f); setView({ x: 0, y: 0, scale: 1 }) }} title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}>{fullscreen ? '✕' : '⤢'}</button>
+        </div>
+
+        <div
+          className={styles.svcViewport}
+          style={{
+            transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
+            transition: drag.current ? 'none' : 'transform 0.2s ease',
+          }}
+        >
+          {/* connectors */}
+          <svg className={styles.svcEdgeLayer} viewBox="0 0 100 100" preserveAspectRatio="none">
             {EDGES.map((e, i) => {
-              const f = SERVICES.find((s) => s.id === e.from)!
-              const t = SERVICES.find((s) => s.id === e.to)!
+              const f = byId(e.from)
+              const t = byId(e.to)
+              const mx = (f.x + t.x) / 2
               return (
-                <line
+                <path
                   key={i}
-                  x1={(f.x / 100) * W}
-                  y1={(f.y / 100) * H}
-                  x2={(t.x / 100) * W}
-                  y2={(t.y / 100) * H}
-                  stroke="#d0d5dd"
-                  strokeWidth={1.5}
-                  strokeDasharray="4 3"
+                  d={`M ${f.x} ${f.y} C ${mx} ${f.y}, ${mx} ${t.y}, ${t.x} ${t.y}`}
+                  className={styles.svcEdge}
+                  vectorEffect="non-scaling-stroke"
                 />
               )
             })}
           </svg>
+
+          {/* edge labels */}
+          {EDGES.map((e, i) => {
+            const f = byId(e.from)
+            const t = byId(e.to)
+            return (
+              <div
+                key={i}
+                className={styles.svcEdgeLabel}
+                style={{ left: `${(f.x + t.x) / 2}%`, top: `${(f.y + t.y) / 2}%` }}
+              >
+                {e.calls} calls · {e.lat}
+              </div>
+            )
+          })}
+
+          {/* nodes */}
+          {SERVICES.map((s) => {
+            const out = outCount(s.id)
+            const inb = inCount(s.id)
+            return (
+              <div
+                key={s.id}
+                data-svcnode
+                className={styles.svcCard}
+                style={{
+                  left: `${s.x}%`,
+                  top: `${s.y}%`,
+                  borderColor: s.color,
+                  opacity: matches(s.label) ? 1 : 0.3,
+                  boxShadow: selected === s.id ? `0 0 0 3px ${s.color}33` : undefined,
+                }}
+                onClick={() => {
+                  setSelected(s.id)
+                  setDrawerSvc(s)
+                  setSvcTab('overview')
+                }}
+              >
+                <div className={styles.svcCardName}>{s.label}</div>
+                <div className={styles.svcCardMeta}>{s.spans.toLocaleString()} spans · {s.lat} avg</div>
+                <div className={styles.svcCardConn}>
+                  {out > 0 && <span style={{ color: s.color }}>↑{out} out</span>}
+                  {inb > 0 && <span style={{ color: s.color }}>↓{inb} in</span>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* minimap */}
+        <div className={styles.svcMiniMap}>
           {SERVICES.map((s) => (
-            <div
-              key={s.id}
-              className={styles.svcNode}
-              style={{
-                left: `calc(${s.x}% - 36px)`,
-                top: `calc(${s.y}% - 36px)`,
-                borderColor: s.color,
-                color: s.color,
-                opacity: matches(s.label) ? 1 : 0.25,
-                boxShadow: selected === s.id ? `0 0 0 3px ${s.color}33` : undefined,
-              }}
-              onClick={() => setSelected(s.id)}
-            >
-              <IconServer size={20} />
-              <span className={styles.svcNodeLabel}>{s.label}</span>
-            </div>
+            <span key={s.id} className={styles.svcMiniNode} style={{ left: `${s.x}%`, top: `${s.y}%`, background: s.color }} />
           ))}
         </div>
-
-        <div className={styles.svcSidebar}>
-          <Card>
-            <Card.Content title={sel ? sel.label : 'Select a service'} description={sel ? undefined : 'Click a node on the map'}>
-              {sel && (
-                <>
-                  <div className={styles.detailRow}><span className={styles.detailLabel}>Requests/sec</span><b>{sel.rps}</b></div>
-                  <div className={styles.detailRow}><span className={styles.detailLabel}>Avg latency</span><b>{sel.lat}</b></div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.detailLabel}>Error rate</span>
-                    <StatusTag variant="filled" color={parseFloat(sel.err) > 1 ? 'failed' : parseFloat(sel.err) > 0 ? 'warning' : 'success'}>{sel.err}</StatusTag>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.detailLabel}>Status</span>
-                    <StatusTag variant="filled" color={parseFloat(sel.err) > 2 ? 'failed' : 'success'}>{parseFloat(sel.err) > 2 ? 'Degraded' : 'Healthy'}</StatusTag>
-                  </div>
-                </>
-              )}
-            </Card.Content>
-          </Card>
-
-          <Card>
-            <Card.Content title="Traffic summary">
-              <div className={styles.detailRow}><span className={styles.detailLabel}>Total RPS</span><b>13.7K</b></div>
-              <div className={styles.detailRow}><span className={styles.detailLabel}>Avg latency</span><b>42ms</b></div>
-              <div className={styles.detailRow}><span className={styles.detailLabel}>Active services</span><b>{SERVICES.length}</b></div>
-            </Card.Content>
-          </Card>
-        </div>
       </div>
+
+      {/* Service detail drawer */}
+      <Drawer
+        open={!!drawerSvc}
+        onClose={() => setDrawerSvc(null)}
+        title={drawerSvc ? `Service: ${drawerSvc.label}` : ''}
+        width={640}
+      >
+        {drawerSvc &&
+          (() => {
+            const s = drawerSvc
+            const inbound = EDGES.filter((e) => e.to === s.id).length
+            const outbound = EDGES.filter((e) => e.from === s.id).length
+            const logs = LOGS.filter((l) => l.svc === s.label)
+            const red = serviceRedPanels(s)
+            return (
+              <>
+                <Tabs
+                  tabs={[
+                    { key: 'overview', label: 'Overview' },
+                    { key: 'red', label: 'RED' },
+                    { key: 'telemetry', label: 'Telemetry' },
+                  ]}
+                  activeKey={svcTab}
+                  onChange={setSvcTab}
+                />
+
+                {svcTab === 'overview' && (
+                  <>
+                    <div className={styles.metricGrid}>
+                      <div className={styles.metricCell}><span className={styles.detailStatLabel}>Spans</span><span className={styles.detailStatValue}>{s.spans.toLocaleString()}</span></div>
+                      <div className={styles.metricCell}><span className={styles.detailStatLabel}>Inbound</span><span className={styles.detailStatValue}>{inbound}</span></div>
+                      <div className={styles.metricCell}><span className={styles.detailStatLabel}>Outbound</span><span className={styles.detailStatValue}>{outbound}</span></div>
+                      <div className={styles.metricCell}><span className={styles.detailStatLabel}>Requests/sec</span><span className={styles.detailStatValue}>{s.rps}</span></div>
+                      <div className={styles.metricCell}><span className={styles.detailStatLabel}>Error rate</span><span className={styles.detailStatValue}>{s.err}</span></div>
+                      <div className={styles.metricCell}><span className={styles.detailStatLabel}>Duration avg</span><span className={styles.detailStatValue}>{s.lat}</span></div>
+                    </div>
+
+                    <div className={styles.tlSection}>Recent logs ({logs.length})</div>
+                    {logs.length === 0 ? (
+                      <div className={styles.svcEmpty}>No recent logs for this service.</div>
+                    ) : (
+                      logs.map((l) => (
+                        <div key={l.key} className={styles.svcLogRow}>
+                          <span className={styles.svcLogTime}>{l.ts.slice(11, 19)}</span>
+                          <span className={LOG_LEVEL_CLASSES[l.level]}>{l.level.toUpperCase()}</span>
+                          <span className={styles.svcLogMsg}>{l.msg}</span>
+                        </div>
+                      ))
+                    )}
+                  </>
+                )}
+
+                {svcTab === 'red' && (
+                  <div className={styles.redStack}>
+                    <div>
+                      <div className={styles.overviewTitle}>Requests <span>Count</span></div>
+                      <MiniLineChart panel={red.requests} height={120} />
+                    </div>
+                    <div>
+                      <div className={styles.overviewTitle}>Errors <span>Count</span></div>
+                      <MiniLineChart panel={red.errors} height={120} />
+                    </div>
+                    <div>
+                      <div className={styles.overviewTitle}>Duration <span>ms</span></div>
+                      <MiniLineChart panel={red.duration} height={120} />
+                    </div>
+                  </div>
+                )}
+
+                {svcTab === 'telemetry' && (
+                  <div className={styles.telemetryStack}>
+                    <div>
+                      <div className={styles.overviewTitle}>Spans <span>{s.spans.toLocaleString()} spans</span></div>
+                      <TelemetrySpans />
+                      <MiniLegend items={[{ label: 'ERROR', color: '#e0372e' }, { label: 'OK & UNSET', color: '#98a2b3' }]} />
+                    </div>
+                    <div>
+                      <div className={styles.overviewTitle}>Logs <span>{logs.length} entries</span></div>
+                      <TelemetryLogs />
+                      <MiniLegend items={[{ label: 'ERROR & FATAL', color: '#e0372e' }, { label: 'WARN', color: '#f2b338' }, { label: 'INFO', color: '#0577ff' }, { label: 'TRACE & DEBUG', color: '#98a2b3' }]} />
+                    </div>
+                    <div>
+                      <div className={styles.overviewTitle}>Metrics <span>26 discovered</span></div>
+                      <div className={styles.metricsTable}>
+                        <div className={styles.metricsHead}>
+                          <span>Type</span><span>Metric name</span><span>Unit</span>
+                        </div>
+                        {telemetryMetrics(s.label).map((m) => (
+                          <div key={m.name} className={styles.metricsRow}>
+                            <span><Tag color="orange">{m.type}</Tag></span>
+                            <span className={styles.mono}>{m.name}</span>
+                            <span className={styles.mono}>{m.unit}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )
+          })()}
+      </Drawer>
     </>
   )
 }
 
 /* ─── Kubernetes mock data (deployments / services / events) ─── */
 const K8S_DEPLOYMENTS = [
-  { key: 'd1', name: 'api-gateway', ready: '3/3', uptodate: 3, available: 3, age: '12d', ns: 'production' },
-  { key: 'd2', name: 'kappticentral', ready: '2/2', uptodate: 2, available: 2, age: '12d', ns: 'production' },
-  { key: 'd3', name: 'runner-eu-west', ready: '4/4', uptodate: 4, available: 4, age: '8d', ns: 'production' },
-  { key: 'd4', name: 'screenshot-svc', ready: '0/1', uptodate: 1, available: 0, age: '6h', ns: 'production' },
-  { key: 'd5', name: 'metrics-proxy', ready: '2/2', uptodate: 2, available: 2, age: '20d', ns: 'production' },
+  { key: 'd1', name: 'demo-site', ready: '2/2', uptodate: 2, available: 2, age: '9d', ns: 'rocket-corp' },
+  { key: 'd2', name: 'payment-service', ready: '1/2', uptodate: 2, available: 1, age: '9d', ns: 'rocket-corp' },
+  { key: 'd3', name: 'notification', ready: '1/1', uptodate: 1, available: 1, age: '7d', ns: 'rocket-corp' },
+  { key: 'd4', name: 'postgres', ready: '1/1', uptodate: 1, available: 1, age: '9d', ns: 'rocket-corp' },
+  { key: 'd5', name: 'redis', ready: '1/1', uptodate: 1, available: 1, age: '9d', ns: 'rocket-corp' },
 ]
 const K8S_SERVICES = [
-  { key: 's1', name: 'api-gateway', type: 'LoadBalancer', clusterIP: '10.24.1.10', ports: '443/TCP', age: '12d', ns: 'production' },
-  { key: 's2', name: 'kappticentral', type: 'ClusterIP', clusterIP: '10.24.2.31', ports: '8080/TCP', age: '12d', ns: 'production' },
-  { key: 's3', name: 'metrics-proxy', type: 'ClusterIP', clusterIP: '10.24.2.44', ports: '9090/TCP', age: '20d', ns: 'production' },
-  { key: 's4', name: 'screenshot-svc', type: 'ClusterIP', clusterIP: '10.24.2.58', ports: '4000/TCP', age: '6h', ns: 'production' },
+  { key: 's1', name: 'demo-site', type: 'LoadBalancer', clusterIP: '10.24.1.10', ports: '443/TCP', age: '9d', ns: 'rocket-corp' },
+  { key: 's2', name: 'payment-service', type: 'ClusterIP', clusterIP: '10.24.2.31', ports: '8080/TCP', age: '9d', ns: 'rocket-corp' },
+  { key: 's3', name: 'postgres', type: 'ClusterIP', clusterIP: '10.24.2.44', ports: '5432/TCP', age: '9d', ns: 'rocket-corp' },
+  { key: 's4', name: 'redis', type: 'ClusterIP', clusterIP: '10.24.2.58', ports: '6379/TCP', age: '9d', ns: 'rocket-corp' },
 ]
 const K8S_EVENTS = [
-  { key: 'e1', type: 'Warning', reason: 'BackOff', object: 'pod/screenshot-svc-4c7b8d-p2w5t', message: 'Back-off restarting failed container', age: '2m', ns: 'production' },
-  { key: 'e2', type: 'Warning', reason: 'Unhealthy', object: 'pod/screenshot-svc-4c7b8d-p2w5t', message: 'Liveness probe failed: HTTP 500', age: '3m', ns: 'production' },
-  { key: 'e3', type: 'Normal', reason: 'Scheduled', object: 'pod/runner-eu-west-9e2f1a-j6h3r', message: 'Successfully assigned to node-3', age: '8m', ns: 'production' },
-  { key: 'e4', type: 'Normal', reason: 'Pulled', object: 'pod/api-gateway-7f8d9c-x4k2p', message: 'Container image already present on machine', age: '14m', ns: 'production' },
+  { key: 'e1', type: 'Warning', reason: 'BackOff', object: 'pod/payment-service-9e2f1a-t2w5k', message: 'Back-off restarting failed container', age: '2m', ns: 'rocket-corp' },
+  { key: 'e2', type: 'Warning', reason: 'Unhealthy', object: 'pod/payment-service-9e2f1a-t2w5k', message: 'Liveness probe failed: HTTP 500', age: '3m', ns: 'rocket-corp' },
+  { key: 'e3', type: 'Normal', reason: 'Scheduled', object: 'pod/demo-site-7f8d9c-q9v2m', message: 'Successfully assigned to node-2', age: '8m', ns: 'rocket-corp' },
+  { key: 'e4', type: 'Normal', reason: 'Pulled', object: 'pod/demo-site-7f8d9c-x4k2p', message: 'Container image already present on machine', age: '14m', ns: 'rocket-corp' },
 ]
 
 /* ─── Kubernetes View ─── */
@@ -979,6 +1441,7 @@ const ExploreTabsProto = () => {
     url.searchParams.set('tab', tab)
     window.history.replaceState(null, '', url)
   }, [tab])
+  useReportScreen(`${mode}:${tab}`)
   const [persesHeaderSlot, setPersesHeaderSlot] = useState<HTMLDivElement | null>(null)
 
   // lifted view state (needed by header actions)
@@ -987,6 +1450,8 @@ const ExploreTabsProto = () => {
   const [traceSearch, setTraceSearch] = useState('')
   const [traceSvc, setTraceSvc] = useState('all')
   const [selectedTraces, setSelectedTraces] = useState<string[]>([])
+  const [traceDetail, setTraceDetail] = useState<TraceEntry | null>(null)
+  const [logDetail, setLogDetail] = useState<LogEntry | null>(null)
 
   // usage
   const [cap, setCap] = useState(9)
@@ -1092,7 +1557,7 @@ const ExploreTabsProto = () => {
   const renderView = () => {
     switch (tab) {
       case 'logs':
-        return <LogsView search={logSearch} setSearch={setLogSearch} level={logLevel} setLevel={setLogLevel} />
+        return <LogsView search={logSearch} setSearch={setLogSearch} level={logLevel} setLevel={setLogLevel} onOpenLog={setLogDetail} />
       case 'traces':
         return (
           <TracesView
@@ -1102,6 +1567,7 @@ const ExploreTabsProto = () => {
             setSvc={setTraceSvc}
             selected={selectedTraces}
             toggleSelected={toggleTrace}
+            onOpenTrace={setTraceDetail}
           />
         )
       case 'svcmap':
@@ -1138,9 +1604,9 @@ const ExploreTabsProto = () => {
         </div>
 
         <div className={styles.ws}>
-          <div className={styles.wsAvatar}>🐙</div>
+          <div className={styles.wsAvatar}>🚀</div>
           <div>
-            <div className={styles.wsName}>kapptivate</div>
+            <div className={styles.wsName}>Rocket Corp</div>
             <div className={styles.wsSub}>Workspace</div>
           </div>
         </div>
@@ -1314,6 +1780,136 @@ helm install kapp-agent kapptivate/agent \\
       </Modal>
 
       {/* Compare traces drawer */}
+      {/* Trace detail drawer */}
+      <Drawer
+        open={!!traceDetail}
+        onClose={() => setTraceDetail(null)}
+        title={traceDetail ? `Trace ${traceDetail.key}` : ''}
+        width={720}
+      >
+        {traceDetail &&
+          (() => {
+            const t = traceDetail
+            const services = Array.from(new Set(t.bars.map((b) => b.label)))
+            const ticks = Array.from({ length: 6 }, (_, i) => Math.round((t.durMs * i) / 5))
+            return (
+              <>
+                <div className={styles.detailStats}>
+                  <div className={styles.detailStat}>
+                    <span className={styles.detailStatLabel}>Duration</span>
+                    <span className={styles.detailStatValue}>{t.dur}</span>
+                  </div>
+                  <div className={styles.detailStat}>
+                    <span className={styles.detailStatLabel}>Spans</span>
+                    <span className={styles.detailStatValue}>{t.spans}</span>
+                  </div>
+                  <div className={styles.detailStat}>
+                    <span className={styles.detailStatLabel}>Services</span>
+                    <span className={styles.detailStatValue}>{services.length}</span>
+                  </div>
+                  <div className={styles.detailStat}>
+                    <span className={styles.detailStatLabel}>Status</span>
+                    <span>
+                      <StatusTag variant="ghost" color={t.status === 'error' ? 'failed' : 'success'}>
+                        {t.status === 'error' ? 'Error' : 'OK'}
+                      </StatusTag>
+                    </span>
+                  </div>
+                </div>
+
+                <div className={styles.tlSection}>Timeline</div>
+                <div className={styles.tlAxis}>
+                  {ticks.map((ms, i) => (
+                    <span key={i} className={styles.tlTick} style={{ left: `${(i / 5) * 100}%` }}>
+                      {ms}ms
+                    </span>
+                  ))}
+                </div>
+                <div className={styles.tlBars}>
+                  {t.bars.map((b, i) => (
+                    <div key={i} className={styles.tlRow}>
+                      <div
+                        className={styles.tlBar}
+                        style={{ left: `${b.left}%`, width: `${b.width}%`, background: b.color }}
+                      >
+                        <span className={styles.tlBarLabel}>{i === 0 ? `${b.label} · ${t.name}` : b.label}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className={styles.tlLegend}>
+                  {services.map((s) => (
+                    <span key={s} className={styles.tlLegendItem}>
+                      <span className={styles.tlDot} style={{ background: t.bars.find((b) => b.label === s)?.color }} />
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )
+          })()}
+      </Drawer>
+
+      {/* Log detail drawer */}
+      <Drawer
+        open={!!logDetail}
+        onClose={() => setLogDetail(null)}
+        title={logDetail ? `Log · ${logDetail.ts.slice(11)}` : ''}
+        width={560}
+      >
+        {logDetail &&
+          (() => {
+            const l = logDetail
+            const a = httpAttrs(l.msg)
+            const spanId = idFrom(l.key, 16)
+            const traceId = idFrom(l.key + 't', 32)
+            const taskId = `${idFrom(l.key, 8)}-${idFrom(l.key + '1', 4)}-${idFrom(l.key + '2', 4)}-${idFrom(l.key + '3', 4)}-${idFrom(l.key + '4', 12)}`
+            return (
+              <>
+                <div className={styles.logDetailHead}>
+                  <span className={LOG_LEVEL_CLASSES[l.level]}>{l.level.toUpperCase()}</span>
+                  <span className={styles.svcLogTime}>{l.ts}</span>
+                </div>
+                <div className={styles.logBody}>{l.msg}</div>
+
+                <div className={styles.tlSection}>Attributes</div>
+                {a && (
+                  <>
+                    <div className={styles.detailRow}><span className={styles.detailLabel}>http.method</span><span className={styles.mono}>{a.method}</span></div>
+                    <div className={styles.detailRow}><span className={styles.detailLabel}>http.route</span><span className={styles.mono}>{a.route}</span></div>
+                    <div className={styles.detailRow}><span className={styles.detailLabel}>http.status_code</span><span className={styles.mono}>{a.status}</span></div>
+                    <div className={styles.detailRow}><span className={styles.detailLabel}>http.duration_ms</span><span className={styles.mono}>{a.dur}</span></div>
+                  </>
+                )}
+                <div className={styles.detailRow}><span className={styles.detailLabel}>service.name</span><span className={styles.mono}>{l.svc}</span></div>
+                <div className={styles.detailRow}><span className={styles.detailLabel}>kapptivate.task_id</span><span className={styles.mono}>{taskId}</span></div>
+
+                <div className={styles.tlSection}>Span context</div>
+                <div className={styles.detailRow}><span className={styles.detailLabel}>Span ID</span><span className={styles.mono}>{spanId}</span></div>
+                <div className={styles.detailRow}><span className={styles.detailLabel}>Trace ID</span><span className={styles.mono}>{traceId}</span></div>
+                {a && (
+                  <div className={styles.tlRow} style={{ marginTop: 12 }}>
+                    <div className={styles.tlBar} style={{ left: '0%', width: '100%', background: '#6366f1' }}>
+                      <span className={styles.tlBarLabel}>{l.svc} {a.method} {a.route}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className={styles.tlSection}>Resource</div>
+                <div className={styles.detailRow}><span className={styles.detailLabel}>deployment.environment</span><span className={styles.mono}>production</span></div>
+                <div className={styles.detailRow}><span className={styles.detailLabel}>k8s.namespace</span><span className={styles.mono}>rocket-corp</span></div>
+                <div className={styles.detailRow}><span className={styles.detailLabel}>k8s.pod.name</span><span className={styles.mono}>{l.svc}-{idFrom(l.key, 5)}</span></div>
+
+                <div className={styles.drawerLinks}>
+                  <Button color="secondary" icon={IconEye} onClick={() => toast.info('Opening test result details')}>Test result details</Button>
+                  <Button color="secondary" icon={IconActivity} onClick={() => toast.info('Opening resource metrics')}>Resource metrics</Button>
+                </div>
+              </>
+            )
+          })()}
+      </Drawer>
+
       <Drawer open={compareOpen} onClose={() => setCompareOpen(false)} title="Compare traces" width={560}>
         <div className={styles.compareGrid}>
           {compareTraces.map((t) => (
