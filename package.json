@@ -11,11 +11,12 @@
   },
   "dependencies": {
     "@kapptivate/ui-kit": "1.47.0",
+    "@supabase/supabase-js": "^2.109.0",
     "antd": "5.16.4",
-    "jose": "^5.9.6",
     "dayjs": "1.11.13",
     "formik": "2.4.5",
     "i18next": "23.8.2",
+    "jose": "^5.9.6",
     "lodash": "4.17.21",
     "lucide-react": "^0.263.1",
     "prismjs": "^1.29.0",

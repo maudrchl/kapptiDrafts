@@ -39,6 +39,7 @@ import {
   IconMoreHorizontal,
   IconCopy,
 } from '@kapptivate/ui-kit'
+import { useReportScreen } from '../../context/ScreenContext'
 import styles from './checks.module.scss'
 import {
   INITIAL_CONDITIONS,
@@ -97,6 +98,8 @@ const ChecksProto = () => {
   const [action, setAction] = useState('API Call')
   const [url, setUrl] = useState('https://jsonplaceholder.typicode.com/todos/1')
   const [startUrl, setStartUrl] = useState('https://kapptivate.com')
+
+  useReportScreen(`${tab}:${formView}`)
 
   const patch = (id: string, next: Partial<Condition>) =>
     setConds((cur) => cur.map((c) => (c.id === id ? { ...c, ...next } : c)))

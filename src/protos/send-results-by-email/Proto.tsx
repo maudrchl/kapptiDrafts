@@ -12,6 +12,7 @@ import {
   IconDownload,
   IconMail,
 } from '@kapptivate/ui-kit'
+import { useReportScreen } from '../../context/ScreenContext'
 import styles from './styles.module.scss'
 
 /**
@@ -47,6 +48,7 @@ const Proto = () => {
   const { notification } = useNotification()
   const [open, setOpen] = useState(false)
   const [sending, setSending] = useState(false)
+  useReportScreen(open ? 'email-modal' : 'main')
   const [recipients, setRecipients] = useState<TagValue[]>([
     tag('alice@kapptivate.com'),
     tag('qa-team@kapptivate.com'),
