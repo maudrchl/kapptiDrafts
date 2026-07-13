@@ -50,7 +50,7 @@
   flex: 1;
   padding: 6px 0;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
   font-family: inherit;
@@ -235,7 +235,7 @@
   line-height: 1.8;
   background: #1a1a2e;
   color: #c8d6e5;
-  border-radius: var(--radius-lg, 8px);
+  border-radius: var(--radius-md, 6px);
   padding: 16px;
   overflow-x: auto;
   max-height: 420px;
@@ -291,7 +291,7 @@
 .traceList {
   background: var(--color-surface-white, #fff);
   border: 1px solid var(--color-border-grey, #e4e4e7);
-  border-radius: var(--radius-lg, 8px);
+  border-radius: var(--radius-md, 6px);
   overflow: hidden;
 }
 
@@ -514,8 +514,7 @@
 }
 
 .traceLegendLabel {
-  font-weight: 600;
-  color: var(--color-text-primary, #101828);
+  color: var(--color-text-secondary, #667085);
 }
 
 .traceLegendItem {
@@ -610,7 +609,7 @@
 .tlBox {
   background: var(--color-surface-white, #fff);
   border: 1px solid var(--color-border-grey, #e4e4e7);
-  border-radius: var(--radius-lg, 8px);
+  border-radius: var(--radius-md, 6px);
   padding: 14px 16px;
   margin-bottom: 20px;
 }
@@ -841,7 +840,7 @@
 .perfBar {
   display: flex;
   height: 10px;
-  border-radius: 5px;
+  border-radius: 6px;
   overflow: hidden;
   margin-bottom: 16px;
 }
@@ -863,7 +862,7 @@
   position: relative;
   min-height: 560px;
   border: 1px solid var(--color-border-grey, #e4e4e7);
-  border-radius: var(--radius-lg, 8px);
+  border-radius: var(--radius-md, 6px);
   background-color: var(--color-surface-white, #fff);
   background-image: radial-gradient(circle, #dfe3e8 1px, transparent 1px);
   background-size: 22px 22px;
@@ -897,7 +896,7 @@
   transform: translate(-50%, -50%);
   background: var(--color-surface-white, #fff);
   border: 1px solid var(--color-border-grey, #e4e4e7);
-  border-radius: 5px;
+  border-radius: 6px;
   padding: 2px 7px;
   font-family: 'Geist Mono', ui-monospace, monospace;
   font-size: 10.5px;
@@ -914,7 +913,7 @@
   padding: 12px 14px;
   background: var(--color-surface-white, #fff);
   border: 2px solid;
-  border-radius: 10px;
+  border-radius: 6px;
   box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
   cursor: pointer;
   z-index: 2;
@@ -1012,7 +1011,7 @@
   gap: 1px;
   background: var(--color-border-grey, #e4e4e7);
   border: 1px solid var(--color-border-grey, #e4e4e7);
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
   margin: 16px 0 20px;
 }
@@ -1064,7 +1063,7 @@
 
 .metricsTable {
   border: 1px solid var(--color-border-grey, #e4e4e7);
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -1118,7 +1117,7 @@
 .logsPanel {
   background: #0e1613;
   border: 1px solid #1c2b26;
-  border-radius: var(--radius-lg, 8px);
+  border-radius: var(--radius-md, 6px);
   overflow: hidden;
 }
 
@@ -1242,7 +1241,7 @@
 .k8sCard {
   background: var(--color-surface-white, #fff);
   border: 1px solid var(--color-border-grey, #e4e4e7);
-  border-radius: var(--radius-lg, 8px);
+  border-radius: var(--radius-md, 6px);
   padding: 16px;
 }
 
@@ -1631,7 +1630,7 @@
   position: relative;
   background: #0f1b2d;
   color: #e6edf3;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 14px 16px;
   margin-top: 8px;
   font-size: 12px;
