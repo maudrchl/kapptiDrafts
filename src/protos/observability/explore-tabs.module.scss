@@ -253,6 +253,7 @@
   gap: 12px;
   padding: 2px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
 
   &:hover {
     background: rgba(255, 255, 255, 0.03);
@@ -271,10 +272,11 @@
   font-weight: 600;
 }
 
-.logLevelInfo { composes: logLevel; color: #22d3ee; }
-.logLevelWarn { composes: logLevel; color: #fbbf24; }
-.logLevelError { composes: logLevel; color: #f87171; }
-.logLevelDebug { composes: logLevel; color: #a78bfa; }
+/* Niveaux alignés sur les tokens du DS (error/warning/info/neutre). */
+.logLevelInfo { composes: logLevel; color: var(--color-accent-blue, #0577ff); }
+.logLevelWarn { composes: logLevel; color: var(--color-warning, #f2b338); }
+.logLevelError { composes: logLevel; color: var(--color-error, #e0372e); }
+.logLevelDebug { composes: logLevel; color: var(--color-grey-500, #98a2b3); }
 
 .logSvc {
   color: #60a5fa;
@@ -316,6 +318,7 @@
 .traceName {
   font-size: 13px;
   font-weight: 600;
+  font-family: 'Geist Mono', ui-monospace, monospace;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -345,58 +348,548 @@
   opacity: 0.7;
 }
 
-/* ===== SERVICE MAP ===== */
-.svcMapContainer {
+/* ===== TRACES OVERVIEW GRAPHS ===== */
+.overviewRow {
   display: grid;
-  grid-template-columns: 1fr 280px;
-  gap: 20px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-.svcMapCanvas {
-  background: var(--color-surface-white, #fff);
-  border: 1px solid var(--color-border-grey, #e4e4e7);
-  border-radius: var(--radius-lg, 8px);
-  min-height: 450px;
+.overviewCard {
+  padding: 12px 14px;
+}
+
+.overviewTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary, #101828);
+  margin-bottom: 6px;
+
+  span {
+    font-weight: 400;
+    font-size: 11.5px;
+    color: var(--color-text-secondary, #667085);
+    margin-left: 4px;
+  }
+}
+
+/* ===== TRACE DETAIL DRAWER ===== */
+.detailStats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--color-border-grey, #e4e4e7);
+}
+
+.detailStat {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detailStatLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #667085);
+}
+
+.detailStatValue {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary, #101828);
+}
+
+.tlSection {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #667085);
+  margin-bottom: 10px;
+}
+
+.tlAxis {
   position: relative;
+  height: 16px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--color-border-grey, #e4e4e7);
+}
+
+.tlTick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  color: var(--color-text-tertiary, #98a2b3);
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+
+  &:first-child {
+    transform: none;
+  }
+}
+
+.tlBars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tlRow {
+  position: relative;
+  height: 30px;
+  background: var(--color-grey-100, #f5f5f7);
+  border-radius: 4px;
+}
+
+.tlBar {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  min-width: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
   overflow: hidden;
 }
 
-.svcNode {
-  width: 72px;
-  height: 72px;
-  border-radius: 12px;
+.tlBarLabel {
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.tlLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.tlLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary, #667085);
+}
+
+.tlDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* ===== SERVICE DETAIL DRAWER ===== */
+.svcStatTrio {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 16px 0 18px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--color-border-grey, #e4e4e7);
+
+  small {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--color-text-secondary, #667085);
+  }
+}
+
+.redStack {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  position: absolute;
-  border: 2px solid;
-  cursor: pointer;
-  background: #fff;
-  transition: transform 0.15s;
+  gap: 18px;
+  padding-top: 16px;
+}
 
-  svg {
-    width: 20px;
-    height: 20px;
-  }
+.svcEmpty {
+  font-size: 12.5px;
+  color: var(--color-text-secondary, #667085);
+  padding: 8px 0;
+}
+
+.svcLogRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-grey-100, #f5f5f7);
+  font-size: 12.5px;
+}
+
+.svcLogTime {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 11.5px;
+  color: var(--color-text-tertiary, #98a2b3);
+  flex-shrink: 0;
+}
+
+.svcLogMsg {
+  flex: 1;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--color-text-primary, #101828);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== LOG DETAIL DRAWER ===== */
+.logDetailHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.logBody {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 12.5px;
+  color: var(--color-text-primary, #101828);
+  background: var(--color-grey-100, #f5f5f7);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 18px;
+  word-break: break-word;
+}
+
+.drawerLinks {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-grey, #e4e4e7);
+}
+
+/* ===== SERVICE MAP (Supabase-style canvas) ===== */
+.svcMapCanvas {
+  position: relative;
+  min-height: 560px;
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-radius: var(--radius-lg, 8px);
+  background-color: var(--color-surface-white, #fff);
+  background-image: radial-gradient(circle, #dfe3e8 1px, transparent 1px);
+  background-size: 22px 22px;
+  overflow: hidden;
+}
+
+.svcCanvasBar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+}
+
+.svcEdgeLayer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.svcEdge {
+  fill: none;
+  stroke: #c4cbd4;
+  stroke-width: 1.75;
+}
+
+.svcEdgeLabel {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: var(--color-surface-white, #fff);
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  color: var(--color-text-secondary, #667085);
+  white-space: nowrap;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.svcCard {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 180px;
+  padding: 12px 14px;
+  background: var(--color-surface-white, #fff);
+  border: 2px solid;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+  cursor: pointer;
+  z-index: 2;
+  transition: box-shadow 0.15s, transform 0.15s;
 
   &:hover {
-    transform: scale(1.08);
+    transform: translate(-50%, -50%) translateY(-2px);
+    box-shadow: 0 4px 14px rgba(16, 24, 40, 0.12);
   }
 }
 
-.svcNodeLabel {
-  color: var(--color-text-primary, #24292f);
-  font-size: 9px;
+.svcCardName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary, #101828);
+  margin-bottom: 4px;
 }
 
-.svcSidebar {
+.svcCardMeta {
+  font-size: 12px;
+  color: var(--color-text-secondary, #667085);
+  margin-bottom: 6px;
+}
+
+.svcCardConn {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.svcMiniMap {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 140px;
+  height: 84px;
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(2px);
+  z-index: 3;
+}
+
+.svcMiniNode {
+  position: absolute;
+  width: 10px;
+  height: 6px;
+  border-radius: 2px;
+  transform: translate(-50%, -50%);
+}
+
+.svcMapFullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  min-height: 0;
+  border-radius: 0;
+}
+
+.svcViewport {
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+}
+
+.svcCanvasBar {
+  display: flex;
+  gap: 6px;
+}
+
+.zoomBtn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  background: var(--color-surface-white, #fff);
+  border-radius: 6px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--color-text-secondary, #667085);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-grey-100, #f5f5f7);
+  }
+}
+
+/* ===== SERVICE DRAWER — metric grid + telemetry ===== */
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--color-border-grey, #e4e4e7);
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 16px 0 20px;
+}
+
+.metricCell {
+  background: var(--color-surface-white, #fff);
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
+  gap: 5px;
+}
+
+.telemetryStack {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding-top: 12px;
+}
+
+.miniChart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.miniLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.miniLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-secondary, #667085);
+}
+
+.miniDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.metricsTable {
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.metricsHead,
+.metricsRow {
+  display: grid;
+  grid-template-columns: 92px 1fr 92px;
   gap: 12px;
+  align-items: center;
+  padding: 9px 14px;
+}
+
+.metricsHead {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #667085);
+  background: var(--color-grey-100, #f5f5f7);
+}
+
+.metricsRow {
+  border-top: 1px solid var(--color-border-grey, #e4e4e7);
+  font-size: 12.5px;
+}
+
+/* ===== LOGS EXPLORER — volume + dark branded table ===== */
+.volumeCard {
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.logTable {
+  background: var(--color-surface-grey, #0b0f18);
+  border: 1px solid #1c2430;
+  border-radius: var(--radius-lg, 8px);
+  overflow: hidden;
+  max-height: 520px;
+  overflow-y: auto;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+}
+
+.logTableHead,
+.logRow {
+  display: grid;
+  grid-template-columns: 84px 130px 128px 1fr 108px 76px;
+  gap: 14px;
+  align-items: center;
+  padding: 9px 16px;
+}
+
+.logTableHead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-surface-grey, #0b0f18);
+  border-bottom: 1px solid #1c2430;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5b6472;
+}
+
+.logRow {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.035);
+  }
+}
+
+.logCellTime {
+  color: #7a8494;
+  white-space: nowrap;
+}
+
+.logCellSvc {
+  color: #9aa4b2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logCellBody {
+  color: #cdd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logCellTrace {
+  color: var(--color-accent-blue, #0577ff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logViewBtn {
+  font-family: inherit;
+  font-size: 11px;
+  border: 1px solid #2a333f;
+  background: transparent;
+  color: #9aa4b2;
+  border-radius: 5px;
+  padding: 2px 10px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-accent-blue, #0577ff);
+    color: var(--color-accent-blue, #0577ff);
+  }
 }
 
 /* ===== KUBERNETES ===== */

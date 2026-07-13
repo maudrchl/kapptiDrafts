@@ -23,7 +23,7 @@ export const PAGE_META: Record<
   },
   traces: {
     title: 'Traces',
-    sub: 'Distributed tracing — follow requests across your microservices',
+    sub: 'Distributed tracing to follow requests across your microservices',
     actions: [
       { label: 'Pin as panel', primary: false },
       { label: 'Compare traces', primary: true },
@@ -55,7 +55,7 @@ export const PAGE_META: Record<
   },
   perses: {
     title: 'Traces (Perses)',
-    sub: 'Build and edit trace dashboards backed by ClickHouse — Perses-powered',
+    sub: 'Build and edit trace dashboards backed by ClickHouse, Perses-powered',
     actions: [],
   },
 }
@@ -129,18 +129,20 @@ export type LogEntry = {
 }
 
 export const LOGS: LogEntry[] = [
-  { key: 'l1', ts: '2026-07-08 14:32:18.443', level: 'info', svc: 'api-gateway', msg: 'POST /api/v2/executions/start 200 — 142ms' },
-  { key: 'l2', ts: '2026-07-08 14:32:17.891', level: 'warn', svc: 'runner-eu-west', msg: 'Container warmup exceeded 3s threshold — pool=chrome-120 delay=3847ms' },
-  { key: 'l3', ts: '2026-07-08 14:32:17.220', level: 'error', svc: 'screenshot-svc', msg: 'Failed to capture screenshot — timeout after 10000ms — test_id=t_4kLm9' },
-  { key: 'l4', ts: '2026-07-08 14:32:16.554', level: 'info', svc: 'metrics-proxy', msg: 'Flushed 2,847 datapoints to storage — compression_ratio=0.34' },
-  { key: 'l5', ts: '2026-07-08 14:32:15.102', level: 'debug', svc: 'kappticentral', msg: 'Cache hit for test config — test_id=t_9nRw2 — ttl_remaining=847s' },
-  { key: 'l6', ts: '2026-07-08 14:32:14.330', level: 'info', svc: 'runner-eu-west', msg: 'Execution completed — exec_id=e_3mKp — duration=28.4s — steps=23 — passed=23' },
-  { key: 'l7', ts: '2026-07-08 14:32:13.890', level: 'warn', svc: 'device-server', msg: 'Device d_pixel7 battery level below 20% — current=17%' },
-  { key: 'l8', ts: '2026-07-08 14:32:12.110', level: 'error', svc: 'api-gateway', msg: 'Rate limit exceeded for workspace ws_demo — limit=100/min — current=112' },
-  { key: 'l9', ts: '2026-07-08 14:32:11.776', level: 'info', svc: 'kappticentral', msg: 'Monitor m_8hNw triggered — schedule=every_5m — target=app.kapptivate.com/health' },
-  { key: 'l10', ts: '2026-07-08 14:32:10.442', level: 'info', svc: 'runner-us-east', msg: 'Execution started — exec_id=e_6pLn — test=Login Flow (Staging)' },
-  { key: 'l11', ts: '2026-07-08 14:32:09.120', level: 'debug', svc: 'metrics-proxy', msg: 'Received 412 datapoints from runner-eu-west — queue_depth=1,204' },
-  { key: 'l12', ts: '2026-07-08 14:32:08.003', level: 'warn', svc: 'screenshot-svc', msg: 'Retrying screenshot capture — attempt=2/3 — test_id=t_4kLm9 step=14' },
+  { key: 'l1', ts: '2026-07-13 08:11:35.501', level: 'info', svc: 'demo-site', msg: 'GET /api/admin/orders 200 — 39ms' },
+  { key: 'l2', ts: '2026-07-13 08:11:35.462', level: 'debug', svc: 'demo-site', msg: 'Admin orders list — 24 orders' },
+  { key: 'l3', ts: '2026-07-13 08:11:35.417', level: 'info', svc: 'demo-site', msg: 'Order ORD-MRIXZUY9 status: ready → delivered' },
+  { key: 'l4', ts: '2026-07-13 08:11:35.417', level: 'info', svc: 'demo-site', msg: 'PATCH /api/orders/ORD-MRIXZUY9/status 200 — 3ms' },
+  { key: 'l5', ts: '2026-07-13 08:11:35.204', level: 'info', svc: 'payment-service', msg: 'Payment captured — ORD-MRIXZUY9 — €42.90 — stripe' },
+  { key: 'l6', ts: '2026-07-13 08:10:48.544', level: 'info', svc: 'demo-site', msg: 'GET /api/menu 200 — 1ms' },
+  { key: 'l7', ts: '2026-07-13 08:10:48.487', level: 'debug', svc: 'demo-site', msg: 'Menu requested — 18 items — cache hit' },
+  { key: 'l8', ts: '2026-07-13 08:10:24.944', level: 'info', svc: 'demo-site', msg: 'POST /api/order 200 — 278ms' },
+  { key: 'l9', ts: '2026-07-13 08:10:24.902', level: 'info', svc: 'demo-site', msg: 'Order ORD-MRIXGHJY created — 3 items — €58.40' },
+  { key: 'l10', ts: '2026-07-13 08:09:20.118', level: 'warn', svc: 'payment-service', msg: 'Payment gateway latency high — stripe p95=1,240ms' },
+  { key: 'l11', ts: '2026-07-13 08:08:34.552', level: 'error', svc: 'payment-service', msg: 'Payment declined — card_declined — ORD-MRIWX7E7' },
+  { key: 'l12', ts: '2026-07-13 08:08:34.510', level: 'info', svc: 'demo-site', msg: 'POST /api/login 200 — 461ms' },
+  { key: 'l13', ts: '2026-07-13 08:08:34.104', level: 'debug', svc: 'demo-site', msg: 'Session created — user_id=u_8823' },
+  { key: 'l14', ts: '2026-07-13 08:07:59.330', level: 'warn', svc: 'demo-site', msg: "Slow query — SELECT orders WHERE status='pending' — 842ms" },
 ]
 
 export type TraceEntry = {
@@ -156,49 +158,58 @@ export type TraceEntry = {
 
 export const TRACES: TraceEntry[] = [
   {
-    key: 'tr_9xKm3', name: 'POST /api/v2/executions/start', svc: 'api-gateway', dur: '142ms', durMs: 142, spans: 8, status: 'ok',
+    key: 'tr_MRIXGHJY', name: 'POST /api/order', svc: 'demo-site', dur: '278ms', durMs: 278, spans: 9, status: 'ok',
     bars: [
-      { left: 0, width: 100, color: '#2E7D74', label: 'api-gateway' },
-      { left: 5, width: 30, color: '#60a5fa', label: 'auth-service' },
-      { left: 20, width: 65, color: '#f59e0b', label: 'runner-eu-west' },
-      { left: 25, width: 40, color: '#a78bfa', label: 'kappticentral' },
+      { left: 0, width: 100, color: '#6366f1', label: 'demo-site' },
+      { left: 8, width: 20, color: '#06b6d4', label: 'redis (cart)' },
+      { left: 30, width: 45, color: '#1fae7e', label: 'payment-service' },
+      { left: 40, width: 28, color: '#a78bfa', label: 'stripe' },
+      { left: 78, width: 18, color: '#f59e0b', label: 'postgres' },
     ],
   },
   {
-    key: 'tr_3pLn7', name: 'GET /api/v2/monitors/m_8hNw/results', svc: 'api-gateway', dur: '89ms', durMs: 89, spans: 5, status: 'ok',
+    key: 'tr_536f6018', name: 'GET /api/admin/orders', svc: 'demo-site', dur: '39ms', durMs: 39, spans: 5, status: 'ok',
     bars: [
-      { left: 0, width: 100, color: '#2E7D74', label: 'api-gateway' },
-      { left: 8, width: 55, color: '#a78bfa', label: 'kappticentral' },
-      { left: 15, width: 30, color: '#60a5fa', label: 'metrics-proxy' },
+      { left: 0, width: 100, color: '#6366f1', label: 'demo-site' },
+      { left: 15, width: 70, color: '#f59e0b', label: 'postgres' },
     ],
   },
   {
-    key: 'tr_7wQp1', name: 'POST /api/v2/screenshots/capture', svc: 'screenshot-svc', dur: '10.2s', durMs: 10200, spans: 4, status: 'error',
+    key: 'tr_e8e8cab8', name: 'PATCH /api/orders/ORD-MRIXZUY9/status', svc: 'demo-site', dur: '3ms', durMs: 3, spans: 3, status: 'ok',
     bars: [
-      { left: 0, width: 100, color: '#e0372e', label: 'screenshot-svc' },
-      { left: 2, width: 95, color: '#f87171', label: 'chrome-pool' },
+      { left: 0, width: 100, color: '#6366f1', label: 'demo-site' },
+      { left: 25, width: 55, color: '#f59e0b', label: 'postgres' },
     ],
   },
   {
-    key: 'tr_2nRt5', name: 'POST /webhooks/slack/deliver', svc: 'kappticentral', dur: '234ms', durMs: 234, spans: 3, status: 'ok',
+    key: 'tr_MRIWX7E7', name: 'POST /api/payments/charge', svc: 'payment-service', dur: '1.2s', durMs: 1240, spans: 4, status: 'error',
     bars: [
-      { left: 0, width: 100, color: '#a78bfa', label: 'kappticentral' },
-      { left: 30, width: 60, color: '#60a5fa', label: 'webhook-worker' },
+      { left: 0, width: 100, color: '#1fae7e', label: 'payment-service' },
+      { left: 5, width: 92, color: '#a78bfa', label: 'stripe (card_declined)' },
     ],
   },
   {
-    key: 'tr_8hYw4', name: 'GET /api/v2/tests/t_9nRw2', svc: 'api-gateway', dur: '12ms', durMs: 12, spans: 2, status: 'ok',
+    key: 'tr_cab2adb1', name: 'POST /api/login', svc: 'demo-site', dur: '461ms', durMs: 461, spans: 4, status: 'ok',
     bars: [
-      { left: 0, width: 100, color: '#2E7D74', label: 'api-gateway' },
-      { left: 10, width: 40, color: '#a78bfa', label: 'kappticentral (cache)' },
+      { left: 0, width: 100, color: '#6366f1', label: 'demo-site' },
+      { left: 6, width: 40, color: '#60a5fa', label: 'auth' },
+      { left: 48, width: 45, color: '#f59e0b', label: 'postgres' },
     ],
   },
   {
-    key: 'tr_5mDx9', name: 'PUT /api/v2/variables/v_3kLw', svc: 'api-gateway', dur: '67ms', durMs: 67, spans: 4, status: 'ok',
+    key: 'tr_71ba90d0', name: 'GET /api/menu', svc: 'demo-site', dur: '1ms', durMs: 1, spans: 2, status: 'ok',
     bars: [
-      { left: 0, width: 100, color: '#2E7D74', label: 'api-gateway' },
-      { left: 12, width: 50, color: '#a78bfa', label: 'kappticentral' },
-      { left: 40, width: 35, color: '#34d399', label: 'vault' },
+      { left: 0, width: 100, color: '#6366f1', label: 'demo-site' },
+      { left: 20, width: 60, color: '#06b6d4', label: 'redis (cache)' },
+    ],
+  },
+  {
+    key: 'tr_1cd34f35', name: 'POST /api/register', svc: 'demo-site', dur: '484ms', durMs: 484, spans: 5, status: 'ok',
+    bars: [
+      { left: 0, width: 100, color: '#6366f1', label: 'demo-site' },
+      { left: 5, width: 35, color: '#60a5fa', label: 'auth' },
+      { left: 38, width: 35, color: '#f59e0b', label: 'postgres' },
+      { left: 72, width: 24, color: '#34d399', label: 'notification' },
     ],
   },
 ]
@@ -212,24 +223,25 @@ export type ServiceNode = {
   rps: string
   lat: string
   err: string
+  spans: number
 }
 
 export const SERVICES: ServiceNode[] = [
-  { id: 'gw', label: 'API Gateway', x: 50, y: 15, color: '#2E7D74', rps: '2.4K', lat: '23ms', err: '0.1%' },
-  { id: 'auth', label: 'Auth', x: 15, y: 40, color: '#60a5fa', rps: '1.8K', lat: '12ms', err: '0%' },
-  { id: 'core', label: 'Central', x: 50, y: 45, color: '#a78bfa', rps: '3.1K', lat: '34ms', err: '0.2%' },
-  { id: 'run', label: 'Runner', x: 85, y: 40, color: '#f59e0b', rps: '890', lat: '142ms', err: '1.4%' },
-  { id: 'met', label: 'Metrics', x: 25, y: 72, color: '#34d399', rps: '5.2K', lat: '8ms', err: '0%' },
-  { id: 'scr', label: 'Screenshot', x: 75, y: 72, color: '#f87171', rps: '320', lat: '2.1s', err: '3.8%' },
+  { id: 'site', label: 'demo-site', x: 30, y: 20, color: '#6366f1', rps: '1.4K', lat: '58ms', err: '0.4%', spans: 1377 },
+  { id: 'auth', label: 'auth', x: 14, y: 55, color: '#60a5fa', rps: '620', lat: '12ms', err: '0%', spans: 210 },
+  { id: 'pay', label: 'payment-service', x: 62, y: 46, color: '#1fae7e', rps: '190', lat: '131ms', err: '2.1%', spans: 190 },
+  { id: 'redis', label: 'redis', x: 60, y: 16, color: '#06b6d4', rps: '4.8K', lat: '1ms', err: '0%', spans: 940 },
+  { id: 'pg', label: 'postgres', x: 40, y: 82, color: '#f59e0b', rps: '2.1K', lat: '9ms', err: '0.1%', spans: 610 },
+  { id: 'notif', label: 'notification', x: 84, y: 78, color: '#34d399', rps: '210', lat: '44ms', err: '0%', spans: 88 },
 ]
 
-export const EDGES: { from: string; to: string }[] = [
-  { from: 'gw', to: 'auth' },
-  { from: 'gw', to: 'core' },
-  { from: 'gw', to: 'run' },
-  { from: 'core', to: 'met' },
-  { from: 'core', to: 'run' },
-  { from: 'run', to: 'scr' },
+export const EDGES: { from: string; to: string; calls: number; lat: string }[] = [
+  { from: 'site', to: 'auth', calls: 210, lat: '12ms' },
+  { from: 'site', to: 'pay', calls: 190, lat: '131ms' },
+  { from: 'site', to: 'redis', calls: 940, lat: '1ms' },
+  { from: 'site', to: 'pg', calls: 610, lat: '9ms' },
+  { from: 'pay', to: 'pg', calls: 190, lat: '8ms' },
+  { from: 'pay', to: 'notif', calls: 88, lat: '44ms' },
 ]
 
 export type PodEntry = {
@@ -244,11 +256,11 @@ export type PodEntry = {
 }
 
 export const PODS: PodEntry[] = [
-  { key: 'p1', name: 'api-gateway-7f8d9c-x4k2p', ns: 'production', status: 'Running', cpu: '120m / 500m', mem: '256Mi / 512Mi', restarts: 0, age: '4d' },
-  { key: 'p2', name: 'kappticentral-5b4a3c-m8n1q', ns: 'production', status: 'Running', cpu: '340m / 1000m', mem: '890Mi / 2Gi', restarts: 0, age: '4d' },
-  { key: 'p3', name: 'runner-eu-west-9e2f1a-j6h3r', ns: 'production', status: 'Running', cpu: '780m / 2000m', mem: '1.4Gi / 4Gi', restarts: 2, age: '2d' },
-  { key: 'p4', name: 'screenshot-svc-4c7b8d-p2w5t', ns: 'production', status: 'CrashLoopBackOff', cpu: '0m / 500m', mem: '0Mi / 1Gi', restarts: 47, age: '6h' },
-  { key: 'p5', name: 'metrics-proxy-1d6e9f-k7m4s', ns: 'production', status: 'Running', cpu: '90m / 250m', mem: '180Mi / 512Mi', restarts: 0, age: '7d' },
-  { key: 'p6', name: 'device-server-8a3c2b-n5p7v', ns: 'production', status: 'Running', cpu: '210m / 500m', mem: '420Mi / 1Gi', restarts: 1, age: '3d' },
-  { key: 'p7', name: 'webhook-worker-6f1d4e-q3r8w', ns: 'production', status: 'Running', cpu: '45m / 250m', mem: '128Mi / 256Mi', restarts: 0, age: '7d' },
+  { key: 'p1', name: 'demo-site-7f8d9c-x4k2p', ns: 'rocket-corp', status: 'Running', cpu: '210m / 500m', mem: '312Mi / 512Mi', restarts: 0, age: '4d' },
+  { key: 'p2', name: 'demo-site-7f8d9c-q9v2m', ns: 'rocket-corp', status: 'Running', cpu: '184m / 500m', mem: '298Mi / 512Mi', restarts: 0, age: '4d' },
+  { key: 'p3', name: 'payment-service-9e2f1a-j6h3r', ns: 'rocket-corp', status: 'Running', cpu: '90m / 500m', mem: '220Mi / 1Gi', restarts: 3, age: '2d' },
+  { key: 'p4', name: 'payment-service-9e2f1a-t2w5k', ns: 'rocket-corp', status: 'CrashLoopBackOff', cpu: '0m / 500m', mem: '0Mi / 1Gi', restarts: 12, age: '5h' },
+  { key: 'p5', name: 'postgres-0', ns: 'rocket-corp', status: 'Running', cpu: '340m / 1000m', mem: '1.2Gi / 2Gi', restarts: 0, age: '9d' },
+  { key: 'p6', name: 'redis-0', ns: 'rocket-corp', status: 'Running', cpu: '45m / 250m', mem: '128Mi / 512Mi', restarts: 0, age: '9d' },
+  { key: 'p7', name: 'notification-6f1d4e-q3r8w', ns: 'rocket-corp', status: 'Running', cpu: '60m / 250m', mem: '96Mi / 256Mi', restarts: 0, age: '7d' },
 ]

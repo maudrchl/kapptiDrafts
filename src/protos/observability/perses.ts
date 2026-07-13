@@ -199,6 +199,32 @@ export const INITIAL_DASHBOARD: Dashboard = {
   ],
 }
 
+/** Panels d'aperçu affichés en haut de la vue Traces (comme le vrai produit :
+ *  Spans / Avg Duration / p95 avant le tableau). Séries pleines (7 points). */
+export const TRACE_OVERVIEW_PANELS: Panel[] = [
+  {
+    id: 'ov_spans', name: 'Spans', description: '', type: 'timeseries',
+    queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES('count()'),
+    unit: 'Count', showLegend: false, yMin: 0, yMax: 60, yTicks: 7,
+    xLabels: X_LABELS['1h'], span: 1,
+    series: [{ name: 'demo-site', color: '#6366f1', points: [39, 46, 44, 50, 48, 52, 43] }],
+  },
+  {
+    id: 'ov_avg', name: 'Avg Duration', description: '', type: 'timeseries',
+    queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES('avg(Duration) / 1e6'),
+    unit: 'ms', showLegend: false, yMin: 60, yMax: 150, yTicks: 6,
+    xLabels: X_LABELS['1h'], span: 1,
+    series: [{ name: 'demo-site', color: '#3b82f6', points: [120, 110, 128, 118, 132, 122, 127] }],
+  },
+  {
+    id: 'ov_p95', name: 'Request Duration (p95)', description: '', type: 'timeseries',
+    queryType: 'clickhouse-timeseries', sql: SQL_TIMESERIES('quantile(0.95)(Duration) / 1e6'),
+    unit: 'ms', showLegend: false, yMin: 300, yMax: 600, yTicks: 7,
+    xLabels: X_LABELS['1h'], span: 1,
+    series: [{ name: 'demo-site', color: '#8b5cf6', points: [430, 470, 450, 500, 460, 480, 445] }],
+  },
+]
+
 /** Texte d'aide sous l'éditeur SQL (repris des maquettes). */
 export const SQL_HINT =
   'Bucket column aliased t; numeric columns become series; string columns group into labelled series. {from}/{to}/{tenantId} are bound server-side.'
