@@ -286,6 +286,14 @@
   text-overflow: ellipsis;
 }
 
+/* Centre un empty state dans l'espace restant de la page. */
+.centerEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
 /* ===== TRACES ===== */
 /* Liste = un seul bloc bordé, rangées séparées par un filet. */
 .traceList {
@@ -551,11 +559,10 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text-primary, #101828);
-  width: 100%;
   align-self: stretch;
   box-sizing: border-box;
-  margin: 0 0 12px;
-  padding: 0 0 10px;
+  margin: 0 -14px 12px;
+  padding: 0 14px 10px;
   border-bottom: 1px solid var(--color-border-grey, #e4e4e7);
 
   span {

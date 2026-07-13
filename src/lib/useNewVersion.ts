@@ -36,13 +36,17 @@ export function useNewVersion(pollMs = 60_000): boolean {
     }
 
     const id = window.setInterval(check, pollMs)
+    // visibilitychange couvre le changement d'onglet ; focus couvre le retour
+    // sur la fenêtre/l'app (que visibilitychange ne déclenche pas toujours).
     document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', check)
     void check()
 
     return () => {
       active = false
       window.clearInterval(id)
       document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', check)
     }
   }, [pollMs, stale])
 

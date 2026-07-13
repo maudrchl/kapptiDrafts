@@ -1092,135 +1092,15 @@ const K8S_EVENTS = [
 ]
 
 /* ─── Kubernetes View ─── */
-const KubernetesView = () => {
-  const [search, setSearch] = useState('')
-  const [ns, setNs] = useState('production')
-  const [k8sTab, setK8sTab] = useState('pods')
-  const q = search.trim().toLowerCase()
-  const byNsQ = (row: { ns: string; name?: string; object?: string }) =>
-    (ns === 'all' || row.ns === ns) &&
-    (q === '' || `${row.name ?? ''} ${row.object ?? ''}`.toLowerCase().includes(q))
-  const filtered = PODS.filter(
-    (p) => (ns === 'all' || p.ns === ns) && (q === '' || p.name.toLowerCase().includes(q)),
-  )
-
-  const deployColumns = [
-    { title: 'Deployment', dataIndex: 'name', key: 'name', render: (v: string) => <Tag mono maxLen={40}>{v}</Tag> },
-    { title: 'Ready', dataIndex: 'ready', key: 'ready', width: 100, render: (v: string) => <span className={styles.mono}>{v}</span> },
-    { title: 'Up-to-date', dataIndex: 'uptodate', key: 'uptodate', width: 110 },
-    { title: 'Available', dataIndex: 'available', key: 'available', width: 100 },
-    { title: 'Age', dataIndex: 'age', key: 'age', width: 80 },
-  ]
-  const svcColumns = [
-    { title: 'Service', dataIndex: 'name', key: 'name', render: (v: string) => <Tag mono maxLen={40}>{v}</Tag> },
-    { title: 'Type', dataIndex: 'type', key: 'type', width: 150, render: (v: string) => <StatusTag variant="ghost" color={v === 'LoadBalancer' ? 'info' : 'neutral'}>{v}</StatusTag> },
-    { title: 'Cluster IP', dataIndex: 'clusterIP', key: 'clusterIP', width: 150, render: (v: string) => <span className={styles.mono}>{v}</span> },
-    { title: 'Ports', dataIndex: 'ports', key: 'ports', width: 130, render: (v: string) => <span className={styles.mono}>{v}</span> },
-    { title: 'Age', dataIndex: 'age', key: 'age', width: 80 },
-  ]
-  const eventColumns = [
-    { title: 'Type', dataIndex: 'type', key: 'type', width: 110, render: (v: string) => <StatusTag variant="ghost" color={v === 'Warning' ? 'warning' : 'success'}>{v}</StatusTag> },
-    { title: 'Reason', dataIndex: 'reason', key: 'reason', width: 130, render: (v: string) => <Tag mono>{v}</Tag> },
-    { title: 'Object', dataIndex: 'object', key: 'object', render: (v: string) => <span className={styles.mono}>{v}</span> },
-    { title: 'Message', dataIndex: 'message', key: 'message' },
-    { title: 'Age', dataIndex: 'age', key: 'age', width: 70 },
-  ]
-
-  const podColumns = [
-    { title: 'Pod', dataIndex: 'name', key: 'name', render: (v: string) => <Tag mono maxLen={40}>{v}</Tag> },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      width: 200,
-      render: (v: PodEntry['status']) => (
-        <StatusTag variant="ghost" color={v === 'Running' ? 'success' : v === 'CrashLoopBackOff' ? 'failed' : 'warning'}>{v}</StatusTag>
-      ),
-    },
-    { title: 'CPU', dataIndex: 'cpu', key: 'cpu', width: 130, render: (v: string) => <span className={styles.mono}>{v}</span> },
-    { title: 'Memory', dataIndex: 'mem', key: 'mem', width: 130, render: (v: string) => <span className={styles.mono}>{v}</span> },
-    {
-      title: 'Restarts',
-      dataIndex: 'restarts',
-      key: 'restarts',
-      width: 90,
-      align: 'right' as const,
-      render: (v: number) => (v > 5 ? <Tag color="red" weight="semibold">{String(v)}</Tag> : <span>{v}</span>),
-    },
-    { title: 'Age', dataIndex: 'age', key: 'age', width: 70 },
-  ]
-
-  return (
-    <>
-      <div className={styles.searchRow}>
-        <div className={styles.searchFlex}>
-          <SearchInput value={search} onChange={setSearch} placeholder="Search pods, deployments, services..." fullwidth />
-        </div>
-        <div className={styles.filterGroup}>
-          <Select
-            options={[
-              { label: 'production', value: 'production' },
-              { label: 'staging', value: 'staging' },
-              { label: 'All namespaces', value: 'all' },
-            ]}
-            value={ns}
-            onChange={(_e, v) => setNs(v)}
-            icon={IconFilter}
-            minWidth="150px"
-          />
-          <Select
-            options={[
-              { label: 'eu-west-1', value: 'eu-west-1' },
-              { label: 'us-east-1', value: 'us-east-1' },
-            ]}
-            defaultValue="eu-west-1"
-            icon={IconLayers}
-            minWidth="130px"
-          />
-        </div>
-      </div>
-
-      <div className={styles.k8sGrid}>
-        <div className={styles.k8sCard}>
-          <div className={styles.k8sCardTitle}><Cpu size={14} /> CPU usage</div>
-          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>42%</div>
-          <div className={styles.k8sBar}><div className={styles.k8sBarFill} style={{ width: '42%', background: '#2E7D74' }} /></div>
-          <div className={styles.k8sBarLabel}><span>1.59 cores used</span><span>3.8 cores allocated</span></div>
-        </div>
-        <div className={styles.k8sCard}>
-          <div className={styles.k8sCardTitle}><IconServer size={14} /> Memory usage</div>
-          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>61%</div>
-          <div className={styles.k8sBar}><div className={styles.k8sBarFill} style={{ width: '61%', background: '#f59e0b' }} /></div>
-          <div className={styles.k8sBarLabel}><span>5.2 Gi used</span><span>8.5 Gi allocated</span></div>
-        </div>
-        <div className={styles.k8sCard}>
-          <div className={styles.k8sCardTitle}><IconBox size={14} /> Pods</div>
-          <div className={styles.k8sPodSummary}>
-            <div><div className={styles.k8sPodCount} style={{ color: '#1fae7e' }}>18</div><div className={styles.k8sPodLabel}>Running</div></div>
-            <div><div className={styles.k8sPodCount} style={{ color: '#e0372e' }}>1</div><div className={styles.k8sPodLabel}>CrashLoop</div></div>
-            <div><div className={styles.k8sPodCount} style={{ color: '#d97706' }}>0</div><div className={styles.k8sPodLabel}>Pending</div></div>
-          </div>
-        </div>
-      </div>
-
-      <Tabs
-        tabs={[
-          { key: 'pods', label: 'Pods' },
-          { key: 'deployments', label: 'Deployments' },
-          { key: 'services', label: 'Services' },
-          { key: 'events', label: 'Events' },
-        ]}
-        activeKey={k8sTab}
-        onChange={setK8sTab}
-      />
-
-      {k8sTab === 'pods' && <Table rowKey="key" columns={podColumns} data={filtered} showHeader />}
-      {k8sTab === 'deployments' && <Table rowKey="key" columns={deployColumns} data={K8S_DEPLOYMENTS.filter(byNsQ)} showHeader />}
-      {k8sTab === 'services' && <Table rowKey="key" columns={svcColumns} data={K8S_SERVICES.filter(byNsQ)} showHeader />}
-      {k8sTab === 'events' && <Table rowKey="key" columns={eventColumns} data={K8S_EVENTS.filter(byNsQ)} showHeader />}
-    </>
-  )
-}
+const KubernetesView = () => (
+  <div className={styles.centerEmpty}>
+    <EmptyState
+      icon={<IconBox />}
+      text="No Kubernetes data yet"
+      description="Connect a cluster to start monitoring pods, resource usage and cluster health here."
+    />
+  </div>
+)
 
 /* ─── Usage & ingestion View ─── */
 type Period = '7' | '14' | 'month'
