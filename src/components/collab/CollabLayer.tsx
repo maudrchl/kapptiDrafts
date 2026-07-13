@@ -51,7 +51,8 @@ const CollabLayer = ({ slug }: { slug: string }) => {
         me={user}
         comments={comments}
         replies={replies}
-        commentMode={commentMode}
+        // Suspend le placement (curseur croix + capture) tant que le drawer est ouvert.
+        commentMode={commentMode && !historyOpen}
         showResolved={showResolved}
         selectedId={selectedId}
         onSelect={setSelectedId}
