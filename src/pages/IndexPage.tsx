@@ -18,10 +18,14 @@ import {
 import logo from '../assets/kapptidrafts-logo.svg'
 import {
   catalog,
+  protos,
   STATUS_ORDER,
   type CatalogEntry,
   type ProtoStatus,
 } from '../protos/registry'
+import { useCurrentUser } from '../context/CurrentUser'
+import { useAllPresence } from '../components/collab/useAllPresence'
+import RowPresence from '../components/collab/RowPresence'
 import css from './index-page.module.css'
 
 const STATUS_ACCENT: Record<ProtoStatus, string> = {
@@ -76,6 +80,10 @@ const fmtDate = (iso?: string): string => {
   return absDate(iso)
 }
 
+// Seuls les protos React portent la présence temps réel (les archives HTML ne
+// montent pas la couche collab). Liste stable dérivée du registry.
+const REACT_SLUGS = protos.map((p) => p.slug)
+
 // Icône de tri du design system (rendue dans le slot natif de la Table antd)
 const renderSortIcon = ({
   sortOrder,
@@ -85,6 +93,8 @@ const renderSortIcon = ({
 
 const IndexPage = () => {
   const navigate = useNavigate()
+  const { user } = useCurrentUser()
+  const presence = useAllPresence(REACT_SLUGS, user)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | ProtoStatus>('all')
 
@@ -228,6 +238,17 @@ const IndexPage = () => {
           <span style={{ ...styles.dot, background: STATUS_ACCENT[p.status] }} />
           <Text size="s">{p.status}</Text>
         </div>
+      ),
+    },
+    {
+      // Présence temps réel : avatars des personnes qui regardent ce proto,
+      // tout à droite de la ligne. Cellule vide si personne (ou proto HTML).
+      title: '',
+      key: 'presence',
+      width: 120,
+      align: 'right' as const,
+      render: (_: unknown, p: CatalogEntry) => (
+        <RowPresence users={presence[p.slug] ?? []} />
       ),
     },
   ]
