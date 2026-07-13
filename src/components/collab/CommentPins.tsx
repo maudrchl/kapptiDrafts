@@ -4,6 +4,7 @@ import {
   useState,
   type CSSProperties,
   type MouseEvent,
+  type ReactNode,
 } from 'react'
 import { Button, Text, IconCheck, IconTrash } from '@kapptivate/ui-kit'
 import { deriveIdentity, type CurrentUser } from '../../context/CurrentUser'
@@ -33,6 +34,45 @@ type Props = {
 }
 
 const Z = 2147483646
+
+// Rend cliquables les URLs d'un texte (ouverture nouvel onglet), sans toucher
+// au reste. Gère http(s):// et www., et ne « mange » pas la ponctuation finale.
+const URL_RE = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi
+const linkify = (text: string): ReactNode[] => {
+  const out: ReactNode[] = []
+  let last = 0
+  text.replace(URL_RE, (match: string, _g: string, offset: number) => {
+    if (offset > last) out.push(text.slice(last, offset))
+    const trailing = match.match(/[.,;:!?)\]}'"]+$/)
+    const tail = trailing ? trailing[0] : ''
+    const url = tail ? match.slice(0, -tail.length) : match
+    const href = url.startsWith('www.') ? `https://${url}` : url
+    out.push(
+      <a
+        key={offset}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={linkStyle}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {url}
+      </a>,
+    )
+    if (tail) out.push(tail)
+    last = offset + match.length
+    return match
+  })
+  if (last < text.length) out.push(text.slice(last))
+  return out
+}
+
+const linkStyle: CSSProperties = {
+  color: '#d26334',
+  textDecoration: 'underline',
+  textUnderlineOffset: 2,
+  wordBreak: 'break-all',
+}
 
 const CommentPins = ({
   activeScreen,
@@ -300,7 +340,7 @@ const Message = ({
             {timeAgo(createdAt)}
           </span>
         </div>
-        <div style={styles.body}>{body}</div>
+        <div style={styles.body}>{linkify(body)}</div>
       </div>
     </div>
   )

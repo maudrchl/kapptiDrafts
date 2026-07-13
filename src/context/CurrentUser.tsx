@@ -21,16 +21,17 @@ export type CurrentUser = {
   color: string
 }
 
-/** Petite palette d'avatars, choisie de façon déterministe par email. */
+/** Palette d'avatars vive, choisie de façon déterministe par email
+ *  (contraste OK avec des initiales blanches). */
 const AVATAR_COLORS = [
-  '#1c4a47',
-  '#d26334',
-  '#3b6ea5',
-  '#7a5195',
-  '#2e8b57',
-  '#bc5090',
-  '#c08a1e',
-  '#556b8d',
+  '#E5322D', // rouge
+  '#EA580C', // orange
+  '#CA8A04', // ambre
+  '#16A34A', // vert
+  '#2563EB', // bleu
+  '#7C3AED', // violet
+  '#DB2777', // rose
+  '#0891B2', // cyan
 ]
 
 const hash = (s: string): number => {

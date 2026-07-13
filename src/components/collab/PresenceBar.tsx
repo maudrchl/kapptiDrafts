@@ -24,7 +24,13 @@ const PresenceBar = ({
         {others.slice(0, 5).map((u, i) => (
           <div key={u.email} style={{ ...styles.slot, zIndex: 10 - i }}>
             <Tooltip content={`${u.name} is viewing`}>
-              <span style={styles.avatarWrap}>
+              <span
+                style={{
+                  ...styles.avatarWrap,
+                  // Halo « actif » façon Figma : anneau blanc + anneau couleur + glow.
+                  boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${u.color}, 0 0 0 7px ${u.color}33`,
+                }}
+              >
                 <UserAvatar email={u.email} size="small" />
               </span>
             </Tooltip>
@@ -48,7 +54,7 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    padding: '4px 10px 4px 6px',
+    padding: '8px 14px',
     background: 'rgba(255,255,255,0.82)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
@@ -58,11 +64,10 @@ const styles: Record<string, CSSProperties> = {
     fontFamily: FONT,
   },
   stack: { display: 'flex', alignItems: 'center' },
-  slot: { marginLeft: -8, borderRadius: 999 },
+  slot: { marginLeft: 2, borderRadius: 999 },
   avatarWrap: {
     display: 'inline-flex',
     borderRadius: 999,
-    boxShadow: '0 0 0 2px #fff',
   },
   more: { fontSize: 11, fontWeight: 600, color: '#475467' },
 }
