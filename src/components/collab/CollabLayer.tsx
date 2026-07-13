@@ -1,76 +1,131 @@
-import { useState, type CSSProperties, type ComponentType } from 'react'
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type ComponentType,
+  type ReactNode,
+} from 'react'
 import {
   Drawer,
   Tooltip,
   IconMessageSquare,
   IconHistory,
+  IconEye,
+  IconEyeOff,
 } from '@kapptivate/ui-kit'
 import { collabEnabled } from '../../lib/supabase'
 import { useCurrentUser } from '../../context/CurrentUser'
-import { useActiveScreen } from '../../context/ScreenContext'
+import { useActiveScreen, useGoToScreen } from '../../context/ScreenContext'
 import { FONT } from './types'
 import { useProtoComments } from './useProtoComments'
 import { usePresence } from './usePresence'
-import CommentPins from './CommentPins'
+import CommentPins, { type PlacementMode } from './CommentPins'
 import CommentsDrawer from './CommentsDrawer'
 import PresenceBar from './PresenceBar'
 
+const EMOJIS = ['🔥', '❤️', '👏', '🎉', '😍', '🚀', '👀', '💡']
+
 /**
  * Orchestre la collaboration sur un proto : présence, pins de commentaires,
- * historique. Rendu par ProtoFrame, à l'intérieur du ScreenProvider.
- * Ne s'active que si Supabase est configuré et l'utilisateur connu.
+ * stamps emoji, historique. Rendu par ProtoFrame, dans le ScreenProvider.
  */
 const CollabLayer = ({ slug }: { slug: string }) => {
   const { user } = useCurrentUser()
   const activeScreen = useActiveScreen()
-  const present = usePresence(slug, user)
+  const goToScreen = useGoToScreen()
+  const present = usePresence(slug, user, activeScreen)
   const {
     comments,
     replies,
     addComment,
+    addStamp,
     addReply,
     setResolved,
     deleteComment,
   } = useProtoComments(slug)
 
-  const [commentMode, setCommentMode] = useState(false)
+  const [mode, setMode] = useState<PlacementMode>('off')
+  const [activeEmoji, setActiveEmoji] = useState(EMOJIS[0])
   const [showResolved, setShowResolved] = useState(false)
+  const [showEmojis, setShowEmojis] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
 
+  // Échap quitte le mode de placement (en plus de fermer draft/thread côté pins).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMode('off')
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   if (!collabEnabled) return null
 
-  const openCount = comments.filter((c) => !c.resolved).length
+  const openCount = comments.filter((c) => c.kind !== 'emoji' && !c.resolved).length
 
   return (
     <>
-      <PresenceBar users={present} meEmail={user?.email} />
+      <PresenceBar users={present} meEmail={user?.email} onFollow={goToScreen} />
 
       <CommentPins
         activeScreen={activeScreen}
         me={user}
         comments={comments}
         replies={replies}
-        // Suspend le placement (curseur croix + capture) tant que le drawer est ouvert.
-        commentMode={commentMode && !historyOpen}
+        // Suspend le placement tant que le drawer historique est ouvert.
+        mode={historyOpen ? 'off' : mode}
+        activeEmoji={activeEmoji}
         showResolved={showResolved}
+        showEmojis={showEmojis}
         selectedId={selectedId}
         onSelect={setSelectedId}
         addComment={addComment}
+        addStamp={addStamp}
         addReply={addReply}
         setResolved={setResolved}
         deleteComment={deleteComment}
       />
 
+      {/* Palette emoji (au-dessus de la toolbar, en mode emoji). */}
+      {mode === 'emoji' && !historyOpen && (
+        <div style={styles.palette}>
+          {EMOJIS.map((e) => (
+            <button
+              key={e}
+              type="button"
+              onClick={() => setActiveEmoji(e)}
+              aria-label={`Emoji ${e}`}
+              aria-pressed={e === activeEmoji}
+              style={{ ...styles.emojiBtn, ...(e === activeEmoji ? styles.emojiBtnActive : null) }}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Toolbar flottante, bas-centre (façon Figma). */}
       <div style={styles.toolbar}>
         <ToolBtn
           icon={IconMessageSquare}
-          label={commentMode ? 'Comment mode: on' : 'Comment mode'}
-          active={commentMode}
-          onClick={() => setCommentMode((v) => !v)}
+          label={mode === 'comment' ? 'Comment mode: on' : 'Comment mode'}
+          active={mode === 'comment'}
+          onClick={() => setMode((m) => (m === 'comment' ? 'off' : 'comment'))}
+        />
+        <ToolBtn
+          glyph={<span style={{ fontSize: 16, lineHeight: 1 }}>{activeEmoji}</span>}
+          label={mode === 'emoji' ? 'Emoji mode: on' : 'Emoji reactions'}
+          active={mode === 'emoji'}
+          onClick={() => setMode((m) => (m === 'emoji' ? 'off' : 'emoji'))}
         />
         <span style={styles.divider} />
+        <ToolBtn
+          icon={showEmojis ? IconEye : IconEyeOff}
+          label={showEmojis ? 'Hide emoji reactions' : 'Show emoji reactions'}
+          active={!showEmojis}
+          onClick={() => setShowEmojis((v) => !v)}
+        />
         <ToolBtn
           icon={IconHistory}
           label="Comment history"
@@ -79,18 +134,17 @@ const CollabLayer = ({ slug }: { slug: string }) => {
         />
       </div>
 
-      <Drawer
-        open={historyOpen}
-        onClose={() => setHistoryOpen(false)}
-        title="Comments"
-        width={380}
-      >
+      <Drawer open={historyOpen} onClose={() => setHistoryOpen(false)} title="Comments" width={380}>
         <CommentsDrawer
           comments={comments}
           replies={replies}
           onSelect={(id) => {
             const c = comments.find((x) => x.id === id)
-            if (c?.resolved) setShowResolved(true)
+            if (!c) return
+            if (c.resolved) setShowResolved(true)
+            // Ramène l'utilisateur sur l'écran où le commentaire a été posé
+            // (le proto ré-ouvre l'onglet / le drawer → l'ancre réapparaît).
+            goToScreen(c.screen_id)
             setSelectedId(id)
             setHistoryOpen(false)
           }}
@@ -104,12 +158,14 @@ const CollabLayer = ({ slug }: { slug: string }) => {
 
 const ToolBtn = ({
   icon: Icon,
+  glyph,
   label,
   active,
   counter,
   onClick,
 }: {
-  icon: ComponentType<{ size?: number }>
+  icon?: ComponentType<{ size?: number }>
+  glyph?: ReactNode
   label: string
   active?: boolean
   counter?: number
@@ -126,7 +182,7 @@ const ToolBtn = ({
         ...(active ? styles.btnActive : null),
       }}
     >
-      <Icon size={17} />
+      {glyph ?? (Icon ? <Icon size={17} /> : null)}
       {counter != null && <span style={styles.counter}>{counter}</span>}
     </button>
   </Tooltip>
@@ -151,6 +207,38 @@ const styles: Record<string, CSSProperties> = {
     boxShadow: '0 4px 16px rgba(16,24,40,0.16)',
     fontFamily: FONT,
   },
+  palette: {
+    position: 'fixed',
+    bottom: 66,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: 2147483647,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 2,
+    padding: 5,
+    background: 'rgba(255,255,255,0.95)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    border: '1px solid #ececf0',
+    borderRadius: 12,
+    boxShadow: '0 4px 16px rgba(16,24,40,0.16)',
+    fontFamily: FONT,
+  },
+  emojiBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 30,
+    height: 30,
+    fontSize: 17,
+    lineHeight: 1,
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer',
+  },
+  emojiBtnActive: { background: '#f4e9e2', boxShadow: 'inset 0 0 0 1px #d26334' },
   divider: { width: 1, height: 22, background: '#ececf0' },
   btn: {
     position: 'relative',

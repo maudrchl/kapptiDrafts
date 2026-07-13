@@ -1,14 +1,25 @@
+export type CommentKind = 'comment' | 'emoji'
+
 export type Comment = {
   id: string
   proto_slug: string
   screen_id: string
-  /** Coordonnées relatives au viewport, 0..1. */
+  /**
+   * Position 0..1. Relative à l'élément ancré (`anchor`) s'il est défini,
+   * sinon relative au viewport (fallback legacy).
+   */
   x: number
   y: number
   body: string
   author_email: string
   resolved: boolean
   created_at: string
+  /** Id de l'élément d'ancrage (`data-anchor`). Null = ancrage viewport legacy. */
+  anchor: string | null
+  /** 'comment' (thread) ou 'emoji' (stamp de réaction). */
+  kind: CommentKind
+  /** Caractère emoji si kind === 'emoji'. */
+  emoji: string | null
 }
 
 export type Reply = {

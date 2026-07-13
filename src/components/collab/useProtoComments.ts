@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import type { Comment, Reply } from './types'
+import type { Comment, CommentKind, Reply } from './types'
 
 /**
  * Charge les commentaires d'un proto et les tient à jour en temps réel
@@ -111,11 +111,14 @@ export function useProtoComments(slug: string) {
       y: number
       body: string
       author_email: string
+      anchor?: string | null
+      kind?: CommentKind
+      emoji?: string | null
     }): Promise<Comment | null> => {
       if (!supabase) return null
       const { data, error } = await supabase
         .from('proto_comments')
-        .insert({ proto_slug: slug, resolved: false, ...input })
+        .insert({ proto_slug: slug, resolved: false, kind: 'comment', ...input })
         .select()
         .single()
       if (error || !data) return null
@@ -126,6 +129,19 @@ export function useProtoComments(slug: string) {
       return row
     },
     [slug],
+  )
+
+  // Stamp emoji (réaction posée sur un point ancré, sans thread).
+  const addStamp = useCallback(
+    (input: {
+      screen_id: string
+      x: number
+      y: number
+      emoji: string
+      author_email: string
+      anchor?: string | null
+    }) => addComment({ ...input, body: '', kind: 'emoji' }),
+    [addComment],
   )
 
   const addReply = useCallback(
@@ -166,6 +182,7 @@ export function useProtoComments(slug: string) {
     replies,
     loading,
     addComment,
+    addStamp,
     addReply,
     setResolved,
     deleteComment,

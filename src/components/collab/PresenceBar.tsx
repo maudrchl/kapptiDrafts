@@ -11,9 +11,11 @@ import type { PresentUser } from './usePresence'
 const PresenceBar = ({
   users,
   meEmail,
+  onFollow,
 }: {
   users: PresentUser[]
   meEmail?: string
+  onFollow?: (screen: string) => void
 }) => {
   const others = users.filter((u) => u.email !== meEmail)
   if (others.length === 0) return null
@@ -23,8 +25,11 @@ const PresenceBar = ({
       <div style={styles.stack}>
         {others.slice(0, 5).map((u, i) => (
           <div key={u.email} style={{ ...styles.slot, zIndex: 10 - i }}>
-            <Tooltip content={`${u.name} is viewing`}>
-              <span
+            <Tooltip content={onFollow ? `Jump to ${u.name}` : `${u.name} is viewing`}>
+              <button
+                type="button"
+                onClick={() => u.screen && onFollow?.(u.screen)}
+                aria-label={`Jump to ${u.name}`}
                 style={{
                   ...styles.avatarWrap,
                   // Halo « actif » façon Figma : anneau blanc + anneau couleur + glow.
@@ -32,7 +37,7 @@ const PresenceBar = ({
                 }}
               >
                 <UserAvatar email={u.email} size="small" />
-              </span>
+              </button>
             </Tooltip>
           </div>
         ))}
@@ -68,6 +73,11 @@ const styles: Record<string, CSSProperties> = {
   avatarWrap: {
     display: 'inline-flex',
     borderRadius: 999,
+    padding: 0,
+    border: 'none',
+    background: 'transparent',
+    cursor: 'pointer',
+    lineHeight: 0,
   },
   more: { fontSize: 11, fontWeight: 600, color: '#475467' },
 }

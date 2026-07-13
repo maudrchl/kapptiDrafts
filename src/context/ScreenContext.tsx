@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -11,9 +12,12 @@ import {
  *
  * Les protos gèrent leurs vues en state local (pas dans l'URL), donc il n'existe
  * pas d'ID d'écran stable nativement. Un proto déclare sa vue courante via
- * `useReportScreen('detail')` ; la couche commentaires lit `useActiveScreen()`
- * pour n'afficher que les pins de l'écran visible (sinon un pin posé sur la
- * liste flotterait par-dessus la vue détail).
+ * `useReportScreen('detail')` ; la couche commentaires lit `useActiveScreen()`.
+ *
+ * Canal inverse : `goToScreen(id)` demande à revenir sur un écran donné (ex.
+ * clic sur un commentaire de l'historique). Le proto écoute `pendingScreen` via
+ * `useScreenNavigation()` et rétablit sa vue locale (onglet, drawer…), puis
+ * appelle `clearPendingScreen()`. Les protos qui ne l'écoutent pas l'ignorent.
  *
  * Le provider est monté par ProtoFrame et remonte à chaque changement de proto,
  * donc l'état repart de `'default'` automatiquement.
@@ -21,17 +25,28 @@ import {
 type ScreenState = {
   screenId: string
   setScreenId: (id: string) => void
+  pendingScreen: string | null
+  goToScreen: (id: string) => void
+  clearPendingScreen: () => void
 }
 
 const ScreenContext = createContext<ScreenState>({
   screenId: 'default',
   setScreenId: () => {},
+  pendingScreen: null,
+  goToScreen: () => {},
+  clearPendingScreen: () => {},
 })
 
 export const ScreenProvider = ({ children }: { children: ReactNode }) => {
   const [screenId, setScreenId] = useState('default')
+  const [pendingScreen, setPendingScreen] = useState<string | null>(null)
+  const goToScreen = useCallback((id: string) => setPendingScreen(id), [])
+  const clearPendingScreen = useCallback(() => setPendingScreen(null), [])
   return (
-    <ScreenContext.Provider value={{ screenId, setScreenId }}>
+    <ScreenContext.Provider
+      value={{ screenId, setScreenId, pendingScreen, goToScreen, clearPendingScreen }}
+    >
       {children}
     </ScreenContext.Provider>
   )
@@ -50,4 +65,16 @@ export const useReportScreen = (screenId: string) => {
   useEffect(() => {
     setScreenId(screenId)
   }, [screenId, setScreenId])
+}
+
+/** Demande une navigation vers un écran (ex. clic sur un commentaire). */
+export const useGoToScreen = () => useContext(ScreenContext).goToScreen
+
+/**
+ * Côté proto : lit l'écran demandé (`pendingScreen`) et fournit de quoi le
+ * consommer une fois la vue rétablie. Renvoie `null` quand rien n'est demandé.
+ */
+export const useScreenNavigation = () => {
+  const { pendingScreen, clearPendingScreen } = useContext(ScreenContext)
+  return { pendingScreen, clearPendingScreen }
 }
