@@ -546,7 +546,7 @@ const TracesView = ({
         <div className={styles.overviewRow}>
           {TRACE_OVERVIEW_PANELS.map((p) => (
             <Card key={p.id} className={styles.overviewCard}>
-              <div className={styles.overviewTitle}>
+              <div data-anchor={`trace-overview:${p.id}`} className={styles.overviewTitle}>
                 {p.name} <span>{p.unit}</span>
               </div>
               <LineChart panel={p} height={150} />
@@ -871,6 +871,7 @@ const ServiceMapView = () => {
       </div>
 
       <div
+        data-anchor="svcmap:canvas"
         className={fullscreen ? `${styles.svcMapCanvas} ${styles.svcMapFullscreen}` : styles.svcMapCanvas}
         onMouseDown={startPan}
         onMouseMove={onPan}
@@ -1192,7 +1193,7 @@ const UsageView = ({
           asideContent={<StatusTag variant="ghost" color={status.color}>{status.label}</StatusTag>}
         />
         <Card.Content>
-          <div className={styles.usageCardBody}>
+          <div data-anchor="usage:quota" className={styles.usageCardBody}>
           <div className={styles.usageHero}>
             <span className={styles.usageHeroNum}>{fmtGB(USAGE_INGESTED_GB)}</span>
             <span className={styles.usageHeroSub}>/ {fmtGB(cap)} included</span>
@@ -1256,7 +1257,7 @@ const UsageView = ({
           }
         />
         <Card.Content>
-          <div className={styles.usageCardBody}>
+          <div data-anchor="usage:consumption" className={styles.usageCardBody}>
           <div className={styles.cardSub} style={{ marginBottom: 12 }}>Ingested bytes per day vs daily budget · current month (UTC)</div>
           <div className={styles.chart}>
             {showBudget && (
@@ -1290,7 +1291,7 @@ const UsageView = ({
       <Card className={styles.usageCard}>
         <Card.Header title="Usage by signal" icon={IconLayers} />
         <Card.Content>
-          <div className={styles.usageCardBody}>
+          <div data-anchor="usage:signals" className={styles.usageCardBody}>
           {SIGNALS.map((s) => {
             const sp = (s.bytes / totalBytes) * 100
             return (
@@ -1317,7 +1318,7 @@ const UsageView = ({
           asideContent={<StatusTag variant="ghost" color={revoked ? 'failed' : 'success'}>{revoked ? 'Revoked' : 'Active'}</StatusTag>}
         />
         <Card.Content>
-          <div className={styles.usageCardBody}>
+          <div data-anchor="usage:otlp-key" className={styles.usageCardBody}>
           <p className={styles.cardSub} style={{ marginBottom: 12 }}>
             {revoked
               ? 'No active key. Ingestion is disabled until you issue a new one.'
@@ -1351,7 +1352,7 @@ const UsageView = ({
           asideContent={<StatusTag variant="ghost" color="info">{retTier}</StatusTag>}
         />
         <Card.Content>
-          <div className={styles.usageCardBody}>
+          <div data-anchor="usage:retention" className={styles.usageCardBody}>
           <div className={styles.cardSub} style={{ marginBottom: 12 }}>
             How long ingested signals stay queryable. Current tier {RETENTION_LABELS[retention]}.
           </div>
@@ -2338,7 +2339,7 @@ helm install kapp-agent kapptivate/agent \\
 
                 {logTab === 'headers' && (
                   a ? (
-                    <div className={styles.kvTable}>
+                    <div data-anchor={`log:${l.key}:headers`} className={styles.kvTable}>
                       {headers.map(([k, v]) => (
                         <div key={k} className={styles.kvRow}><span className={styles.kvKey}>{k}</span><span className={styles.kvVal}>{v}</span></div>
                       ))}
@@ -2352,7 +2353,7 @@ helm install kapp-agent kapptivate/agent \\
                   a ? (
                     <>
                       <div className={styles.perfTotal}>{total}<small>ms total</small></div>
-                      <div className={styles.perfBar}>
+                      <div data-anchor={`log:${l.key}:performance`} className={styles.perfBar}>
                         {phases.map((p) => (
                           <div key={p.label} className={styles.perfSeg} style={{ width: `${total ? (p.ms / total) * 100 : 0}%`, background: p.color }} title={`${p.label} · ${p.ms}ms`} />
                         ))}
