@@ -185,7 +185,9 @@ const IndexPage = () => {
         const status = p.status
         return (
           <Dropdown trigger="contextMenu" menu={pinMenu(p)} placement="bottomLeft">
-            <div style={styles.protoCell}>
+            {/* Clic gauche = navigation explicite (le wrapper Dropdown
+                interceptait le clic sur cette cellule) ; clic droit = épingler. */}
+            <div style={{ ...styles.protoCell, cursor: 'pointer' }} onClick={() => open(p)}>
               <span
                 style={{ ...styles.iconBox, background: STATUS_ICON_BG[status] }}
               >
