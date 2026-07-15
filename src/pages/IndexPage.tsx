@@ -14,6 +14,7 @@ import {
   IconSearchX,
   IconCode,
   IconFileType,
+  IconPin,
 } from '@kapptivate/ui-kit'
 import logo from '../assets/kapptidrafts-logo.svg'
 import {
@@ -25,8 +26,19 @@ import {
 } from '../protos/registry'
 import { useCurrentUser } from '../context/CurrentUser'
 import { useAllPresence } from '../components/collab/useAllPresence'
+import { useProtoPins } from '../components/collab/useProtoPins'
 import RowPresence from '../components/collab/RowPresence'
 import css from './index-page.module.css'
+
+// Ligne du tableau = entrée catalogue + son état « épinglé » (partagé).
+type Row = CatalogEntry & { pinned: boolean }
+
+// Les protos épinglés restent en tête : on préfixe chaque tri par ce rang.
+const pinRank = (a: Row, b: Row) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)
+const withPin =
+  (sorter: (a: Row, b: Row) => number) =>
+  (a: Row, b: Row) =>
+    pinRank(a, b) || sorter(a, b)
 
 const STATUS_ACCENT: Record<ProtoStatus, string> = {
   'wip design': '#d98a00',
@@ -95,6 +107,7 @@ const IndexPage = () => {
   const navigate = useNavigate()
   const { user } = useCurrentUser()
   const presence = useAllPresence(REACT_SLUGS, user)
+  const { pinned, togglePin } = useProtoPins()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | ProtoStatus>('all')
 
@@ -102,15 +115,15 @@ const IndexPage = () => {
     document.title = 'kapptiDrafts'
   }, [])
 
-  const open = (p: CatalogEntry) => {
+  const open = (p: Row) => {
     if (p.kind === 'react') navigate(p.target)
     else window.location.href = encodeURI(p.target)
   }
 
-  // Recherche + filtre statut, puis tri de base par statut (QA → wip dev →
-  // wip design → deployed). La Table peut re-trier au clic, mais cet ordre est
-  // l'ordre par défaut garanti, indépendant de tout tri persisté.
-  const items = useMemo(() => {
+  // Recherche + filtre statut, puis tri de base : épinglés d'abord, ensuite par
+  // statut (QA → wip dev → wip design → deployed). La Table peut re-trier au
+  // clic, mais cet ordre est l'ordre par défaut garanti.
+  const items = useMemo<Row[]>(() => {
     const q = search.trim().toLowerCase()
     return catalog
       .filter((p) => {
@@ -122,12 +135,29 @@ const IndexPage = () => {
           statusFilter === 'all' || p.status === statusFilter
         return matchQ && matchStatus
       })
+      .map((p): Row => ({ ...p, pinned: pinned.has(p.slug) }))
       .sort((a, b) => {
+        const p = pinRank(a, b)
+        if (p !== 0) return p
         const s =
           STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)
         return s !== 0 ? s : a.title.localeCompare(b.title)
       })
-  }, [search, statusFilter])
+  }, [search, statusFilter, pinned])
+
+  // Menu contextuel (clic droit) d'une ligne : épingler / désépingler.
+  const pinMenu = (p: Row) => ({
+    items: [
+      {
+        key: 'pin',
+        label: p.pinned ? 'Unpin' : 'Pin to top',
+        icon: <IconPin size={12} />,
+      },
+    ],
+    onClick: ({ key }: { key: string }) => {
+      if (key === 'pin') togglePin(p.slug, user?.email)
+    },
+  })
 
   // Menu du filtre statut (composant Dropdown du design system)
   const filterMenu = {
@@ -147,30 +177,36 @@ const IndexPage = () => {
       title: 'Prototype',
       key: 'title',
       dataIndex: 'title',
-      sorter: (a: CatalogEntry, b: CatalogEntry) =>
-        a.title.localeCompare(b.title),
+      sorter: withPin((a, b) => a.title.localeCompare(b.title)),
       sortIcon: renderSortIcon,
-      render: (_: string, p: CatalogEntry) => {
+      // Clic droit sur la cellule → menu épingler / désépingler (Dropdown DS).
+      render: (_: string, p: Row) => {
         const Icon = p.icon
         const status = p.status
         return (
-          <div style={styles.protoCell}>
-            <span
-              style={{ ...styles.iconBox, background: STATUS_ICON_BG[status] }}
-            >
-              <Icon size={18} color={STATUS_ACCENT[status]} />
-            </span>
-            <div>
-              <Text weight="medium">{p.title}</Text>
-              {p.description && (
-                <div>
-                  <Text size="xs" color="secondary">
-                    {p.description}
-                  </Text>
+          <Dropdown trigger="contextMenu" menu={pinMenu(p)} placement="bottomLeft">
+            <div style={styles.protoCell}>
+              <span
+                style={{ ...styles.iconBox, background: STATUS_ICON_BG[status] }}
+              >
+                <Icon size={18} color={STATUS_ACCENT[status]} />
+              </span>
+              <div>
+                <div style={styles.titleRow}>
+                  <Text weight="medium">{p.title}</Text>
+                  {/* Indicateur d'épingle : seulement si le proto est épinglé. */}
+                  {p.pinned && <IconPin size={13} color="#d26334" />}
                 </div>
-              )}
+                {p.description && (
+                  <div>
+                    <Text size="xs" color="secondary">
+                      {p.description}
+                    </Text>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </Dropdown>
         )
       },
     },
@@ -179,7 +215,7 @@ const IndexPage = () => {
       key: 'kind',
       dataIndex: 'kind',
       width: 180,
-      sorter: (a: CatalogEntry, b: CatalogEntry) => a.kind.localeCompare(b.kind),
+      sorter: withPin((a, b) => a.kind.localeCompare(b.kind)),
       sortIcon: renderSortIcon,
       render: (kind: 'react' | 'html') => (
         <Tag
@@ -196,8 +232,7 @@ const IndexPage = () => {
       key: 'updatedAt',
       dataIndex: 'updatedAt',
       width: 160,
-      sorter: (a: CatalogEntry, b: CatalogEntry) =>
-        (a.updatedAt ?? '').localeCompare(b.updatedAt ?? ''),
+      sorter: withPin((a, b) => (a.updatedAt ?? '').localeCompare(b.updatedAt ?? '')),
       sortIcon: renderSortIcon,
       render: (updatedAt?: string) => (
         <span title={absDate(updatedAt)}>
@@ -229,11 +264,10 @@ const IndexPage = () => {
       dataIndex: 'status',
       width: 150,
       defaultSortOrder: 'ascend' as const,
-      sorter: (a: CatalogEntry, b: CatalogEntry) =>
-        STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status),
+      sorter: withPin((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)),
       sortIcon: renderSortIcon,
       // Statut en lecture seule — la source de vérité est le `meta.ts` du proto.
-      render: (_: ProtoStatus, p: CatalogEntry) => (
+      render: (_: ProtoStatus, p: Row) => (
         <div style={styles.statusCell}>
           <span style={{ ...styles.dot, background: STATUS_ACCENT[p.status] }} />
           <Text size="s">{p.status}</Text>
@@ -316,6 +350,7 @@ const styles: Record<string, CSSProperties> = {
   page: { flex: 1, minWidth: 0, padding: '7rem' },
   logo: { height: 30, width: 'auto', display: 'block', marginBottom: 8 },
   protoCell: { display: 'flex', alignItems: 'center', gap: 12 },
+  titleRow: { display: 'flex', alignItems: 'center', gap: 6 },
   iconBox: {
     width: 36,
     height: 36,
