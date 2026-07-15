@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useState, type Dispatch, type SetStateAction, type ReactNode } from 'react'
 import {
   Select,
   Input,
   Button,
   ButtonGroup,
   Breadcrumb,
-  StatusTag,
   Dropdown,
   Tabs,
+  Checkbox,
+  Table,
+  Tag,
+  Text,
   IconColouredLogo,
   IconSquareArrowOutUpRight,
   IconLayoutGrid,
@@ -23,13 +26,15 @@ import {
   IconSmartphone,
   IconShield,
   IconHelpCircle,
-  IconChevronDown,
+  IconInfo,
+  IconChevronRight,
   IconGripVertical,
   IconMoreVertical,
   IconZap,
   IconLock,
   IconStar,
   IconTrash,
+  IconMinusCircle,
   IconSave,
   IconFlag,
   IconGlobe,
@@ -38,6 +43,11 @@ import {
   IconPlus,
   IconMoreHorizontal,
   IconCopy,
+  IconCheck,
+  IconCalendar,
+  IconTimer,
+  IconListFilter,
+  IconCornerDownLeft,
 } from '@kapptivate/ui-kit'
 import { useReportScreen } from '../../context/ScreenContext'
 import styles from './checks.module.scss'
@@ -57,58 +67,85 @@ import {
 let uid = 100
 const nextId = () => `c${++uid}`
 
-// Présentation dans le panneau d'édition (droite) — 2 options, figées.
-type SevLayout = 'inline' | 'groups'
-const SEV_LAYOUTS: { value: SevLayout; label: string }[] = [
-  { value: 'inline', label: 'Pastille par ligne' },
-  { value: 'groups', label: 'Deux groupes' },
+// Historique d'exécutions (panneau test → Preview) — statique pour le proto.
+const EXECUTIONS = [
+  { id: '#290', status: 'warn', date: '13/07/2026 - 05:37:53 PM', dur: '29s' },
+  { id: '#289', status: 'ok', date: '13/07/2026 - 05:32:57 PM', dur: '29s' },
+  { id: '#288', status: 'ok', date: '13/07/2026 - 05:19:38 PM', dur: '28s' },
 ]
 
-// Affichage du récap des conditions DANS LE FORMULAIRE (canvas, à gauche).
-type FormView = 'chips' | 'grouped' | 'list'
-const FORM_VIEWS: { value: FormView; label: string }[] = [
-  { value: 'chips', label: 'Chips' },
-  { value: 'grouped', label: 'Groupé par sévérité' },
-  { value: 'list', label: 'Checklist' },
+// Variables tab — output variables (produites) + variables consommées.
+// Source = méthode d'extraction depuis la réponse (cf. proto Figma « output variable »).
+const OUT_SOURCES = [
+  { label: 'JSON attribute', value: 'json' },
+  { label: 'Header', value: 'header' },
+  { label: 'Status code', value: 'status' },
+  { label: 'Full body', value: 'body' },
 ]
+const USED_VARS = ['baseUrl', 'authToken']
+// Globales disponibles quand un output met à jour une variable globale.
+const GLOBAL_VARS = ['URL', 'baseUrl', 'authToken']
 
 const toOptions = (arr: string[]) => arr.map((v) => ({ label: v, value: v }))
 const optVal = (v: any): string => (v && typeof v === 'object' ? v.value : v)
 const ACTION_OPTIONS = ['API Call', 'Navigate', 'Click', 'Fill in', 'Assert', 'Wait']
 const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
-const initFormView = (): FormView => {
-  const v = new URLSearchParams(window.location.search).get('form')
-  return FORM_VIEWS.some((f) => f.value === v) ? (v as FormView) : 'chips'
-}
+// ---- type des tables clé/valeur (Headers / Query parameters) ----
+type KV = { id: string; k: string; v: string }
+// ---- variables extraites de la réponse ----
+type OutVar = { id: string; name: string; source: string; path: string }
 
 const ChecksProto = () => {
   const [tab, setTab] = useState('checks')
-  const [sevLayout, setSevLayout] = useState<SevLayout>('inline')
-  const [formView, setFormView] = useState<FormView>(initFormView)
-  const [logic, setLogic] = useState<'and' | 'or'>('or')
   const [failLogic, setFailLogic] = useState<'and' | 'or'>('or')
   const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('or')
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropSev, setDropSev] = useState<Severity | null>(null)
+  // Sélection de la step : ouvre le panneau (drawer) + fond grey.
+  const [stepSelected, setStepSelected] = useState(true)
+  // Onglet du panneau test (affiché quand aucune step n'est sélectionnée).
+  const [testTab, setTestTab] = useState('preview')
   const [conds, setConds] = useState<Condition[]>(() =>
     INITIAL_CONDITIONS.map((c) => ({ ...c })),
   )
   const [method, setMethod] = useState('GET')
   const [action, setAction] = useState('API Call')
-  const [url, setUrl] = useState('https://jsonplaceholder.typicode.com/todos/1')
   const [startUrl, setStartUrl] = useState('https://kapptivate.com')
+  // Texte éditable saisi APRÈS le tag variable {{URL}} dans les champs du canvas.
+  const [navPath, setNavPath] = useState('')
+  const [apiPath, setApiPath] = useState('')
 
-  useReportScreen(`${tab}:${formView}`)
+  // ---- General tab (sous-onglets Headers / Body / Query Parameters) ----
+  const emptyRow = (): KV => ({ id: nextId(), k: '', v: '' })
+  const [genTab, setGenTab] = useState('headers')
+  const [headers, setHeaders] = useState<KV[]>(() => [emptyRow()])
+  const [queryParams, setQueryParams] = useState<KV[]>(() => [emptyRow()])
+  const [body, setBody] = useState('')
+
+  // ---- Variables tab : variables extraites de la réponse ----
+  const [outVars, setOutVars] = useState<OutVar[]>(() => [
+    { id: nextId(), name: 'authToken', source: 'json', path: '$.access_token' },
+  ])
+
+  // ---- Advanced settings tab (checkboxes) ----
+  const [overrideDns, setOverrideDns] = useState(false)
+  const [ignoreSsl, setIgnoreSsl] = useState(false)
+  const [preserveCookies, setPreserveCookies] = useState(false)
+  const [followRedirects, setFollowRedirects] = useState(true)
+  const [ignoreError, setIgnoreError] = useState(false)
+  const [skipDuringRun, setSkipDuringRun] = useState(false)
+
+  useReportScreen(tab)
 
   const patch = (id: string, next: Partial<Condition>) =>
     setConds((cur) => cur.map((c) => (c.id === id ? { ...c, ...next } : c)))
   const remove = (id: string) =>
     setConds((cur) => cur.filter((c) => c.id !== id))
-  const add = () =>
+  const add = (sev: Severity) =>
     setConds((cur) => [
       ...cur,
-      { id: nextId(), sev: 'fail', ...resetForKind('Status code') } as Condition,
+      { id: nextId(), sev, ...resetForKind('Status code') } as Condition,
     ])
   const duplicate = (c: Condition) =>
     setConds((cur) => {
@@ -159,6 +196,7 @@ const ChecksProto = () => {
           <Select
             size="s"
             borderless
+            popupClassName={styles.selPopup}
             options={toOptions(NUM_OPS)}
             value={c.op ?? '='}
             onChange={(_e: unknown, v: string) => patch(c.id, { op: optVal(v) })}
@@ -168,6 +206,7 @@ const ChecksProto = () => {
             <Select
               size="s"
               borderless
+              popupClassName={styles.selPopup}
               options={toOptions(UNITS)}
               value={c.unit ?? 'seconds'}
               onChange={(_e: unknown, v: string) => patch(c.id, { unit: optVal(v) })}
@@ -186,6 +225,7 @@ const ChecksProto = () => {
         <Select
           size="s"
           borderless
+          popupClassName={styles.selPopup}
           {...(withValue || c.kind === 'header'
             ? {}
             : { fullWidth: true, className: styles.grow })}
@@ -216,6 +256,7 @@ const ChecksProto = () => {
       <Select
         size="s"
         borderless
+        popupClassName={styles.selPopup}
         options={SUBJECTS.map((s) => ({ label: s.label, value: s.label }))}
         value={c.subj}
         onChange={(_e: unknown, v: string) => patch(c.id, resetForKind(optVal(v)))}
@@ -224,30 +265,7 @@ const ChecksProto = () => {
     </div>
   )
 
-  const sevControl = (c: Condition) => (
-    <Dropdown
-      trigger="click"
-      placement="bottomRight"
-      menu={{
-        onClick: ({ key }: { key: string }) => patch(c.id, { sev: key as Severity }),
-        items: [
-          { key: 'fail', label: sevLabel(false, 'Fails the step') },
-          { key: 'warn', label: sevLabel(true, 'Sets a warning') },
-        ],
-      }}
-    >
-      <span className={styles.sevTrigger}>
-        <StatusTag variant="ghost" color={c.sev === 'warn' ? 'warning' : 'failed'}>
-          {c.sev === 'warn' ? 'Sets a warning' : 'Fails the step'}
-        </StatusTag>
-        <span className={styles.sevChev}>
-          <IconChevronDown size={13} />
-        </span>
-      </span>
-    </Dropdown>
-  )
-
-  const rowMenu = (c: Condition, mode: 'inline' | 'groups') => (
+  const rowMenu = (c: Condition) => (
     <Dropdown
       trigger="click"
       placement="bottomRight"
@@ -258,18 +276,14 @@ const ChecksProto = () => {
           if (key === 'delete') remove(c.id)
         },
         items: [
-          ...(mode === 'groups'
-            ? [
-                {
-                  key: 'move',
-                  label: sevLabel(
-                    c.sev === 'fail',
-                    c.sev === 'fail' ? 'Move to Warning' : 'Move to Failed',
-                  ),
-                },
-                { type: 'divider' as const },
-              ]
-            : []),
+          {
+            key: 'move',
+            label: sevLabel(
+              c.sev === 'fail',
+              c.sev === 'fail' ? 'Move to Warning' : 'Move to Failed',
+            ),
+          },
+          { type: 'divider' as const },
           { key: 'duplicate', label: 'Duplicate', icon: <IconCopy size={14} /> },
           { type: 'divider' as const },
           { key: 'delete', label: 'Delete', danger: true, icon: <IconTrash size={14} /> },
@@ -282,30 +296,6 @@ const ChecksProto = () => {
     </Dropdown>
   )
 
-  // Le dot ouvre un dropdown pour changer la sévérité (reclasse la condition)
-  const sevDot = (c: Condition) => (
-    <Dropdown
-      trigger="click"
-      placement="bottomRight"
-      menu={{
-        onClick: ({ key }: { key: string }) => patch(c.id, { sev: key as Severity }),
-        items: [
-          { key: 'fail', label: sevLabel(false, 'Fails the step') },
-          { key: 'warn', label: sevLabel(true, 'Sets a warning') },
-        ],
-      }}
-    >
-      <span className={styles.sevTrigger} aria-label="Change severity">
-        <span className={c.sev === 'warn' ? styles.sevDotWarn : styles.sevDotFail} />
-        <span className={styles.sevChev}>
-          <IconChevronDown size={13} />
-        </span>
-      </span>
-    </Dropdown>
-  )
-
-  // Modèle proposé par l'équipe : « Check if [condition], else 🔴 »
-  // → condition d'abord, point de sévérité APRÈS, en position « else ».
   // Connecteur logique : seul le 1er select (non-Check-if) est éditable, les
   // suivants héritent (disabled).
   const connSelect = (
@@ -316,6 +306,7 @@ const ChecksProto = () => {
     <Select
       size="s"
       className={styles.conn}
+      popupClassName={styles.selPopup}
       width="64px"
       minWidth="0"
       disabled={disabled}
@@ -327,29 +318,26 @@ const ChecksProto = () => {
 
   const addBtn = (
     <div className={styles.addWrap}>
-      <Button color="secondary" size="s" icon={IconPlus} onClick={add}>
-        Add condition
-      </Button>
+      <Dropdown
+        trigger="click"
+        placement="topLeft"
+        menu={{
+          onClick: ({ key }: { key: string }) => add(key as Severity),
+          items: [
+            { key: 'fail', label: sevLabel(false, 'Fails the step') },
+            { key: 'warn', label: sevLabel(true, 'Sets a warning') },
+          ],
+        }}
+      >
+        <Button color="secondary" size="s" icon={IconPlus}>
+          Add condition
+        </Button>
+      </Dropdown>
     </div>
   )
 
-  // Option 1 : sévérité par condition (« Check if …, else 🔴 »), logique partagée.
-  const condRow = (c: Condition, i: number) => (
-    <div key={c.id} className={styles.cond}>
-      {i === 0 ? (
-        <span className={styles.checkIf}>Check if</span>
-      ) : (
-        connSelect(logic, setLogic, i > 1)
-      )}
-      <span className={styles.exprWrap}>{expr(c)}</span>
-      <span className={styles.elseLabel}>, else</span>
-      {sevDot(c)}
-      {rowMenu(c, 'inline')}
-    </div>
-  )
-
-  // Option 2 : chaque groupe = une expression and/or, la conséquence est portée
-  // par le groupe → pas de pastille par ligne.
+  // Chaque groupe = une expression and/or, la conséquence est portée par le
+  // groupe → pas de pastille par ligne.
   const groupExpr = (
     c: Condition,
     i: number,
@@ -375,14 +363,13 @@ const ChecksProto = () => {
       <span className={styles.grip} title="Drag to the other group">
         <IconGripVertical size={15} />
       </span>
-      {rowMenu(c, 'groups')}
+      {rowMenu(c)}
     </div>
   )
 
   const fails = conds.filter((c) => c.sev === 'fail')
   const warns = conds.filter((c) => c.sev === 'warn')
 
-  // Un groupe (Failed / Warning) partagé par « Deux groupes » et « côte à côte ».
   const renderGroup = (sev: Severity) => {
     const list = sev === 'fail' ? fails : warns
     const gLogic = sev === 'fail' ? failLogic : warnLogic
@@ -397,8 +384,8 @@ const ChecksProto = () => {
         onDrop={() => dropTo(sev)}
       >
         <div className={styles.grpHead}>
-          <span className={sev === 'fail' ? styles.grpDotFail : styles.grpDotWarn} />
-          <span className={sev === 'fail' ? styles.grpTitleFail : styles.grpTitleWarn}>
+          <span className={sev === 'fail' ? styles.grpBadgeFail : styles.grpBadgeWarn}>
+            <span className={sev === 'fail' ? styles.dotFail : styles.dotWarn} />
             {sev === 'fail' ? 'Failed' : 'Warning'}
           </span>
           <span className={styles.grpNote}>
@@ -418,99 +405,379 @@ const ChecksProto = () => {
     )
   }
 
-  const checksBody = () => {
-    if (sevLayout === 'groups')
-      return (
-        <div className={styles.checksBody}>
-          {renderGroup('fail')}
-          <div className={styles.grpDivider} />
-          {renderGroup('warn')}
-          {addBtn}
-        </div>
-      )
-    return (
-      <div className={styles.checksBody}>
-        <div className={styles.condList}>{conds.map((c, i) => condRow(c, i))}</div>
-        {addBtn}
-      </div>
-    )
-  }
+  const checksBody = () => (
+    <div className={styles.checksBody}>
+      {renderGroup('fail')}
+      <div className={styles.grpDivider} />
+      {renderGroup('warn')}
+      {addBtn}
+    </div>
+  )
 
-  /* ---------- récap des conditions DANS LE FORMULAIRE (canvas) ---------- */
+  /* ---------- récap des conditions DANS LE FORMULAIRE (canvas) : ligne compacte,
+     le clic ouvre l'onglet Checks du panneau de droite ---------- */
   const formSummary = () => {
     if (conds.length === 0) return null
-
-    if (formView === 'grouped')
-      return (
-        <div className={styles.fmGrouped}>
-          <span className={styles.fmLabel}>Must match</span>
-          {fails.length > 0 && (
-            <div className={styles.fmGroupRow}>
-              <span className={`${styles.fmTag} ${styles.fmTagFail}`}>
-                <span className={styles.dotFail} />
-                Fails the step
-              </span>
-              <span className={styles.fmGroupConds}>
-                {fails.map((c) => conditionText(c)).join(', ')}
-              </span>
-            </div>
-          )}
-          {warns.length > 0 && (
-            <div className={styles.fmGroupRow}>
-              <span className={`${styles.fmTag} ${styles.fmTagWarn}`}>
-                <span className={styles.dotWarn} />
-                Warning only
-              </span>
-              <span className={styles.fmGroupConds}>
-                {warns.map((c) => conditionText(c)).join(', ')}
-              </span>
-            </div>
-          )}
-        </div>
-      )
-
-    if (formView === 'list')
-      return (
-        <div className={styles.fmList}>
-          <span className={styles.fmLabel}>Must match</span>
-          {conds.map((c) => (
-            <div key={c.id} className={styles.fmListRow}>
-              <span className={c.sev === 'warn' ? styles.dotWarn : styles.dotFail} />
-              <span className={styles.fmListCond}>{conditionText(c)}</span>
-              <span
-                className={`${styles.fmPill} ${c.sev === 'warn' ? styles.fmPillWarn : styles.fmPillFail}`}
-              >
-                {c.sev === 'warn' ? 'Warns' : 'Fails'}
-              </span>
-            </div>
-          ))}
-        </div>
-      )
-
-    // chips (défaut)
     return (
-      <div className={styles.chipsWrap}>
-        <span className={styles.chipsLabel}>Must match:</span>
-        <div className={styles.chips}>
-          {conds.map((c) => (
-            <span key={c.id} className={styles.chip}>
-              <span
-                className={`${styles.chipDot} ${c.sev === 'warn' ? styles.dotWarn : styles.dotFail}`}
-              />
-              {conditionText(c)}
-              <span
-                className={`${styles.chipCause} ${c.sev === 'warn' ? styles.causeWarn : styles.causeFail}`}
-              >
-                · {c.sev === 'warn' ? 'Warning' : 'Failed'}
-              </span>
-            </span>
-          ))}
-        </div>
-      </div>
+      <button
+        type="button"
+        className={styles.fmBar}
+        onClick={(e) => {
+          e.stopPropagation()
+          setStepSelected(true)
+          setTab('checks')
+        }}
+        title="Edit checks"
+      >
+        <span className={styles.fmLabel}>Checks</span>
+        {fails.length > 0 && (
+          <span className={styles.fmCount}>
+            <span className={styles.dotFail} />
+            {fails.length} {fails.length > 1 ? 'fails' : 'fail'}
+          </span>
+        )}
+        {warns.length > 0 && (
+          <span className={styles.fmCount}>
+            <span className={styles.dotWarn} />
+            {warns.length} {warns.length > 1 ? 'warnings' : 'warning'}
+          </span>
+        )}
+      </button>
     )
   }
 
-  const tabPlaceholder = (label: string) => (
+  /* ---------- General / Variables / Advanced (reste de l'XP du panneau) ---------- */
+
+  // Table clé/valeur (Headers / Query parameters) — une ligne vide reste
+  // toujours en fin pour saisir la suivante.
+  const editKv = (setRows: Dispatch<SetStateAction<KV[]>>, id: string, patch: Partial<KV>) =>
+    setRows((cur) => {
+      let next = cur.map((r) => (r.id === id ? { ...r, ...patch } : r))
+      const last = next[next.length - 1]
+      if (last && (last.k.trim() !== '' || last.v.trim() !== '')) next = [...next, emptyRow()]
+      return next
+    })
+
+  const removeKv = (setRows: Dispatch<SetStateAction<KV[]>>, id: string) =>
+    setRows((cur) => {
+      const next = cur.filter((x) => x.id !== id)
+      return next.length ? next : [emptyRow()]
+    })
+
+  const kvTable = (rows: KV[], setRows: Dispatch<SetStateAction<KV[]>>) => (
+    <div className={styles.kvTable}>
+      <div className={`${styles.kvRow} ${styles.kvHead}`}>
+        <div className={styles.kvCol}>Key</div>
+        <div className={styles.kvCol}>Value</div>
+      </div>
+      {rows.map((r) => (
+        <div key={r.id} className={styles.kvRow}>
+          <div className={styles.kvCell}>
+            <Input
+              size="s"
+              borderless
+              fullWidth
+              mono
+              placeholder="Key"
+              value={r.k}
+              onChange={(e) => editKv(setRows, r.id, { k: e.target.value })}
+              iconRight={<IconBraces size={12} />}
+            />
+          </div>
+          <div className={styles.kvCell}>
+            <Input
+              size="s"
+              borderless
+              fullWidth
+              mono
+              placeholder="Value"
+              value={r.v}
+              onChange={(e) => editKv(setRows, r.id, { v: e.target.value })}
+              iconRight={<IconBraces size={12} />}
+            />
+            <button
+              className={styles.kvRemove}
+              title="Remove row"
+              onClick={() => removeKv(setRows, r.id)}
+            >
+              <IconMinusCircle size={14} />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
+  const genCount = (rows: KV[]) =>
+    rows.filter((r) => r.k.trim() !== '' || r.v.trim() !== '').length
+
+  const generalTab = () => (
+    <div className={styles.genPane}>
+      <div className={styles.subTabs}>
+        <button
+          className={genTab === 'headers' ? styles.subTabActive : styles.subTab}
+          onClick={() => setGenTab('headers')}
+        >
+          Headers ({genCount(headers)})
+        </button>
+        <button
+          className={genTab === 'body' ? styles.subTabActive : styles.subTab}
+          onClick={() => setGenTab('body')}
+        >
+          Body
+        </button>
+        <button
+          className={genTab === 'query' ? styles.subTabActive : styles.subTab}
+          onClick={() => setGenTab('query')}
+        >
+          Query Parameters ({genCount(queryParams)})
+        </button>
+      </div>
+
+      {genTab === 'headers' && kvTable(headers, setHeaders)}
+      {genTab === 'query' && kvTable(queryParams, setQueryParams)}
+      {genTab === 'body' && (
+        <textarea
+          className={styles.fCode}
+          placeholder="Request body…"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+        />
+      )}
+    </div>
+  )
+
+  const patchOutVar = (id: string, next: Partial<OutVar>) =>
+    setOutVars((cur) => cur.map((v) => (v.id === id ? { ...v, ...next } : v)))
+  const addOutVar = () =>
+    setOutVars((cur) => [...cur, { id: nextId(), name: '', source: 'body', path: '' }])
+  const removeOutVar = (id: string) =>
+    setOutVars((cur) => cur.filter((v) => v.id !== id))
+
+  const variablesTab = () => (
+    <div className={styles.varsPane}>
+      {/* Global variables */}
+      <Table
+        rowKey="key"
+        compact
+        verticalBorders
+        data={[{ key: 'url', name: 'URL', value: startUrl }]}
+        columns={[
+          {
+            title: <div style={{ textAlign: 'left' }}>Global variables</div>,
+            dataIndex: 'name',
+            width: '30%',
+            onHeaderCell: () => ({ colSpan: 2 }),
+            render: (_: unknown, r: any) => (
+              <div className={styles.varNameCell}>
+                <Tag color="dark-blue" size="sm" icon={IconBraces} />
+                <Text weight="medium">{r.name}</Text>
+              </div>
+            ),
+          },
+          {
+            title: '',
+            dataIndex: 'value',
+            onHeaderCell: () => ({ colSpan: 0 }),
+            render: (_: unknown, r: any) => (
+              <Input
+                size="m"
+                borderless
+                fullWidth
+                placeholder="Enter value..."
+                value={r.value}
+                onChange={(e) => setStartUrl(e.target.value)}
+              />
+            ),
+          },
+        ]}
+      />
+
+      {/* Output variables (produites depuis la réponse) */}
+      <div className={styles.varsSection}>
+        <div className={styles.varsSectionHead}>
+          <span className={styles.varsSectionTitle}>Output variables</span>
+          <span className={styles.varsSectionSub}>Saved from the response to reuse in later steps</span>
+        </div>
+        <div className={styles.kvTable}>
+          {outVars.map((r) => (
+            <div key={r.id} className={styles.outRow}>
+              <div className={styles.outCell}>
+                <Input
+                  size="s"
+                  borderless
+                  fullWidth
+                  placeholder="Variable name"
+                  value={r.name}
+                  onChange={(e) => patchOutVar(r.id, { name: e.target.value })}
+                />
+              </div>
+              <div className={styles.outCell}>
+                <Select
+                  size="s"
+                  borderless
+                  fullWidth
+                  popupClassName={styles.selPopup}
+                  options={OUT_SOURCES}
+                  value={r.source}
+                  onChange={(_e: unknown, v: string) => patchOutVar(r.id, { source: optVal(v) })}
+                />
+              </div>
+              <div className={styles.outCell}>
+                <Input
+                  size="s"
+                  borderless
+                  fullWidth
+                  mono
+                  placeholder="e.g. $.access_token"
+                  value={r.path}
+                  onChange={(e) => patchOutVar(r.id, { path: e.target.value })}
+                />
+              </div>
+              <button
+                className={styles.outDel}
+                aria-label="Remove"
+                onClick={() => removeOutVar(r.id)}
+              >
+                <IconMinusCircle size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className={styles.addWrap}>
+          <Button color="secondary" size="s" icon={IconPlus} onClick={addOutVar}>
+            Add variable
+          </Button>
+        </div>
+      </div>
+
+      {/* Used in this step */}
+      <div className={styles.varsSection}>
+        <div className={styles.varsSectionHead}>
+          <span className={styles.varsSectionTitle}>Used in this step</span>
+          <span className={styles.varsSectionSub}>Variables referenced by the request</span>
+        </div>
+        <div className={styles.varsChips}>
+          {USED_VARS.map((u) => (
+            <Tag key={u} color="dark-blue" size="sm" smallPadding mono>
+              {`{{${u}}}`}
+            </Tag>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  const advCheckbox = (
+    id: string,
+    label: ReactNode,
+    checked: boolean,
+    onChange: (v: boolean) => void,
+  ) => (
+    <Checkbox
+      identifier={id}
+      border={false}
+      label={label}
+      checked={checked}
+      onChange={(e) => onChange(e.target.checked)}
+    />
+  )
+
+  const advancedTab = () => (
+    <div className={styles.advPane}>
+      <div className={styles.advGroup}>
+        <div className={styles.advTitle}>API Call Settings</div>
+        {advCheckbox('adv-dns', 'Override DNS', overrideDns, setOverrideDns)}
+        {advCheckbox('adv-ssl', 'Ignore SSL certificate', ignoreSsl, setIgnoreSsl)}
+        {advCheckbox('adv-cookies', 'Preserve cookies', preserveCookies, setPreserveCookies)}
+      </div>
+
+      <div className={styles.advGroup}>
+        <div className={styles.advTitle}>Redirection</div>
+        {advCheckbox('adv-redirects', 'Automatically follow redirects', followRedirects, setFollowRedirects)}
+      </div>
+
+      <div className={styles.advDivider} />
+
+      <div className={styles.advGroup}>
+        <div className={styles.advTitle}>Execution settings</div>
+        {advCheckbox(
+          'adv-ignore-error',
+          <span className={styles.advLabelInfo}>
+            Ignore error on this step
+            <IconInfo size={15} />
+          </span>,
+          ignoreError,
+          setIgnoreError,
+        )}
+        {advCheckbox('adv-skip', 'Skip during run', skipDuringRun, setSkipDuringRun)}
+      </div>
+    </div>
+  )
+
+  // Champ avec le tag variable {{URL}} + une saisie texte éditable + braces.
+  const urlField = (value: string, setValue: (v: string) => void) => (
+    <div className={styles.varField} onClick={(e) => e.stopPropagation()}>
+      <Tag color="dark-blue" size="sm" weight="medium" smallPadding>
+        URL
+      </Tag>
+      <input
+        className={styles.varFieldInput}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <span className={styles.varFieldBraces}>
+        <IconBraces size={12} />
+      </span>
+    </div>
+  )
+
+  // Panneau test (aucune step sélectionnée) → onglet Preview.
+  const previewPane = () => (
+    <div className={styles.previewPane}>
+      <div className={styles.previewEmpty}>
+        <div className={styles.previewHint}>
+          <span>Click</span>
+          <Button color="secondary" size="s" icon={IconZap}>
+            Run
+          </Button>
+          <span>or press</span>
+          <span className={styles.kbdPrimary}>
+            <IconCommand size={15} />
+          </span>
+          <span>+</span>
+          <span className={styles.kbd}>
+            <IconCornerDownLeft size={15} />
+          </span>
+        </div>
+      </div>
+
+      <div className={styles.execBlock}>
+        <div className={styles.execHead}>
+          <span className={styles.execTitle}>Executions ({EXECUTIONS.length})</span>
+          <IconListFilter size={16} />
+        </div>
+        <div className={styles.execList}>
+          {EXECUTIONS.map((e) => (
+            <div key={e.id} className={styles.execRow}>
+              <span className={e.status === 'ok' ? styles.execStatusOk : styles.execStatusWarn}>
+                {e.status === 'ok' ? <IconCheck size={16} /> : '!'}
+              </span>
+              <span className={styles.execId}>{e.id}</span>
+              <span className={styles.execDate}>
+                <IconCalendar size={14} /> {e.date}
+              </span>
+              <span className={styles.execDur}>
+                <IconTimer size={14} /> {e.dur}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  const testPlaceholder = (label: string) => (
     <div className={styles.tabPlaceholder}>{label}</div>
   )
 
@@ -567,23 +834,15 @@ const ChecksProto = () => {
         </header>
 
         <div className={styles.body}>
-          {/* canvas */}
-          <div className={styles.canvas}>
+          {/* canvas — clic hors step = désélection (referme le panneau) */}
+          <div className={styles.canvas} onClick={() => setStepSelected(false)}>
             <div className={styles.canvasInner}>
               <div className={styles.startRow}>
                 <span className={styles.startFlag}><IconFlag size={16} /></span>
                 <span className={styles.startLabel}>
                   <IconGlobe size={15} /> Navigate to starting page
                 </span>
-                <div className={styles.startField}>
-                  <Input
-                    size="s"
-                    fullWidth
-                    value={startUrl}
-                    onChange={(e) => setStartUrl(e.target.value)}
-                    iconRight={<IconBraces size={14} />}
-                  />
-                </div>
+                <div className={styles.startField}>{urlField(navPath, setNavPath)}</div>
               </div>
 
               <span className={styles.connector} />
@@ -602,9 +861,20 @@ const ChecksProto = () => {
                   </button>
                 </div>
 
-                <div className={styles.stepBody}>
+                <div
+                  className={stepSelected ? styles.stepBodySelected : styles.stepBody}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    // Clic sur la carte → ouvre (ou toggle) sur l'onglet General.
+                    if (!stepSelected) setTab('general')
+                    setStepSelected((v) => !v)
+                  }}
+                >
                   <div className={styles.stepCard}>
-                    <div className={styles.stepTop}>
+                    <div
+                      className={styles.stepTop}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <span className={styles.stepNum}>1</span>
                       <Select
                         size="s"
@@ -622,13 +892,7 @@ const ChecksProto = () => {
                         onChange={(_e: unknown, v: string) => setMethod(v)}
                       />
                     </div>
-                    <Input
-                      size="s"
-                      fullWidth
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      iconRight={<IconBraces size={14} />}
-                    />
+                    {urlField(apiPath, setApiPath)}
                     {formSummary()}
                   </div>
                 </div>
@@ -646,15 +910,32 @@ const ChecksProto = () => {
             </div>
           </div>
 
-          {/* right panel */}
+          {/* right panel : step sélectionnée → réglages du step ; sinon → panneau test */}
           <aside className={styles.panel}>
+            {stepSelected ? (
+              <>
             <div className={styles.panelHeader}>
               <span className={styles.panelTitleNum}>1</span>
               <span className={styles.panelTitle}>API Call</span>
               <div className={styles.panelHeaderActions}>
-                <Button color="secondary" size="s" icon={IconSquareArrowOutUpRight} />
-                <Button color="secondary" size="s" icon={IconCopy} />
-                <Button color="danger-s" size="s" icon={IconTrash} />
+                <Dropdown
+                  trigger="click"
+                  placement="bottomRight"
+                  menu={{
+                    items: [
+                      {
+                        key: 'open',
+                        label: 'Open in new tab',
+                        icon: <IconSquareArrowOutUpRight size={14} />,
+                      },
+                      { key: 'duplicate', label: 'Duplicate', icon: <IconCopy size={14} /> },
+                      { type: 'divider' as const },
+                      { key: 'delete', label: 'Delete', danger: true, icon: <IconTrash size={14} /> },
+                    ],
+                  }}
+                >
+                  <Button color="secondary" size="s" icon={IconMoreHorizontal} />
+                </Dropdown>
               </div>
             </div>
 
@@ -664,46 +945,28 @@ const ChecksProto = () => {
               activeKey={tab}
               onChange={setTab}
               tabs={[
-                { key: 'general', label: 'General', children: tabPlaceholder('General settings for this step.') },
-                { key: 'variables', label: 'Variables', children: tabPlaceholder('Variables produced and consumed by this step.') },
+                { key: 'general', label: 'General', children: generalTab() },
+                { key: 'variables', label: 'Variables', children: variablesTab() },
                 { key: 'checks', label: 'Checks', children: checksBody() },
-                { key: 'advanced', label: 'Advanced settings', children: tabPlaceholder('Timeouts, retries and other advanced settings.') },
+                { key: 'advanced', label: 'Advanced settings', children: advancedTab() },
               ]}
             />
+              </>
+            ) : (
+              <Tabs
+                className={styles.panelTabs}
+                type="card"
+                activeKey={testTab}
+                onChange={setTestTab}
+                tabs={[
+                  { key: 'preview', label: 'Preview', children: previewPane() },
+                  { key: 'environment', label: 'Environment', children: testPlaceholder('Environment') },
+                  { key: 'settings', label: 'Test settings', children: testPlaceholder('Test settings') },
+                  { key: 'history', label: 'Version history', children: testPlaceholder('Version history') },
+                ]}
+              />
+            )}
           </aside>
-        </div>
-      </div>
-
-      {/* ---------- floating variants control ---------- */}
-      <div className={styles.fab}>
-        <div className={styles.fabHead}>Proto · explore</div>
-        <div className={styles.fabRow}>
-          <span className={styles.fabLbl}>Affichage dans le formulaire (canvas)</span>
-          <div className={styles.segWrap}>
-            {FORM_VIEWS.map((f) => (
-              <button
-                key={f.value}
-                className={formView === f.value ? styles.segBtnActive : styles.segBtn}
-                onClick={() => setFormView(f.value)}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className={styles.fabRow}>
-          <span className={styles.fabLbl}>Panneau d'édition (droite)</span>
-          <div className={styles.seg}>
-            {SEV_LAYOUTS.map((l) => (
-              <button
-                key={l.value}
-                className={sevLayout === l.value ? styles.segBtnActive : styles.segBtn}
-                onClick={() => setSevLayout(l.value)}
-              >
-                {l.label}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
     </div>

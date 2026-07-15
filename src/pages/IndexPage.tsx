@@ -15,6 +15,8 @@ import {
   IconCode,
   IconFileType,
   IconPin,
+  IconArchive,
+  IconChevronRight,
 } from '@kapptivate/ui-kit'
 import logo from '../assets/kapptidrafts-logo.svg'
 import {
@@ -110,6 +112,7 @@ const IndexPage = () => {
   const { pinned, togglePin } = useProtoPins()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | ProtoStatus>('all')
+  const [archiveOpen, setArchiveOpen] = useState(false)
 
   useEffect(() => {
     document.title = 'kapptiDrafts'
@@ -144,6 +147,19 @@ const IndexPage = () => {
         return s !== 0 ? s : a.title.localeCompare(b.title)
       })
   }, [search, statusFilter, pinned])
+
+  // Dossier « Archive » : les protos rangés dans la collection Archive sont
+  // sortis de la liste principale et repliés dans une section dédiée en bas.
+  const mainItems = useMemo(
+    () => items.filter((p) => p.collection !== 'Archive'),
+    [items],
+  )
+  const archivedItems = useMemo(
+    () => items.filter((p) => p.collection === 'Archive'),
+    [items],
+  )
+  // Ouvert au clic, ou d'office si une recherche remonte un proto archivé.
+  const showArchived = archiveOpen || search.trim() !== ''
 
   // Menu contextuel (clic droit) d'une ligne : épingler / désépingler.
   const pinMenu = (p: Row) => ({
@@ -331,16 +347,59 @@ const IndexPage = () => {
             />
           </div>
         ) : (
-          <div className={css.tableWrap}>
-            <Table
-              rowKey="slug"
-              outerBorders
-              data={items}
-              columns={columns}
-              onClickRow={open}
-              persistSortKey="kapptidrafts:sort-protos-v2"
-            />
-          </div>
+          <>
+            {mainItems.length > 0 && (
+              <div className={css.tableWrap}>
+                <Table
+                  rowKey="slug"
+                  outerBorders
+                  data={mainItems}
+                  columns={columns}
+                  onClickRow={open}
+                  persistSortKey="kapptidrafts:sort-protos-v2"
+                />
+              </div>
+            )}
+
+            {archivedItems.length > 0 && (
+              <div style={styles.archiveSection}>
+                <button
+                  type="button"
+                  style={styles.archiveHead}
+                  onClick={() => setArchiveOpen((v) => !v)}
+                  aria-expanded={showArchived}
+                >
+                  <span
+                    style={{
+                      ...styles.archiveChevron,
+                      transform: showArchived ? 'rotate(90deg)' : 'none',
+                    }}
+                  >
+                    <IconChevronRight size={16} />
+                  </span>
+                  <IconArchive size={16} color="var(--color-text-secondary)" />
+                  <Text size="s" weight="medium" color="secondary">
+                    Archive
+                  </Text>
+                  <Text size="s" color="secondary">
+                    · {archivedItems.length}
+                  </Text>
+                </button>
+
+                {showArchived && (
+                  <div className={css.tableWrap} style={{ marginTop: 12 }}>
+                    <Table
+                      rowKey="slug"
+                      outerBorders
+                      data={archivedItems}
+                      columns={columns}
+                      onClickRow={open}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -394,6 +453,26 @@ const styles: Record<string, CSSProperties> = {
     height: 8,
     borderRadius: '50%',
     flexShrink: 0,
+  },
+  archiveSection: {
+    marginTop: 28,
+  },
+  archiveHead: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '6px 8px',
+    marginLeft: -8,
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer',
+  },
+  archiveChevron: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    color: 'var(--color-text-secondary)',
+    transition: 'transform 0.15s ease',
   },
 }
 
