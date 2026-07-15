@@ -23,7 +23,10 @@ type Props = {
   mode: PlacementMode
   activeEmoji: string
   showResolved: boolean
-  showEmojis: boolean
+  /** Affiche/masque tous les marqueurs (pins de commentaires + stamps emoji). */
+  showMarkers: boolean
+  /** L'utilisateur courant peut supprimer les emojis des autres. */
+  isAdmin: boolean
   selectedId: string | null
   onSelect: (id: string | null) => void
   addComment: (input: {
@@ -45,6 +48,7 @@ type Props = {
   addReply: (commentId: string, body: string, authorEmail: string) => void
   setResolved: (id: string, resolved: boolean) => void
   deleteComment: (id: string) => void
+  deleteReply: (id: string) => void
 }
 
 const Z = 2147483646
@@ -94,7 +98,8 @@ const CommentPins = ({
   mode,
   activeEmoji,
   showResolved,
-  showEmojis,
+  showMarkers,
+  isAdmin,
   selectedId,
   onSelect,
   addComment,
@@ -102,6 +107,7 @@ const CommentPins = ({
   addReply,
   setResolved,
   deleteComment,
+  deleteReply,
 }: Props) => {
   const [draft, setDraft] = useState<{ anchor: string | null; x: number; y: number } | null>(null)
   const layerRef = useRef<HTMLDivElement>(null)
@@ -147,9 +153,10 @@ const CommentPins = ({
     return () => window.removeEventListener('mousedown', onDown, true)
   }, [selectedId, onSelect])
 
-  // Un marqueur est-il affichable ? (bon type + écran/ancre présents)
+  // Un marqueur est-il affichable ? (visibilité globale + type + résolu)
   const isVisible = (c: Comment) => {
-    if (c.kind === 'emoji') return showEmojis
+    if (!showMarkers) return false
+    if (c.kind === 'emoji') return true
     if (c.resolved && !showResolved) return false
     return true
   }
@@ -157,8 +164,11 @@ const CommentPins = ({
   const placed = comments
     .filter(isVisible)
     .map((c) => {
-      // Ancré : visible seulement si l'élément est dans le DOM. Legacy : filtre écran.
-      if (!c.anchor && c.screen_id !== activeScreen) return null
+      // Ancre explicite (id unique) : visible dès que l'élément est dans le DOM.
+      // Viewport legacy ou sélecteur structurel `@…` (non unique entre écrans) :
+      // on filtre par écran pour éviter un match sur un écran voisin.
+      const globallyUnique = !!c.anchor && !c.anchor.startsWith('@')
+      if (!globallyUnique && c.screen_id !== activeScreen) return null
       const pt = resolveAnchorPoint(c)
       if (!pt) return null
       return { c, pt }
@@ -205,7 +215,9 @@ const CommentPins = ({
             key={c.id}
             comment={c}
             pt={pt}
-            canRemove={c.author_email === me?.email}
+            mine={c.author_email === me?.email}
+            // Admin : peut retirer les réactions des autres.
+            canRemove={c.author_email === me?.email || isAdmin}
             onRemove={(e) => {
               e.stopPropagation()
               deleteComment(c.id)
@@ -232,8 +244,10 @@ const CommentPins = ({
           pt={selectedEntry.pt}
           replies={replies.filter((r) => r.comment_id === selectedEntry.c.id)}
           me={me}
+          isAdmin={isAdmin}
           onClose={() => onSelect(null)}
           onReply={(body) => addReply(selectedEntry.c.id, body, me.email)}
+          onDeleteReply={deleteReply}
           onToggleResolved={() => setResolved(selectedEntry.c.id, !selectedEntry.c.resolved)}
           onDelete={() => {
             deleteComment(selectedEntry.c.id)
@@ -265,6 +279,36 @@ const CommentPins = ({
   )
 }
 
+/* --------------------------- Author hover card ---------------------------- */
+
+/**
+ * Petite carte de survol : qui a laissé ce marqueur + depuis quand. S'affiche
+ * au-dessus du marqueur (ou en dessous s'il est trop haut). `pointer-events`
+ * désactivés pour ne pas gêner le clic sur le marqueur.
+ */
+const AuthorHover = ({
+  email,
+  createdAt,
+  suffix,
+  flipBelow,
+}: {
+  email: string
+  createdAt: string
+  suffix?: string
+  flipBelow: boolean
+}) => {
+  const who = deriveIdentity(email)
+  return (
+    <div style={{ ...styles.hover, ...(flipBelow ? styles.hoverBelow : styles.hoverAbove) }}>
+      <UserAvatar email={email} size="small" />
+      <div style={styles.hoverText}>
+        <span style={styles.hoverName}>{who.name}</span>
+        <span style={styles.hoverMeta}>{suffix ?? timeAgo(createdAt)}</span>
+      </div>
+    </div>
+  )
+}
+
 /* ------------------------------- Pin marker ------------------------------- */
 
 const Pin = ({
@@ -278,13 +322,14 @@ const Pin = ({
   selected: boolean
   onClick: (e: MouseEvent) => void
 }) => {
-  const who = deriveIdentity(comment.author_email)
+  const [hover, setHover] = useState(false)
   return (
     <button
       type="button"
       data-comment-pin
       onClick={onClick}
-      title={`${who.name} · ${timeAgo(comment.created_at)}`}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       style={{
         ...styles.pin,
         left: pt.left,
@@ -301,6 +346,13 @@ const Pin = ({
           <IconCheck size={10} />
         </span>
       )}
+      {hover && !selected && (
+        <AuthorHover
+          email={comment.author_email}
+          createdAt={comment.created_at}
+          flipBelow={pt.top < 72}
+        />
+      )}
     </button>
   )
 }
@@ -310,23 +362,43 @@ const Pin = ({
 const EmojiStamp = ({
   comment,
   pt,
+  mine,
   canRemove,
   onRemove,
 }: {
   comment: Comment
   pt: { left: number; top: number }
+  /** La réaction est-elle de l'utilisateur courant ? */
+  mine: boolean
+  /** Peut-on la retirer ? (la sienne, ou admin sur celle d'un autre) */
   canRemove: boolean
   onRemove: (e: MouseEvent) => void
 }) => {
+  const [hover, setHover] = useState(false)
   const who = deriveIdentity(comment.author_email)
+  // Libellé de survol : sienne → "you", admin sur une autre → nom + "(admin)".
+  const suffix = !canRemove
+    ? timeAgo(comment.created_at)
+    : mine
+      ? 'you · click to remove'
+      : `${who.name} · click to remove (admin)`
   return (
     <button
       type="button"
       onClick={canRemove ? onRemove : (e) => e.stopPropagation()}
-      title={canRemove ? `${who.name} · click to remove` : `${who.name} · ${timeAgo(comment.created_at)}`}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       style={{ ...styles.stamp, left: pt.left, top: pt.top, cursor: canRemove ? 'pointer' : 'default' }}
     >
       <span style={styles.stampEmoji}>{comment.emoji}</span>
+      {hover && (
+        <AuthorHover
+          email={comment.author_email}
+          createdAt={comment.created_at}
+          suffix={suffix}
+          flipBelow={pt.top < 72}
+        />
+      )}
     </button>
   )
 }
@@ -350,8 +422,10 @@ const ThreadCard = ({
   pt,
   replies,
   me,
+  isAdmin,
   onClose,
   onReply,
+  onDeleteReply,
   onToggleResolved,
   onDelete,
 }: {
@@ -359,8 +433,10 @@ const ThreadCard = ({
   pt: { left: number; top: number }
   replies: Reply[]
   me: CurrentUser
+  isAdmin: boolean
   onClose: () => void
   onReply: (body: string) => void
+  onDeleteReply: (id: string) => void
   onToggleResolved: () => void
   onDelete: () => void
 }) => {
@@ -378,7 +454,15 @@ const ThreadCard = ({
       {replies.length > 0 && (
         <div style={styles.replies}>
           {replies.map((r) => (
-            <Message key={r.id} authorEmail={r.author_email} body={r.body} createdAt={r.created_at} />
+            <Message
+              key={r.id}
+              authorEmail={r.author_email}
+              body={r.body}
+              createdAt={r.created_at}
+              onDelete={
+                r.author_email === me.email || isAdmin ? () => onDeleteReply(r.id) : undefined
+              }
+            />
           ))}
         </div>
       )}
@@ -399,7 +483,7 @@ const ThreadCard = ({
           {comment.resolved ? 'Reopen' : 'Resolve'}
         </Button>
         <div style={{ flex: 1 }} />
-        {comment.author_email === me.email && (
+        {(comment.author_email === me.email || isAdmin) && (
           <Button size="s" color="danger-s" icon={IconTrash} onClick={onDelete}>
             Delete
           </Button>
@@ -422,14 +506,22 @@ const Message = ({
   authorEmail,
   body,
   createdAt,
+  onDelete,
 }: {
   authorEmail: string
   body: string
   createdAt: string
+  /** Si fourni, affiche un bouton de suppression au survol (auteur ou admin). */
+  onDelete?: () => void
 }) => {
   const who = deriveIdentity(authorEmail)
+  const [hover, setHover] = useState(false)
   return (
-    <div style={styles.msg}>
+    <div
+      style={styles.msg}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
       <UserAvatar email={authorEmail} size="small" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={styles.msgHead}>
@@ -442,6 +534,11 @@ const Message = ({
         </div>
         <div style={styles.body}>{linkify(body)}</div>
       </div>
+      {onDelete && hover && (
+        <button type="button" onClick={onDelete} title="Delete message" style={styles.msgDelete}>
+          <IconTrash size={13} />
+        </button>
+      )}
     </div>
   )
 }
@@ -544,6 +641,28 @@ const styles: Record<string, CSSProperties> = {
     boxShadow: '0 2px 8px rgba(16,24,40,0.22)',
   },
   stampEmoji: { fontSize: 16, lineHeight: 1 },
+  hover: {
+    position: 'absolute',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 7,
+    padding: '5px 9px 5px 5px',
+    whiteSpace: 'nowrap',
+    background: 'rgba(26,26,26,0.92)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    borderRadius: 999,
+    boxShadow: '0 4px 14px rgba(16,24,40,0.28)',
+    pointerEvents: 'none',
+    zIndex: 1,
+  },
+  hoverAbove: { bottom: 'calc(100% + 8px)' },
+  hoverBelow: { top: 'calc(100% + 8px)' },
+  hoverText: { display: 'flex', flexDirection: 'column', lineHeight: 1.2 },
+  hoverName: { fontSize: 12, fontWeight: 600, color: '#fff' },
+  hoverMeta: { fontSize: 10.5, color: 'rgba(255,255,255,0.65)' },
   card: {
     position: 'absolute',
     pointerEvents: 'auto',
@@ -561,6 +680,20 @@ const styles: Record<string, CSSProperties> = {
     boxShadow: '0 8px 28px rgba(16,24,40,0.20)',
   },
   msg: { display: 'flex', gap: 8, alignItems: 'flex-start' },
+  msgDelete: {
+    flexShrink: 0,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 24,
+    height: 24,
+    padding: 0,
+    color: '#98a2b3',
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 6,
+    cursor: 'pointer',
+  },
   msgHead: { display: 'flex', alignItems: 'baseline', gap: 6 },
   time: { fontSize: 11, color: '#98a2b3' },
   body: {

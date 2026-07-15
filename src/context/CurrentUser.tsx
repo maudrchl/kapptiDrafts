@@ -24,6 +24,17 @@ export type CurrentUser = {
   color: string
 }
 
+/**
+ * Emails avec droits d'administration collab (ex. supprimer les réactions
+ * emoji d'autres personnes). `mood@kapptivate.com` est l'identité par défaut
+ * en dev (voir `devEmail`).
+ */
+const ADMIN_EMAILS = new Set(['mood@kapptivate.com'])
+
+/** L'utilisateur courant a-t-il les droits admin collab ? */
+export const isAdmin = (user: CurrentUser | null): boolean =>
+  !!user && ADMIN_EMAILS.has(user.email.toLowerCase())
+
 const hash = (s: string): number => {
   let h = 0
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0

@@ -819,10 +819,47 @@ const telemetryMetrics = (svc: string) => {
 }
 
 /* ─── Service Map View ─── */
+/* Échantillon d'appels déterministe pour une dépendance : le proto n'a pas de
+   donnée par-appel, on fabrique une liste réaliste et stable au re-render
+   (seed = from>to, pas de Math.random pour éviter tout flicker). */
+const CALL_ROUTES = [
+  '/api/order', '/api/menu', '/api/login', '/api/orders/:id', '/api/admin/orders',
+  '/api/payment/capture', '/api/session', '/api/cart/items', '/api/checkout',
+  '/api/user/profile', '/api/inventory', '/api/notify',
+]
+const CALL_METHODS = ['GET', 'GET', 'GET', 'POST', 'POST', 'PATCH', 'DELETE']
+const sampleEdgeCalls = (edge: { from: string; to: string }, count: number) => {
+  const seed = `${edge.from}>${edge.to}`
+  let h = 0
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0
+  const rnd = (n: number) => {
+    let x = (h ^ ((n + 1) * 2654435761)) >>> 0
+    x ^= x << 13
+    x ^= x >>> 17
+    x ^= x << 5
+    return ((x >>> 0) % 100000) / 100000
+  }
+  return Array.from({ length: count }, (_, i) => {
+    const method = CALL_METHODS[Math.floor(rnd(i * 4) * CALL_METHODS.length)]
+    const route = CALL_ROUTES[Math.floor(rnd(i * 4 + 1) * CALL_ROUTES.length)]
+    const ms = 1 + Math.floor(rnd(i * 4 + 2) * 320)
+    const r = rnd(i * 4 + 3)
+    const status = r < 0.05 ? 500 : r < 0.1 ? 404 : 200
+    const total = 8 * 3600 + 11 * 60 + 35 - i * 7
+    const hh = Math.floor(total / 3600)
+    const mm = Math.floor((total % 3600) / 60)
+    const ss = ((total % 60) + 60) % 60
+    const ts = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
+    return { key: `${seed}-${i}`, ts, msg: `${method} ${route} ${status} · ${ms}ms` }
+  })
+}
+
 const ServiceMapView = () => {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string | null>(SERVICES[0]?.id ?? null)
   const [drawerSvc, setDrawerSvc] = useState<ServiceNode | null>(null)
+  const [drawerEdge, setDrawerEdge] = useState<(typeof EDGES)[number] | null>(null)
+  const [edgeTab, setEdgeTab] = useState('calls')
   const [svcTab, setSvcTab] = useState('overview')
   const q = search.trim().toLowerCase()
   const matches = (label: string) => q === '' || label.toLowerCase().includes(q)
@@ -836,7 +873,7 @@ const ServiceMapView = () => {
   const drag = useRef<{ x: number; y: number } | null>(null)
   const clamp = (n: number) => Math.min(1.8, Math.max(0.5, +n.toFixed(2)))
   const startPan = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('[data-svcnode]')) return
+    if ((e.target as HTMLElement).closest('[data-svcnode], [data-svcedge]')) return
     drag.current = { x: e.clientX, y: e.clientY }
   }
   const onPan = (e: React.MouseEvent) => {
@@ -917,8 +954,15 @@ const ServiceMapView = () => {
             return (
               <div
                 key={i}
+                data-svcedge
                 className={styles.svcEdgeLabel}
                 style={{ left: `${(f.x + t.x) / 2}%`, top: `${(f.y + t.y) / 2}%` }}
+                onClick={(ev) => {
+                  ev.stopPropagation()
+                  setDrawerEdge(e)
+                  setEdgeTab('calls')
+                }}
+                title={`${f.label} → ${t.label} — voir les calls & logs`}
               >
                 {e.calls} calls · {e.lat}
               </div>
@@ -1064,6 +1108,71 @@ const ServiceMapView = () => {
                     </div>
                   </div>
                 )}
+              </>
+            )
+          })()}
+      </Drawer>
+
+      {/* Dependency (edge) detail drawer — calls & logs de la dépendance */}
+      <Drawer
+        open={!!drawerEdge}
+        onClose={() => setDrawerEdge(null)}
+        title={drawerEdge ? `${byId(drawerEdge.from).label} → ${byId(drawerEdge.to).label}` : ''}
+        width={560}
+        className={styles.edgeDrawer}
+      >
+        {drawerEdge &&
+          (() => {
+            const e = drawerEdge
+            const from = byId(e.from)
+            const to = byId(e.to)
+            const logs = LOGS.filter((l) => l.svc === from.label || l.svc === to.label)
+            const callRows = sampleEdgeCalls(e, Math.min(20, e.calls))
+            return (
+              <>
+                <Tabs
+                  type="card"
+                  activeKey={edgeTab}
+                  onChange={setEdgeTab}
+                  tabs={[
+                    {
+                      key: 'calls',
+                      label: `Calls (${e.calls.toLocaleString()})`,
+                      children: (
+                        <div className={styles.edgeTabBody}>
+                          <div className={styles.svcSampleNote}>
+                            {callRows.length} most recent of {e.calls.toLocaleString()} calls
+                          </div>
+                          {callRows.map((c) => (
+                            <div key={c.key} className={styles.svcLogRow}>
+                              <span className={styles.svcLogTime}>{c.ts}</span>
+                              <span className={styles.svcLogMsg}>{c.msg}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ),
+                    },
+                    {
+                      key: 'logs',
+                      label: `Logs (${logs.length})`,
+                      children: (
+                        <div className={styles.edgeTabBody}>
+                          {logs.length === 0 ? (
+                            <div className={styles.svcEmpty}>No recent logs for this dependency.</div>
+                          ) : (
+                            logs.map((l) => (
+                              <div key={l.key} className={styles.svcLogRow}>
+                                <span className={styles.svcLogTime}>{l.ts.slice(11, 19)}</span>
+                                <SeverityTag level={l.level} />
+                                <span className={styles.svcLogMsg}>{l.msg}</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
               </>
             )
           })()}
