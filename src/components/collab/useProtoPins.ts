@@ -1,18 +1,41 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
+// Cache local du dernier état connu des épingles. Sert à afficher le BON ordre
+// immédiatement au (re)chargement de l'index — y compris après un rechargement
+// complet de la SPA (retour depuis un proto HTML) — sans attendre Supabase, ce
+// qui évitait un re-tri visible (« l'ordre change tout seul »).
+const CACHE_KEY = 'kapptidrafts:pinned-protos'
+const readCache = (): Set<string> => {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    return new Set(raw ? (JSON.parse(raw) as string[]) : [])
+  } catch {
+    return new Set()
+  }
+}
+const writeCache = (s: Set<string>) => {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify([...s]))
+  } catch {
+    // localStorage indisponible : on garde juste l'état en mémoire
+  }
+}
+
 /**
  * Épingles partagées : la liste des protos « pinned » (affichés en haut de
  * l'index) est stockée dans Supabase (`proto_pins`) et partagée par toute
- * l'équipe. Chargement initial + suivi temps réel (postgres_changes).
+ * l'équipe. Chargement initial + suivi temps réel (postgres_changes), avec un
+ * cache local pour un ordre stable dès le premier rendu.
  */
 export function useProtoPins() {
-  const [pinned, setPinned] = useState<Set<string>>(new Set())
+  const [pinned, setPinned] = useState<Set<string>>(readCache)
   // Copie synchrone pour lire l'état courant dans togglePin sans le mettre en
   // dépendance (évite un useCallback qui se recrée à chaque changement).
   const pinnedRef = useRef(pinned)
   useEffect(() => {
     pinnedRef.current = pinned
+    writeCache(pinned)
   }, [pinned])
 
   useEffect(() => {
