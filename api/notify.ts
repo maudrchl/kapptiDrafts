@@ -102,8 +102,10 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response('ok')
   }
 
+  // Les participants ne sont jamais notifiés de leur propre action…
+  recipients.delete(author)
+  // …mais le catch-all (Maud) reçoit tout, y compris ses propres commentaires.
   ALWAYS_NOTIFY.forEach((e) => recipients.add(e))
-  recipients.delete(author) // jamais soi-même
 
   const base = process.env.APP_BASE_URL || new URL(req.url).origin
   const link = `${base}/p/${protoSlug}?comment=${commentId}`
