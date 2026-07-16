@@ -814,6 +814,26 @@
   word-break: break-all;
 }
 
+/* trace.id cliquable dans le drawer de log : ouvre la trace corrélée */
+.kvValLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--color-primary, #ed7846);
+  cursor: pointer;
+  word-break: break-all;
+  text-align: left;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .drawerLinks {
   display: flex;
   gap: 8px;
@@ -1160,10 +1180,63 @@
   margin-bottom: 6px;
 }
 
+.volumeWrap {
+  position: relative;
+}
+
 .volumeChart {
   display: block;
   width: 100%;
   height: 150px;
+}
+
+/* Tooltip du volume de logs : heure du bucket + compteur par niveau, langage
+   DS (pastille + label + valeur en gras). Suit la colonne survolée. */
+.volumeTip {
+  position: absolute;
+  top: 8px;
+  width: 176px;
+  padding: 10px 12px;
+  background: var(--color-surface-white, #fff);
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 6px 20px rgba(16, 24, 40, 0.12);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.volumeTipTime {
+  margin-bottom: 6px;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary, #24292f);
+}
+
+.volumeTipRow {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.volumeTipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.volumeTipLabel {
+  font-size: 12.5px;
+  color: var(--color-text-secondary, #667085);
+}
+
+.volumeTipVal {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-primary, #24292f);
 }
 
 /* (styles sombres ci-dessous conservés pour un futur dark mode, non utilisés en light) */
@@ -1217,9 +1290,6 @@
 }
 
 .logTable {
-  max-height: 620px;
-  overflow-y: auto;
-  font-family: 'Geist Mono', ui-monospace, monospace;
   background: var(--color-surface-white, #fff);
   border: 1px solid var(--color-border-grey, #e4e4e7);
   border-radius: var(--radius-md, 6px);
@@ -1228,32 +1298,66 @@
 .logTableHead,
 .logRow {
   display: grid;
-  grid-template-columns: 116px 128px 150px 1fr 120px;
+  grid-template-columns: 116px 128px 150px 1fr 184px;
   gap: 14px;
   align-items: center;
   padding: 9px 16px;
 }
 
 .logTableHead {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   background: var(--color-surface-grey, #fafafb);
   border-bottom: 1px solid var(--color-border-grey, #e4e4e7);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-text-tertiary, #98a2b3);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary, #667085);
 }
 
 .logRow {
   border-bottom: 1px solid var(--color-grey-100, #f3f3f3);
+  font-family: 'Geist Mono', ui-monospace, monospace;
   font-size: 12px;
   cursor: pointer;
 
   &:hover {
     background: var(--color-surface-grey, #fafafb);
+  }
+}
+
+/* Live tail : ligne fraîchement arrivée. Fond coloré qui s'estompe en fondu
+   pour la repérer où qu'elle s'insère dans le flux (retour Benjamin). */
+.logRowNew {
+  animation: logRowFadeIn 1.6s ease-out;
+}
+
+@keyframes logRowFadeIn {
+  from {
+    background: color-mix(in srgb, var(--color-primary, #ed7846) 18%, transparent);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+/* Réf. trace dans le tableau de logs : ouvre le drawer de la trace au clic.
+   Pastille de couleur (traces récurrentes) pour repérer les logs d'une même
+   trace d'un coup d'oeil, même dispersés dans le flux. */
+/* Réf. trace dans le tableau de logs : neutre au repos, ouvre le drawer de la
+   trace au clic (orange au survol du lien lui-même). */
+.logTraceBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--color-text-secondary, #667085);
+  cursor: pointer;
+  transition: color 0.12s ease;
+
+  &:hover {
+    color: var(--color-primary, #ed7846);
   }
 }
 
@@ -1280,7 +1384,11 @@
   color: var(--color-text-tertiary, #98a2b3);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.logCellTraceEmpty {
+  color: var(--color-text-tertiary, #98a2b3);
 }
 
 /* ===== KUBERNETES ===== */
@@ -1522,6 +1630,22 @@
   justify-content: flex-start;
   gap: 10px;
   margin-top: 16px;
+}
+
+.svcGoToRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-grey, #e4e4e7);
+}
+
+/* Filtre local des logs dans le drawer service : recherche + level. */
+.svcLogFilter {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .usageHero {

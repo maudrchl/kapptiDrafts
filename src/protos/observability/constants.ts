@@ -245,27 +245,20 @@ export type LogEntry = {
   level: 'info' | 'warn' | 'error' | 'debug'
   svc: string
   msg: string
+  // Trace à laquelle appartient la ligne de log, quand elle est corrélée à une
+  // requête tracée. Référence une clé de TRACES ; absent pour les logs hors trace.
+  traceKey?: string
 }
 
-export const LOGS: LogEntry[] = [
-  { key: 'l1', ts: '2026-07-13 08:11:35.501', level: 'info', svc: 'demo-site', msg: 'GET /api/admin/orders 200 - 39ms' },
-  { key: 'l2', ts: '2026-07-13 08:11:35.462', level: 'debug', svc: 'demo-site', msg: 'Admin orders list - 24 orders' },
-  { key: 'l3', ts: '2026-07-13 08:11:35.417', level: 'info', svc: 'demo-site', msg: 'Order ORD-MRIXZUY9 status: ready → delivered' },
-  { key: 'l4', ts: '2026-07-13 08:11:35.417', level: 'info', svc: 'demo-site', msg: 'PATCH /api/orders/ORD-MRIXZUY9/status 200 - 3ms' },
-  { key: 'l5', ts: '2026-07-13 08:11:35.204', level: 'info', svc: 'payment-service', msg: 'Payment captured - ORD-MRIXZUY9 - €42.90 - stripe' },
-  { key: 'l6', ts: '2026-07-13 08:10:48.544', level: 'info', svc: 'demo-site', msg: 'GET /api/menu 200 - 1ms' },
-  { key: 'l7', ts: '2026-07-13 08:10:48.487', level: 'debug', svc: 'demo-site', msg: 'Menu requested - 18 items - cache hit' },
-  { key: 'l8', ts: '2026-07-13 08:10:24.944', level: 'info', svc: 'demo-site', msg: 'POST /api/order 200 - 278ms' },
-  { key: 'l9', ts: '2026-07-13 08:10:24.902', level: 'info', svc: 'demo-site', msg: 'Order ORD-MRIXGHJY created - 3 items - €58.40' },
-  { key: 'l10', ts: '2026-07-13 08:09:20.118', level: 'warn', svc: 'payment-service', msg: 'Payment gateway latency high - stripe p95=1,240ms' },
-  { key: 'l11', ts: '2026-07-13 08:08:34.552', level: 'error', svc: 'payment-service', msg: 'Payment declined - card_declined - ORD-MRIWX7E7' },
-  { key: 'l12', ts: '2026-07-13 08:08:34.510', level: 'info', svc: 'demo-site', msg: 'POST /api/login 200 - 461ms' },
-  { key: 'l13', ts: '2026-07-13 08:08:34.104', level: 'debug', svc: 'demo-site', msg: 'Session created - user_id=u_8823' },
-  { key: 'l14', ts: '2026-07-13 08:07:59.330', level: 'warn', svc: 'demo-site', msg: "Slow query - SELECT orders WHERE status='pending' - 842ms" },
-]
+// LOGS et TRACES sont générés plus bas à partir de RAW_LOGS + GROUP_SPECS
+// (scénario Rocket Corp / demo-site), pour que le flux de logs et les traces
+// racontent la même histoire.
 
 export type TraceEntry = {
   key: string
+  // Identifiant de trace tel qu'exposé à l'utilisateur : 32 caractères hexa
+  // (format W3C trace-context). `key` reste l'identifiant interne court.
+  traceId: string
   name: string
   svc: string
   dur: string
@@ -275,63 +268,146 @@ export type TraceEntry = {
   bars: { left: number; width: number; color: string; label: string }[]
 }
 
-export const TRACES: TraceEntry[] = [
-  {
-    key: 'tr_MRIXGHJY', name: 'POST /api/order', svc: 'demo-site', dur: '278ms', durMs: 278, spans: 9, status: 'ok',
-    bars: [
-      { left: 0, width: 100, color: '#6366f1', label: 'demo-site' },
-      { left: 8, width: 20, color: '#06b6d4', label: 'redis (cart)' },
-      { left: 30, width: 45, color: '#1fae7e', label: 'payment-service' },
-      { left: 40, width: 28, color: '#a78bfa', label: 'stripe' },
-      { left: 78, width: 18, color: '#f59e0b', label: 'postgres' },
-    ],
-  },
-  {
-    key: 'tr_536f6018', name: 'GET /api/admin/orders', svc: 'demo-site', dur: '39ms', durMs: 39, spans: 5, status: 'ok',
-    bars: [
-      { left: 0, width: 100, color: '#6366f1', label: 'demo-site' },
-      { left: 15, width: 70, color: '#f59e0b', label: 'postgres' },
-    ],
-  },
-  {
-    key: 'tr_e8e8cab8', name: 'PATCH /api/orders/ORD-MRIXZUY9/status', svc: 'demo-site', dur: '3ms', durMs: 3, spans: 3, status: 'ok',
-    bars: [
-      { left: 0, width: 100, color: '#6366f1', label: 'demo-site' },
-      { left: 25, width: 55, color: '#f59e0b', label: 'postgres' },
-    ],
-  },
-  {
-    key: 'tr_MRIWX7E7', name: 'POST /api/payments/charge', svc: 'payment-service', dur: '1.2s', durMs: 1240, spans: 4, status: 'error',
-    bars: [
-      { left: 0, width: 100, color: '#1fae7e', label: 'payment-service' },
-      { left: 5, width: 92, color: '#a78bfa', label: 'stripe (card_declined)' },
-    ],
-  },
-  {
-    key: 'tr_cab2adb1', name: 'POST /api/login', svc: 'demo-site', dur: '461ms', durMs: 461, spans: 4, status: 'ok',
-    bars: [
-      { left: 0, width: 100, color: '#6366f1', label: 'demo-site' },
-      { left: 6, width: 40, color: '#60a5fa', label: 'auth' },
-      { left: 48, width: 45, color: '#f59e0b', label: 'postgres' },
-    ],
-  },
-  {
-    key: 'tr_71ba90d0', name: 'GET /api/menu', svc: 'demo-site', dur: '1ms', durMs: 1, spans: 2, status: 'ok',
-    bars: [
-      { left: 0, width: 100, color: '#6366f1', label: 'demo-site' },
-      { left: 20, width: 60, color: '#06b6d4', label: 'redis (cache)' },
-    ],
-  },
-  {
-    key: 'tr_1cd34f35', name: 'POST /api/register', svc: 'demo-site', dur: '484ms', durMs: 484, spans: 5, status: 'ok',
-    bars: [
-      { left: 0, width: 100, color: '#6366f1', label: 'demo-site' },
-      { left: 5, width: 35, color: '#60a5fa', label: 'auth' },
-      { left: 38, width: 35, color: '#f59e0b', label: 'postgres' },
-      { left: 72, width: 24, color: '#34d399', label: 'notification' },
-    ],
-  },
+/* Flux de logs (scénario Rocket Corp / demo-site). Format compact :
+   [level, heure, service, message, groupe]. Le groupe rassemble les lignes
+   d'une même requête -> même trace (alimente le lien log->trace + le
+   regroupement au survol). Messages sans em dash (préférence Maud). */
+type RawLog = [LogEntry['level'], string, string, string, string]
+
+const RAW_LOGS: RawLog[] = [
+  ['info', '13:29:34.562', 'demo-site', 'GET /api/admin/orders 200 - 2ms', 'g1'],
+  ['debug', '13:29:34.561', 'demo-site', 'Admin orders list', 'g1'],
+  ['info', '13:29:34.528', 'demo-site', 'PATCH /api/orders/ORD-MRNJOHK2/status 200 - 3ms', 'g2'],
+  ['info', '13:29:34.528', 'demo-site', 'Order ORD-MRNJOHK2 status: ready → delivered', 'g2'],
+  ['info', '13:29:22.206', 'demo-site', 'GET /api/admin/orders 200 - 2ms', 'g3'],
+  ['debug', '13:29:22.205', 'demo-site', 'Admin orders list', 'g3'],
+  ['info', '13:29:22.161', 'demo-site', 'PATCH /api/orders/ORD-MRNJOHK2/status 200 - 5ms', 'g4'],
+  ['info', '13:29:22.161', 'demo-site', 'Order ORD-MRNJOHK2 status: preparing → ready', 'g4'],
+  ['info', '13:29:08.614', 'demo-site', 'GET /api/admin/orders 200 - 2ms', 'g5'],
+  ['debug', '13:29:08.612', 'demo-site', 'Admin orders list', 'g5'],
+  ['info', '13:29:08.555', 'demo-site', 'PATCH /api/orders/ORD-MRNJOHK2/status 200 - 6ms', 'g6'],
+  ['info', '13:29:08.554', 'demo-site', 'Order ORD-MRNJOHK2 status: pending → preparing', 'g6'],
+  ['info', '13:28:55.541', 'demo-site', 'GET /api/admin/orders 200 - 3ms', 'g7'],
+  ['debug', '13:28:55.538', 'demo-site', 'Admin orders list', 'g7'],
+  ['info', '13:28:40.510', 'demo-site', 'GET /api/menu 200 - 1ms', 'g8'],
+  ['debug', '13:28:40.509', 'demo-site', 'Menu requested - 18 items', 'g8'],
+  ['info', '13:28:30.748', 'demo-site', 'POST /api/order 200 - 421ms', 'g9'],
+  ['info', '13:28:30.747', 'demo-site', 'Order created', 'g9'],
+  ['info', '13:28:30.745', 'demo-site', 'Payment confirmed: txn TXN-MRNJOHSL', 'g9'],
+  ['info', '13:28:30.741', 'payment-service', 'Payment processed - order ORD-MRNJOHK2, txn TXN-MRNJOHSL, €15.50', 'g9'],
+  ['info', '13:28:30.423', 'payment-service', 'Payment validation OK - card for €15.50', 'g9'],
+  ['info', '13:27:26.959', 'demo-site', 'GET /api/menu 200 - 1ms', 'g10'],
+  ['debug', '13:27:26.958', 'demo-site', 'Menu requested - 18 items', 'g10'],
+  ['info', '13:27:26.837', 'demo-site', 'POST /api/login 200 - 601ms', 'g11'],
+  ['info', '13:27:26.837', 'demo-site', 'User logged in', 'g11'],
+  ['info', '13:26:41.248', 'demo-site', 'GET /api/menu 200 - 1ms', 'g12'],
+  ['debug', '13:26:41.248', 'demo-site', 'Menu requested - 18 items', 'g12'],
+  ['info', '13:26:41.061', 'demo-site', 'POST /api/register 200 - 503ms', 'g13'],
+  ['info', '13:26:41.060', 'demo-site', 'User registered', 'g13'],
+  ['warn', '13:13:31.394', 'demo-site', 'POST /api/order 402 - 247ms', 'g14'],
+  ['error', '13:13:31.394', 'demo-site', 'Payment processing failed for order ORD-MRNJ57QC: Payment declined - insufficient funds', 'g14'],
+  ['error', '13:13:31.390', 'payment-service', 'Payment DECLINED for order ORD-MRNJ57QC - insufficient funds', 'g14'],
+  ['info', '13:13:31.232', 'payment-service', 'Payment validation OK - card for €15.50', 'g14'],
+  ['info', '13:12:25.250', 'demo-site', 'GET /api/menu 200 - 2ms', 'g15'],
+  ['debug', '13:12:25.250', 'demo-site', 'Menu requested - 18 items', 'g15'],
+  ['info', '13:12:25.148', 'demo-site', 'POST /api/login 200 - 445ms', 'g16'],
+  ['info', '13:12:25.147', 'demo-site', 'User logged in', 'g16'],
+  ['info', '13:11:39.666', 'demo-site', 'GET /api/menu 200 - 2ms', 'g17'],
+  ['debug', '13:11:39.665', 'demo-site', 'Menu requested - 18 items', 'g17'],
+  ['info', '13:11:39.547', 'demo-site', 'POST /api/register 200 - 587ms', 'g18'],
+  ['info', '13:11:39.546', 'demo-site', 'User registered', 'g18'],
+  ['error', '12:58:27.573', 'demo-site', 'Payment processing failed for order ORD-MRNILUAA: Payment declined - insufficient funds', 'g19'],
+  ['warn', '12:58:27.573', 'demo-site', 'POST /api/order 402 - 359ms', 'g19'],
+  ['error', '12:58:27.569', 'payment-service', 'Payment DECLINED for order ORD-MRNILUAA - insufficient funds', 'g19'],
+  ['info', '12:58:27.337', 'payment-service', 'Payment validation OK - card for €15.50', 'g19'],
+  ['info', '12:57:21.844', 'demo-site', 'GET /api/menu 200 - 1ms', 'g20'],
+  ['debug', '12:57:21.844', 'demo-site', 'Menu requested - 18 items', 'g20'],
+  ['info', '12:57:21.731', 'demo-site', 'POST /api/login 200 - 391ms', 'g21'],
+  ['info', '12:57:21.730', 'demo-site', 'User logged in', 'g21'],
+  ['info', '12:56:37.639', 'demo-site', 'GET /api/menu 200 - 1ms', 'g22'],
 ]
+
+export const LOGS: LogEntry[] = RAW_LOGS.map(([level, time, svc, msg, group], i) => ({
+  key: `l${i + 1}`,
+  ts: `2026-07-13 ${time}`,
+  level,
+  svc,
+  msg,
+  traceKey: group ? `tr_${group}` : undefined,
+}))
+
+// Total "serveur" affiché dans la barre de résultats (les lignes chargées sont
+// un sous-ensemble d'un flux bien plus large).
+export const LOG_TOTAL = 2403
+
+/* Traces dérivées des groupes de logs : chaque requête tracée devient une
+   trace cohérente (nom = route, durée = celle de la ligne HTTP, services =
+   ceux touchés), pour que le tag d'un log ouvre une trace crédible. */
+type GroupSpec = { name: string; durMs: number; status: 'ok' | 'error'; svcs: string[] }
+
+const GROUP_SPECS: Record<string, GroupSpec> = {
+  g1: { name: 'GET /api/admin/orders', durMs: 2, status: 'ok', svcs: ['demo-site', 'postgres'] },
+  g2: { name: 'PATCH /api/orders/ORD-MRNJOHK2/status', durMs: 3, status: 'ok', svcs: ['demo-site', 'postgres'] },
+  g3: { name: 'GET /api/admin/orders', durMs: 2, status: 'ok', svcs: ['demo-site', 'postgres'] },
+  g4: { name: 'PATCH /api/orders/ORD-MRNJOHK2/status', durMs: 5, status: 'ok', svcs: ['demo-site', 'postgres'] },
+  g5: { name: 'GET /api/admin/orders', durMs: 2, status: 'ok', svcs: ['demo-site', 'postgres'] },
+  g6: { name: 'PATCH /api/orders/ORD-MRNJOHK2/status', durMs: 6, status: 'ok', svcs: ['demo-site', 'postgres'] },
+  g7: { name: 'GET /api/admin/orders', durMs: 3, status: 'ok', svcs: ['demo-site', 'postgres'] },
+  g8: { name: 'GET /api/menu', durMs: 1, status: 'ok', svcs: ['demo-site', 'redis'] },
+  g9: { name: 'POST /api/order', durMs: 421, status: 'ok', svcs: ['demo-site', 'payment-service', 'stripe', 'postgres'] },
+  g10: { name: 'GET /api/menu', durMs: 1, status: 'ok', svcs: ['demo-site', 'redis'] },
+  g11: { name: 'POST /api/login', durMs: 601, status: 'ok', svcs: ['demo-site', 'auth', 'postgres'] },
+  g12: { name: 'GET /api/menu', durMs: 1, status: 'ok', svcs: ['demo-site', 'redis'] },
+  g13: { name: 'POST /api/register', durMs: 503, status: 'ok', svcs: ['demo-site', 'auth', 'postgres'] },
+  g14: { name: 'POST /api/order', durMs: 247, status: 'error', svcs: ['demo-site', 'payment-service'] },
+  g15: { name: 'GET /api/menu', durMs: 2, status: 'ok', svcs: ['demo-site', 'redis'] },
+  g16: { name: 'POST /api/login', durMs: 445, status: 'ok', svcs: ['demo-site', 'auth', 'postgres'] },
+  g17: { name: 'GET /api/menu', durMs: 2, status: 'ok', svcs: ['demo-site', 'redis'] },
+  g18: { name: 'POST /api/register', durMs: 587, status: 'ok', svcs: ['demo-site', 'auth', 'postgres'] },
+  g19: { name: 'POST /api/order', durMs: 359, status: 'error', svcs: ['demo-site', 'payment-service'] },
+  g20: { name: 'GET /api/menu', durMs: 1, status: 'ok', svcs: ['demo-site', 'redis'] },
+  g21: { name: 'POST /api/login', durMs: 391, status: 'ok', svcs: ['demo-site', 'auth', 'postgres'] },
+  g22: { name: 'GET /api/menu', durMs: 1, status: 'ok', svcs: ['demo-site', 'redis'] },
+}
+
+const SVC_COLOR: Record<string, string> = {
+  'demo-site': '#6366f1',
+  'payment-service': '#1fae7e',
+  stripe: '#a78bfa',
+  postgres: '#f59e0b',
+  redis: '#06b6d4',
+  auth: '#60a5fa',
+}
+const BAR_LAYOUT = [
+  { left: 0, width: 100 },
+  { left: 18, width: 60 },
+  { left: 36, width: 42 },
+  { left: 60, width: 32 },
+]
+// Id de trace 32-hex déterministe (stable au reload) dérivé du groupe.
+const hex32 = (seed: string) => {
+  const h = '0123456789abcdef'
+  let out = ''
+  for (let i = 0; i < 32; i++) out += h[(seed.charCodeAt(i % seed.length) * (i + 13) + i * 7) % 16]
+  return out
+}
+const durLabel = (ms: number) => (ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`)
+
+export const TRACES: TraceEntry[] = Object.entries(GROUP_SPECS).map(([g, spec]) => ({
+  key: `tr_${g}`,
+  traceId: hex32(`${g}:${spec.name}`),
+  name: spec.name,
+  svc: spec.svcs[0],
+  dur: durLabel(spec.durMs),
+  durMs: spec.durMs,
+  spans: RAW_LOGS.filter((r) => r[4] === g).length + spec.svcs.length,
+  status: spec.status,
+  bars: spec.svcs.map((s, i) => ({
+    ...BAR_LAYOUT[Math.min(i, BAR_LAYOUT.length - 1)],
+    color: SVC_COLOR[s] ?? '#94a3b8',
+    label: s,
+  })),
+}))
 
 /* ─── Compare period-over-period (mock) ───
  * Agrégats de la fenêtre courante vs la précédente, pour le mode "Compare to

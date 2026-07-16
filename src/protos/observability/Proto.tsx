@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react'
 import {
   Button,
   SearchInput,
@@ -53,6 +53,7 @@ import {
   XCircle,
   Plus,
   Pin,
+  ArrowUpRight,
 } from 'lucide-react'
 import { useReportScreen, useScreenNavigation } from '../../context/ScreenContext'
 import styles from './explore-tabs.module.scss'
@@ -67,6 +68,7 @@ import {
   EXPLORE_TABS,
   PAGE_META,
   LOGS,
+  LOG_TOTAL,
   TRACES,
   TRACE_COMPARE,
   SERVICE_LATENCY_DELTA,
@@ -196,15 +198,23 @@ type AlertDraft = {
    vraiment le graph (SVG maison, Highcharts absent du proto). */
 /* Fenêtre plus courte = buckets plus fins = moins de logs par barre (amplitude
    plus basse). Chaque range a donc une forme + une échelle Y distinctes. */
-const VOLUME_RANGES: Record<string, { n: number; base: number; yMax: number; labels: string[] }> = {
-  '15m': { n: 15, base: 7, yMax: 20, labels: ['08:01', '08:04', '08:07', '08:10', '08:13'] },
-  '1h': { n: 20, base: 22, yMax: 60, labels: ['08:15', '08:30', '08:45', '09:00', '09:15'] },
-  '6h': { n: 18, base: 48, yMax: 90, labels: ['04:00', '05:30', '07:00', '08:30', '10:00'] },
-  '24h': { n: 24, base: 74, yMax: 120, labels: ['11:00', '15:00', '19:00', '23:00', '03:00', '07:00'] },
+const VOLUME_RANGES: Record<
+  string,
+  { n: number; base: number; yMax: number; startMin: number; stepMin: number; labels: string[] }
+> = {
+  '15m': { n: 15, base: 7, yMax: 20, startMin: 481, stepMin: 1, labels: ['08:01', '08:04', '08:07', '08:10', '08:13'] },
+  '1h': { n: 20, base: 22, yMax: 60, startMin: 495, stepMin: 3, labels: ['08:15', '08:30', '08:45', '09:00', '09:15'] },
+  '6h': { n: 18, base: 48, yMax: 90, startMin: 240, stepMin: 20, labels: ['04:00', '05:30', '07:00', '08:30', '10:00'] },
+  '24h': { n: 24, base: 74, yMax: 120, startMin: 660, stepMin: 60, labels: ['11:00', '15:00', '19:00', '23:00', '03:00', '07:00'] },
 }
 
 const LogVolumeBars = ({ range }: { range: string }) => {
   const [hover, setHover] = useState<number | null>(null)
+  // Position réelle (px) du centre de la barre survolée, relative au conteneur.
+  // On la mesure au survol plutôt que la déduire du viewBox, sinon le tooltip
+  // ne tombe pas sur la barre (le SVG est étiré en preserveAspectRatio=none).
+  const [tipX, setTipX] = useState(0)
+  const wrapRef = useRef<HTMLDivElement>(null)
   const cfg = VOLUME_RANGES[range] ?? VOLUME_RANGES['24h']
   const spread = Math.max(6, Math.round(cfg.base * 0.3))
   const bars = Array.from({ length: cfg.n }, (_, i) => {
@@ -223,50 +233,113 @@ const LogVolumeBars = ({ range }: { range: string }) => {
   const colW = plotW / bars.length
   const bw = colW * 0.62
   const yTicks = [0, Math.round(yMax / 3), Math.round((yMax * 2) / 3), yMax]
-  const parts: { key: 'error' | 'warn' | 'info' | 'debug'; color: string }[] = [
-    { key: 'error', color: '#e0372e' },
-    { key: 'warn', color: '#f2b338' },
-    { key: 'info', color: '#7B9F7F' },
-    { key: 'debug', color: '#AEC6B1' },
+  const parts: { key: 'error' | 'warn' | 'info' | 'debug'; label: string; color: string }[] = [
+    { key: 'error', label: 'Error', color: '#e0372e' },
+    { key: 'warn', label: 'Warning', color: '#f2b338' },
+    { key: 'info', label: 'Info', color: '#7B9F7F' },
+    { key: 'debug', label: 'Debug', color: '#AEC6B1' },
   ]
+  // Heure du bucket survolé (pour le tooltip).
+  const barTime = (i: number) => {
+    const total = (cfg.startMin + i * cfg.stepMin) % 1440
+    const p = (x: number) => String(x).padStart(2, '0')
+    return `${p(Math.floor(total / 60))}:${p(total % 60)}`
+  }
+  // Mesure le centre de la barre survolée en px, relatif au conteneur.
+  const onEnterBar = (i: number, e: ReactMouseEvent<SVGGElement>) => {
+    setHover(i)
+    const wrap = wrapRef.current?.getBoundingClientRect()
+    const box = e.currentTarget.getBoundingClientRect()
+    if (!wrap) return
+    const half = 88 // demi-largeur du tooltip, pour le clamp
+    const x = box.left + box.width / 2 - wrap.left
+    setTipX(Math.min(wrap.width - half, Math.max(half, x)))
+  }
+
   return (
-    <svg className={styles.volumeChart} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Log volume">
-      {yTicks.map((t) => (
-        <g key={t}>
-          <line x1={padL} y1={yFor(t)} x2={W - padR} y2={yFor(t)} stroke="#eef0f3" strokeWidth={1} />
-          <text x={padL - 6} y={yFor(t) + 3} textAnchor="end" fontSize={9} fill="#98a2b3" fontFamily="Geist Mono, monospace">{t}</text>
-        </g>
-      ))}
-      {bars.map((b, i) => {
-        const cx = padL + (i + 0.5) * colW
-        const dim = hover !== null && hover !== i
-        let acc = 0
-        return (
-          <g
-            key={i}
-            opacity={dim ? 0.2 : 1}
-            style={{ transition: 'opacity 0.18s ease' }}
-            onMouseEnter={() => setHover(i)}
-            onMouseLeave={() => setHover(null)}
-          >
-            <rect x={cx - colW / 2} y={padT} width={colW} height={plotH} fill="transparent" />
-            {parts.map((p) => {
-              const v = b[p.key]
-              if (!v) return null
-              const y0 = yFor(acc)
-              const y1 = yFor(acc + v)
-              acc += v
-              return <rect key={p.key} x={cx - bw / 2} y={y1} width={bw} height={y0 - y1} fill={p.color} rx={0.5} />
-            })}
+    <div className={styles.volumeWrap} ref={wrapRef}>
+      <svg className={styles.volumeChart} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Log volume">
+        {yTicks.map((t) => (
+          <g key={t}>
+            <line x1={padL} y1={yFor(t)} x2={W - padR} y2={yFor(t)} stroke="#eef0f3" strokeWidth={1} />
+            <text x={padL - 6} y={yFor(t) + 3} textAnchor="end" fontSize={9} fill="#98a2b3" fontFamily="Geist Mono, monospace">{t}</text>
           </g>
-        )
-      })}
-      {cfg.labels.map((lbl, li) => (
-        <text key={lbl + li} x={padL + ((li + 0.5) / cfg.labels.length) * plotW} y={H - 5} textAnchor="middle" fontSize={9} fill="#5b6b6a" fontFamily="Geist Mono, monospace">{lbl}</text>
-      ))}
-    </svg>
+        ))}
+        {bars.map((b, i) => {
+          const cx = padL + (i + 0.5) * colW
+          const hovered = hover === i
+          let acc = 0
+          return (
+            <g key={i} onMouseEnter={(e) => onEnterBar(i, e)} onMouseLeave={() => setHover(null)}>
+              {/* colonne survolée : bande grise + guide pointillé, derrière les barres */}
+              <rect x={cx - colW / 2} y={padT} width={colW} height={plotH} fill={hovered ? '#f0f2f4' : 'transparent'} />
+              {hovered && (
+                <line x1={cx} y1={padT} x2={cx} y2={padT + plotH} stroke="#c4ccd4" strokeWidth={1} strokeDasharray="3 3" />
+              )}
+              {parts.map((p) => {
+                const v = b[p.key]
+                if (!v) return null
+                const y0 = yFor(acc)
+                const y1 = yFor(acc + v)
+                acc += v
+                return <rect key={p.key} x={cx - bw / 2} y={y1} width={bw} height={y0 - y1} fill={p.color} rx={0.5} />
+              })}
+            </g>
+          )
+        })}
+        {cfg.labels.map((lbl, li) => (
+          <text key={lbl + li} x={padL + ((li + 0.5) / cfg.labels.length) * plotW} y={H - 5} textAnchor="middle" fontSize={9} fill="#5b6b6a" fontFamily="Geist Mono, monospace">{lbl}</text>
+        ))}
+      </svg>
+      {hover !== null && (
+        <div className={styles.volumeTip} style={{ left: tipX, marginLeft: -88 }}>
+          <div className={styles.volumeTipTime}>{barTime(hover)}</div>
+          {parts.map((p) => (
+            <div key={p.key} className={styles.volumeTipRow}>
+              <span className={styles.volumeTipDot} style={{ background: p.color }} />
+              <span className={styles.volumeTipLabel}>{p.label}</span>
+              <span className={styles.volumeTipVal}>{bars[hover][p.key]}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
+
+/* Horodatage live tail : on manipule des millisecondes dans la journée pour
+   fabriquer/insérer les lignes, puis on reformate en `YYYY-MM-DD HH:mm:ss.SSS`. */
+const LIVE_DATE = '2026-07-13'
+const tsToMs = (ts: string) => {
+  const t = ts.split(' ')[1] ?? ts
+  const [hms, ms] = t.split('.')
+  const [h, m, s] = hms.split(':').map(Number)
+  return (h * 3600 + m * 60 + s) * 1000 + Number(ms ?? 0)
+}
+const msToTs = (total: number) => {
+  const ms = total % 1000
+  let rem = Math.floor(total / 1000)
+  const s = rem % 60
+  rem = Math.floor(rem / 60)
+  const m = rem % 60
+  const h = Math.floor(rem / 60)
+  const p = (n: number, l = 2) => String(n).padStart(l, '0')
+  return `${LIVE_DATE} ${p(h)}:${p(m)}:${p(s)}.${p(ms, 3)}`
+}
+// Lignes générées par le live tail. Certaines réutilisent une trace existante
+// pour que le regroupement (pastilles) reste visible pendant le stream.
+const LIVE_TEMPLATES: Omit<LogEntry, 'key' | 'ts'>[] = [
+  { level: 'info', svc: 'demo-site', msg: 'GET /api/menu 200 - 2ms', traceKey: 'tr_g8' },
+  { level: 'debug', svc: 'demo-site', msg: 'Menu requested - 18 items', traceKey: 'tr_g8' },
+  { level: 'info', svc: 'demo-site', msg: 'POST /api/order 200 - 264ms', traceKey: 'tr_g9' },
+  { level: 'info', svc: 'demo-site', msg: 'Order created', traceKey: 'tr_g9' },
+  { level: 'info', svc: 'payment-service', msg: 'Payment validation OK - card for €15.50', traceKey: 'tr_g9' },
+  { level: 'info', svc: 'demo-site', msg: 'POST /api/login 200 - 372ms', traceKey: 'tr_g11' },
+  { level: 'info', svc: 'demo-site', msg: 'User logged in', traceKey: 'tr_g11' },
+  { level: 'info', svc: 'demo-site', msg: 'GET /api/admin/orders 200 - 3ms' },
+  { level: 'debug', svc: 'demo-site', msg: 'Session refreshed - user_id=u_8823' },
+  { level: 'info', svc: 'demo-site', msg: 'GET /api/health 200 - 1ms' },
+]
 
 /* ─── Logs View ─── */
 const LogsView = ({
@@ -275,22 +348,60 @@ const LogsView = ({
   level,
   setLevel,
   onOpenLog,
+  onOpenTrace,
 }: {
   search: string
   setSearch: (v: string) => void
   level: string
   setLevel: (v: string) => void
   onOpenLog: (l: LogEntry) => void
+  onOpenTrace: (t: TraceEntry) => void
 }) => {
   const [live, setLive] = useState(false)
   const [range, setRange] = useState('24h')
+  // Live tail : `rows` = flux courant (initialisé aux logs mockés), `newKeys` =
+  // lignes fraîchement arrivées (pour le fondu), refs = horloge + compteur.
+  const [rows, setRows] = useState<LogEntry[]>(LOGS)
+  const [newKeys, setNewKeys] = useState<Set<string>>(() => new Set())
+  const liveClock = useRef<number | null>(null)
+  const liveSeq = useRef(0)
 
   const q = search.trim().toLowerCase()
-  const filtered = LOGS.filter(
+  const filtered = rows.filter(
     (l) =>
       (level === 'all' || l.level === level) &&
       (q === '' || `${l.msg} ${l.svc} ${l.level}`.toLowerCase().includes(q)),
   )
+
+  // Streaming du live tail : à intervalle régulier on fabrique une ligne et on
+  // l'insère à sa place chronologique. Par "la magie du direct" (Benjamin), une
+  // ligne arrive parfois en léger retard et s'insère au milieu, pas seulement en
+  // tête ; elle est signalée par un fond qui s'estompe (newKeys -> .logRowNew).
+  useEffect(() => {
+    if (!live) return
+    if (liveClock.current === null) liveClock.current = tsToMs(rows[0]?.ts ?? `${LIVE_DATE} 08:11:35.501`)
+    const id = setInterval(() => {
+      liveClock.current = (liveClock.current ?? 0) + 300 + Math.floor(Math.random() * 900)
+      const lag = Math.random() < 0.3 ? 400 + Math.floor(Math.random() * 2100) : 0
+      const tpl = LIVE_TEMPLATES[Math.floor(Math.random() * LIVE_TEMPLATES.length)]
+      liveSeq.current += 1
+      const key = `live-${liveSeq.current}`
+      const entry: LogEntry = { ...tpl, key, ts: msToTs((liveClock.current ?? 0) - lag) }
+      setRows((prev) =>
+        [entry, ...prev].sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0)).slice(0, 300),
+      )
+      setNewKeys((prev) => new Set(prev).add(key))
+      setTimeout(() => {
+        setNewKeys((prev) => {
+          const n = new Set(prev)
+          n.delete(key)
+          return n
+        })
+      }, 1600)
+    }, 1200)
+    return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live])
 
   return (
     <>
@@ -362,7 +473,7 @@ const LogsView = ({
       </div>
 
       <div className={styles.resultBar}>
-        <span>Showing {filtered.length} of {LOGS.length} lines</span>
+        <span>Showing {filtered.length} of {LOG_TOTAL} lines</span>
         {live && <span className={styles.liveDot}>● live</span>}
       </div>
 
@@ -381,15 +492,39 @@ const LogsView = ({
             <span>Body</span>
             <span>Trace</span>
           </div>
-          {filtered.map((l) => (
-            <div key={l.key} data-anchor={`log:${l.key}:row`} className={styles.logRow} onClick={() => onOpenLog(l)}>
-              <span><SeverityTag level={l.level} /></span>
-              <span className={styles.logCellTime}>{l.ts.slice(11)}</span>
-              <span className={styles.logCellSvc}>{l.svc}</span>
-              <span className={styles.logCellBody}>{l.msg}</span>
-              <span className={styles.logCellTrace}>{idFrom(l.key, 8)}…</span>
-            </div>
-          ))}
+          {filtered.map((l) => {
+            const tr = l.traceKey ? TRACES.find((t) => t.key === l.traceKey) : undefined
+            return (
+              <div
+                key={l.key}
+                data-anchor={`log:${l.key}:row`}
+                className={`${styles.logRow}${newKeys.has(l.key) ? ` ${styles.logRowNew}` : ''}`}
+                onClick={() => onOpenLog(l)}
+              >
+                <span><SeverityTag level={l.level} /></span>
+                <span className={styles.logCellTime}>{l.ts.slice(11)}</span>
+                <span className={styles.logCellSvc}>{l.svc}</span>
+                <span className={styles.logCellBody}>{l.msg}</span>
+                <span className={styles.logCellTrace}>
+                  {tr ? (
+                    <button
+                      type="button"
+                      className={styles.logTraceBtn}
+                      title={`Open trace ${tr.traceId}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onOpenTrace(tr)
+                      }}
+                    >
+                      {tr.traceId.slice(0, 16)}…
+                    </button>
+                  ) : (
+                    <span className={styles.logCellTraceEmpty}>-</span>
+                  )}
+                </span>
+              </div>
+            )
+          })}
         </div>
       )}
     </>
@@ -596,7 +731,7 @@ const TracesView = ({
                     <CheckCircle2 size={16} className={styles.traceStatusOk} aria-label="OK" />
                   )}
                   <span className={styles.traceNameText}>{t.name}</span>
-                  <span className={styles.traceKey}>{t.key}</span>
+                  <span className={styles.traceKey}>{t.traceId.slice(0, 16)}…</span>
                 </div>
                 <div className={styles.traceMeta}>
                   <span className={styles.traceSpans}>{t.spans} spans</span>
@@ -854,13 +989,22 @@ const sampleEdgeCalls = (edge: { from: string; to: string }, count: number) => {
   })
 }
 
-const ServiceMapView = () => {
+const ServiceMapView = ({
+  onGoToLogs,
+  onGoToTraces,
+}: {
+  onGoToLogs: (svc: string) => void
+  onGoToTraces: (svc: string) => void
+}) => {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string | null>(SERVICES[0]?.id ?? null)
   const [drawerSvc, setDrawerSvc] = useState<ServiceNode | null>(null)
   const [drawerEdge, setDrawerEdge] = useState<(typeof EDGES)[number] | null>(null)
   const [edgeTab, setEdgeTab] = useState('calls')
   const [svcTab, setSvcTab] = useState('overview')
+  // Filtre local des logs affichés dans le drawer service (level + recherche).
+  const [drawerLevel, setDrawerLevel] = useState('all')
+  const [drawerLogQ, setDrawerLogQ] = useState('')
   const q = search.trim().toLowerCase()
   const matches = (label: string) => q === '' || label.toLowerCase().includes(q)
   const byId = (id: string) => SERVICES.find((s) => s.id === id)!
@@ -989,6 +1133,8 @@ const ServiceMapView = () => {
                   setSelected(s.id)
                   setDrawerSvc(s)
                   setSvcTab('overview')
+                  setDrawerLevel('all')
+                  setDrawerLogQ('')
                 }}
               >
                 <div className={styles.svcCardName}>{s.label}</div>
@@ -1023,6 +1169,13 @@ const ServiceMapView = () => {
             const inbound = EDGES.filter((e) => e.to === s.id).length
             const outbound = EDGES.filter((e) => e.from === s.id).length
             const logs = LOGS.filter((l) => l.svc === s.label)
+            const dq = drawerLogQ.trim().toLowerCase()
+            const dLogs = logs.filter(
+              (l) =>
+                (drawerLevel === 'all' || l.level === drawerLevel) &&
+                (dq === '' || `${l.msg} ${l.level}`.toLowerCase().includes(dq)),
+            )
+            const filtering = drawerLevel !== 'all' || dq !== ''
             const red = serviceRedPanels(s)
             return (
               <>
@@ -1047,11 +1200,35 @@ const ServiceMapView = () => {
                       <div className={styles.metricCell}><span className={styles.detailStatLabel}>Duration avg</span><span className={styles.detailStatValue}>{s.lat}</span></div>
                     </div>
 
-                    <div className={styles.tlSection}>Recent logs ({logs.length})</div>
+                    <div className={styles.tlSection}>
+                      Recent logs ({filtering ? `${dLogs.length} of ${logs.length}` : logs.length})
+                    </div>
+                    {logs.length > 0 && (
+                      <div className={styles.svcLogFilter}>
+                        <div className={styles.searchFlex}>
+                          <SearchInput value={drawerLogQ} onChange={setDrawerLogQ} placeholder="Filter these logs..." fullwidth />
+                        </div>
+                        <Select
+                          options={[
+                            { label: 'All levels', value: 'all' },
+                            { label: 'Error', value: 'error' },
+                            { label: 'Warning', value: 'warn' },
+                            { label: 'Info', value: 'info' },
+                            { label: 'Debug', value: 'debug' },
+                          ]}
+                          value={drawerLevel}
+                          onChange={(value) => setDrawerLevel(value)}
+                          icon={IconFilter}
+                          minWidth="120px"
+                        />
+                      </div>
+                    )}
                     {logs.length === 0 ? (
                       <div className={styles.svcEmpty}>No recent logs for this service.</div>
+                    ) : dLogs.length === 0 ? (
+                      <div className={styles.svcEmpty}>No logs match this filter.</div>
                     ) : (
-                      logs.map((l) => (
+                      dLogs.map((l) => (
                         <div key={l.key} className={styles.svcLogRow}>
                           <span className={styles.svcLogTime}>{l.ts.slice(11, 19)}</span>
                           <SeverityTag level={l.level} />
@@ -1108,6 +1285,18 @@ const ServiceMapView = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Rebond vers la vue complète, pré-filtrée sur ce service.
+                    On ne refait pas de moteur de filtre dans le drawer : on
+                    envoie vers Logs / Traces qui savent déjà filtrer. */}
+                <div className={styles.svcGoToRow}>
+                  <Button color="secondary" size="s" icon={ArrowUpRight} iconRight onClick={() => onGoToLogs(s.label)}>
+                    View logs
+                  </Button>
+                  <Button color="secondary" size="s" icon={ArrowUpRight} iconRight onClick={() => onGoToTraces(s.label)}>
+                    View traces
+                  </Button>
+                </div>
               </>
             )
           })()}
@@ -1938,7 +2127,7 @@ const ExploreTabsProto = () => {
   const renderView = () => {
     switch (tab) {
       case 'logs':
-        return <LogsView search={logSearch} setSearch={setLogSearch} level={logLevel} setLevel={setLogLevel} onOpenLog={openLog} />
+        return <LogsView search={logSearch} setSearch={setLogSearch} level={logLevel} setLevel={setLogLevel} onOpenLog={openLog} onOpenTrace={setTraceDetail} />
       case 'traces':
         return (
           <TracesView
@@ -1950,7 +2139,20 @@ const ExploreTabsProto = () => {
           />
         )
       case 'svcmap':
-        return <ServiceMapView />
+        return (
+          <ServiceMapView
+            onGoToLogs={(svc) => {
+              setLogLevel('all')
+              setLogSearch(svc)
+              setTab('logs')
+            }}
+            onGoToTraces={(svc) => {
+              setTraceSearch('')
+              setTraceSvc(svc)
+              setTab('traces')
+            }}
+          />
+        )
       case 'k8s':
         return <KubernetesView />
       case 'usage':
@@ -2306,7 +2508,7 @@ helm install kapp-agent kapptivate/agent \\
       <Drawer
         open={!!traceDetail}
         onClose={() => setTraceDetail(null)}
-        title={traceDetail ? `Trace ${traceDetail.key}` : ''}
+        title={traceDetail ? `Trace ${traceDetail.traceId}` : ''}
         width={720}
       >
         {traceDetail &&
@@ -2383,6 +2585,7 @@ helm install kapp-agent kapptivate/agent \\
             const a = httpAttrs(l.msg)
             const spanId = idFrom(l.key, 16)
             const traceId = idFrom(l.key + 't', 32)
+            const linkedTrace = l.traceKey ? TRACES.find((t) => t.key === l.traceKey) : undefined
             const taskId = `${idFrom(l.key, 8)}-${idFrom(l.key + '1', 4)}-${idFrom(l.key + '2', 4)}-${idFrom(l.key + '3', 4)}-${idFrom(l.key + '4', 12)}`
             const headers: [string, string][] = a
               ? [
@@ -2436,7 +2639,24 @@ helm install kapp-agent kapptivate/agent \\
                     )}
                     <div data-anchor={`log:${l.key}:attributes`} className={styles.kvTable}>
                       <div className={styles.kvRow}><span className={styles.kvKey}>service.name</span><span className={styles.kvVal}>{l.svc}</span></div>
-                      <div className={styles.kvRow}><span className={styles.kvKey}>trace.id</span><span className={styles.kvVal}>{traceId}</span></div>
+                      <div className={styles.kvRow}>
+                        <span className={styles.kvKey}>trace.id</span>
+                        {linkedTrace ? (
+                          <button
+                            type="button"
+                            className={styles.kvValLink}
+                            onClick={() => {
+                              setLogDetail(null)
+                              setTraceDetail(linkedTrace)
+                            }}
+                          >
+                            {linkedTrace.traceId}
+                            <IconBookOpen size={12} />
+                          </button>
+                        ) : (
+                          <span className={styles.kvVal}>{traceId}</span>
+                        )}
+                      </div>
                       <div className={styles.kvRow}><span className={styles.kvKey}>span.id</span><span className={styles.kvVal}>{spanId}</span></div>
                       <div className={styles.kvRow}><span className={styles.kvKey}>kapptivate.task_id</span><span className={styles.kvVal}>{taskId}</span></div>
                       <div className={styles.kvRow}><span className={styles.kvKey}>deployment.environment</span><span className={styles.kvVal}>production</span></div>
