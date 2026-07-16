@@ -13,6 +13,7 @@ import { fullDate, timeAgo } from './time'
 import { captureAnchor, resolveAnchorPoint } from './anchor'
 import UserAvatar from './UserAvatar'
 import MentionTextarea, { mentionsIn, type Person } from './MentionTextarea'
+import { supabase } from '../../lib/supabase'
 
 export type PlacementMode = 'off' | 'comment' | 'emoji'
 
@@ -137,14 +138,35 @@ const CommentPins = ({
   const [draft, setDraft] = useState<{ anchor: string | null; x: number; y: number } | null>(null)
   const layerRef = useRef<HTMLDivElement>(null)
 
-  // Annuaire des @mentions : bootstrap depuis les gens ayant déjà commenté
-  // (+ l'utilisateur courant). À compléter plus tard.
+  // Annuaire des @mentions : tous les gens ayant déjà commenté (n'importe quel
+  // proto) + l'utilisateur courant. Chargé une fois, indépendant du proto.
+  const [known, setKnown] = useState<string[]>([])
+  useEffect(() => {
+    if (!supabase) return
+    let cancelled = false
+    ;(async () => {
+      const [c, r] = await Promise.all([
+        supabase.from('proto_comments').select('author_email'),
+        supabase.from('proto_comment_replies').select('author_email'),
+      ])
+      if (cancelled) return
+      const emails = [...(c.data ?? []), ...(r.data ?? [])]
+        .map((x: { author_email?: string }) => x.author_email ?? '')
+        .filter(Boolean)
+      setKnown(emails)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const directory: Person[] = (() => {
     const map = new Map<string, Person>()
     const add = (email?: string) => {
       if (email && !map.has(email))
         map.set(email, { email, name: deriveIdentity(email).name })
     }
+    known.forEach(add)
     comments.forEach((c) => add(c.author_email))
     replies.forEach((r) => add(r.author_email))
     if (me) add(me.email)
