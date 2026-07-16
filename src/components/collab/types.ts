@@ -20,6 +20,8 @@ export type Comment = {
   kind: CommentKind
   /** Caractère emoji si kind === 'emoji'. */
   emoji: string | null
+  /** Emails mentionnés (@) dans le commentaire → notifiés en DM Slack. */
+  mentions?: string[]
 }
 
 export type Reply = {
