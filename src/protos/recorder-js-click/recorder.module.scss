@@ -1,0 +1,389 @@
+/* ============================================================
+ *  Recorder — JS click fallback
+ *  Reproduction du panneau latéral du web-recorder :
+ *  bandeau « recording live » + liste des actions capturées.
+ *  On retravaille l'action « click » qui détecte un lien sous
+ *  l'élément et propose de cliquer l'élément directement (JS click).
+ * ============================================================ */
+
+$blue: #2f6bf6;
+$blue-soft: #e9f0fe;
+$blue-ink: #2a5fe0;
+$ink: #1f2933;
+$ink-2: #4b5563;
+$muted: #6b7280;
+$faint: #98a2b3;
+$border: #e6e8ec;
+$border-2: #dfe2e7;
+$surface: #ffffff;
+$canvas: #f4f5f7;
+$warn: #e08a1e;
+$warn-ink: #6b4a12;
+$warn-soft: #fdf4e5;
+$fail: #e0473c;
+$dark: #1e2530;
+$radius: 14px;
+$radius-sm: 10px;
+$mono: 'Geist Mono', ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
+
+/* ------- canvas : on pose le panneau comme dans l'extension ------- */
+.canvas {
+  flex: 1 1 auto;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 48px 24px 64px;
+  background:
+    radial-gradient(1200px 600px at 12% -10%, #faf3e2 0%, rgba(250, 243, 226, 0) 55%),
+    $canvas;
+  color: $ink;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.panel {
+  width: 100%;
+  max-width: 452px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ============================ HEADER ============================ */
+.recBar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: $radius;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+
+.recIcon {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 13px;
+  background: $blue;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 14px rgba(47, 107, 246, 0.32);
+}
+
+.recDot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid $blue;
+}
+
+.recText {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.recLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: $blue;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.recCount {
+  margin-top: 2px;
+  font-size: 17px;
+  font-weight: 600;
+  color: $ink;
+}
+.recCount b {
+  font-weight: 700;
+}
+
+.recCtrls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ctrlBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  border: 1px solid $border-2;
+  background: $surface;
+  color: $ink-2;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.ctrlBtn:hover {
+  background: #f7f8fa;
+  border-color: #cdd2d9;
+}
+.ctrlStop {
+  border: none;
+  background: $fail;
+  color: #fff;
+}
+.ctrlStop:hover {
+  background: #cf3d33;
+}
+.stopGlyph {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  background: #fff;
+}
+
+/* ============================ ACTIONS ============================ */
+.card {
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: $radius;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+  overflow: hidden;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: start;
+  padding: 16px 16px 14px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.row:hover {
+  background: #fafbfc;
+}
+.row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(47, 107, 246, 0.35);
+}
+
+.thumb {
+  position: relative;
+  flex-shrink: 0;
+}
+.badge {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: $dark;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  border: 2px solid $surface;
+}
+.thumbBox {
+  width: 46px;
+  height: 46px;
+  border-radius: 11px;
+  background: $blue-soft;
+  color: $blue;
+  display: grid;
+  place-items: center;
+}
+
+.meta {
+  min-width: 0;
+}
+.kind {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: $muted;
+}
+.title {
+  margin-top: 3px;
+  font-size: 16px;
+  font-weight: 600;
+  color: $ink;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.selectorLine {
+  margin-top: 4px;
+  font-family: $mono;
+  font-size: 12.5px;
+  color: $faint;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rowCtrls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-top: 2px;
+}
+.iconBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: $muted;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.iconBtn:hover {
+  background: #f2f4f7;
+}
+.remove {
+  color: $fail;
+}
+.remove:hover {
+  background: #fdecea;
+}
+
+/* ------- corps déplié (warning + réglages) ------- */
+.body {
+  padding: 0 16px 16px;
+  border-top: 1px solid $border;
+  margin-top: 2px;
+  padding-top: 14px;
+}
+
+/* Message détecté : le message porte tout, le chevron déplie le toggle. */
+.hint {
+  border: 1px solid rgba(var(--color-accent-yellow-rgb, 184, 120, 18), 0.28);
+  background: var(--color-accent-light-yellow, #fdf4e5);
+  border-radius: $radius-sm;
+  overflow: hidden;
+}
+.hintHeader {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 11px 13px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--color-text-warning, #b87812);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.hintIcon {
+  flex-shrink: 0;
+}
+.hintText {
+  flex: 1 1 auto;
+}
+.hintChevron {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.hintPanel {
+  padding: 2px 13px 14px;
+}
+.hintWhy {
+  margin: 12px 0 0;
+  color: $warn-ink;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.hintWhy code {
+  font-family: $mono;
+  font-size: 12px;
+}
+
+.field {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.selectorField {
+  min-width: 0;
+}
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.toggleLabel {
+  font-size: 15px;
+  font-weight: 500;
+  color: $ink;
+}
+.toggleSub {
+  margin-top: 1px;
+  font-size: 12.5px;
+  color: $muted;
+}
+
+.fieldLabel {
+  display: block;
+  margin: 0 0 7px;
+  font-size: 14px;
+  color: $ink-2;
+}
+.fieldHint {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: $muted;
+}
+.selectBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid $border-2;
+  border-radius: $radius-sm;
+  background: $surface;
+  cursor: pointer;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.selectBox:hover {
+  border-color: #cdd2d9;
+}
+.selectBox:focus-visible {
+  outline: none;
+  border-color: $blue;
+  box-shadow: 0 0 0 3px rgba(47, 107, 246, 0.15);
+}
+.selectVal {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: $mono;
+  font-size: 13.5px;
+  color: $ink;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.selectChevron {
+  color: $muted;
+  flex-shrink: 0;
+}
