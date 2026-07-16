@@ -14,7 +14,7 @@ import {
   IconEyeOff,
 } from '@kapptivate/ui-kit'
 import { collabEnabled } from '../../lib/supabase'
-import { useCurrentUser } from '../../context/CurrentUser'
+import { useCurrentUser, isAdmin } from '../../context/CurrentUser'
 import { useActiveScreen, useGoToScreen } from '../../context/ScreenContext'
 import { FONT } from './types'
 import { useProtoComments } from './useProtoComments'
@@ -42,19 +42,31 @@ const CollabLayer = ({ slug }: { slug: string }) => {
     addReply,
     setResolved,
     deleteComment,
+    deleteReply,
   } = useProtoComments(slug)
 
   const [mode, setMode] = useState<PlacementMode>('off')
   const [activeEmoji, setActiveEmoji] = useState(EMOJIS[0])
   const [showResolved, setShowResolved] = useState(false)
-  const [showEmojis, setShowEmojis] = useState(true)
+  // Masque TOUS les marqueurs (pins de commentaires + stamps emoji).
+  const [markersHidden, setMarkersHidden] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
 
-  // Échap quitte le mode de placement (en plus de fermer draft/thread côté pins).
+  // Raccourcis clavier : Échap quitte le placement ; « @ » bascule l'affichage
+  // des marqueurs (ignoré pendant la saisie de texte).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMode('off')
+      if (e.key === '@') {
+        const t = e.target as HTMLElement | null
+        const typing =
+          !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)
+        if (!typing) {
+          e.preventDefault()
+          setMarkersHidden((v) => !v)
+        }
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -77,7 +89,8 @@ const CollabLayer = ({ slug }: { slug: string }) => {
         mode={historyOpen ? 'off' : mode}
         activeEmoji={activeEmoji}
         showResolved={showResolved}
-        showEmojis={showEmojis}
+        showMarkers={!markersHidden}
+        isAdmin={isAdmin(user)}
         selectedId={selectedId}
         onSelect={setSelectedId}
         addComment={addComment}
@@ -85,6 +98,7 @@ const CollabLayer = ({ slug }: { slug: string }) => {
         addReply={addReply}
         setResolved={setResolved}
         deleteComment={deleteComment}
+        deleteReply={deleteReply}
       />
 
       {/* Palette emoji (au-dessus de la toolbar, en mode emoji). */}
@@ -121,10 +135,10 @@ const CollabLayer = ({ slug }: { slug: string }) => {
         />
         <span style={styles.divider} />
         <ToolBtn
-          icon={showEmojis ? IconEye : IconEyeOff}
-          label={showEmojis ? 'Hide emoji reactions' : 'Show emoji reactions'}
-          active={!showEmojis}
-          onClick={() => setShowEmojis((v) => !v)}
+          icon={markersHidden ? IconEyeOff : IconEye}
+          label={markersHidden ? 'Show comments & reactions (@)' : 'Hide comments & reactions (@)'}
+          active={markersHidden}
+          onClick={() => setMarkersHidden((v) => !v)}
         />
         <ToolBtn
           icon={IconHistory}

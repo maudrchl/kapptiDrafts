@@ -356,20 +356,6 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 }
 .stepBody {
   padding: 14px 16px;
-  cursor: pointer;
-  transition: background 0.12s;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.02);
-  }
-}
-.stepBodySelected {
-  @extend .stepBody;
-  background: $surface-2;
-
-  &:hover {
-    background: $surface-2;
-  }
 }
 .stepCard {
   background: transparent;
@@ -378,10 +364,6 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-.stepSep {
-  height: 1px;
-  background: $border;
 }
 .stepTop {
   display: flex;
@@ -583,7 +565,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--color-secondary, #163d3a);
+  background: $ink;
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -632,639 +614,6 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   font-size: 13px;
 }
 
-/* ---- General tab : sous-onglets + table clé/valeur ---- */
-.genPane {
-  padding: 10px 12px 20px;
-}
-.subTabs {
-  display: flex;
-  gap: 24px;
-  border-bottom: 1px solid $border;
-  margin-bottom: 16px;
-}
-.subTab {
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: $muted;
-  background: none;
-  border: 0;
-  padding: 2px 0 10px;
-  margin-bottom: -1px;
-  cursor: pointer;
-  position: relative;
-
-  &:hover {
-    color: $ink-2;
-  }
-}
-.subTabActive {
-  @extend .subTab;
-  color: $ink;
-  cursor: default;
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 2px;
-    background: $primary;
-    border-radius: 2px;
-  }
-}
-.kvTable {
-  border: 1px solid $border;
-  border-radius: 8px;
-  overflow: hidden;
-}
-.kvRow {
-  display: grid;
-  grid-template-columns: 2fr 3fr;
-
-  & + & {
-    border-top: 1px solid $border;
-  }
-}
-.kvHead {
-  background: $surface-2;
-}
-.kvCol {
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: $ink-2;
-
-  &:first-child {
-    border-right: 1px solid $border;
-  }
-}
-.kvCell {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-
-  &:first-child {
-    border-right: 1px solid $border;
-  }
-  /* conteneur de l'Input ui-kit → prend la place restante */
-  & > div {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-}
-.kvRemove {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  color: $fail;
-  cursor: pointer;
-  padding: 0 8px 0 4px;
-
-  &:hover {
-    opacity: 0.7;
-  }
-}
-.fCode {
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 160px;
-  padding: 10px 12px;
-  border: 1px solid $border;
-  border-radius: $radius-sm;
-  background: $surface;
-  color: $ink;
-  font-family: $mono;
-  font-size: 12.5px;
-  line-height: 1.5;
-  white-space: pre;
-  resize: vertical;
-  outline: none;
-
-  &:focus {
-    border-color: $primary;
-  }
-  &::placeholder {
-    color: $faint;
-  }
-}
-
-/* ---- Variables tab : Global variables + extraction (composant Table ui-kit) ---- */
-.varsPane {
-  padding: 10px 12px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-
-  :global(.ant-table-wrapper),
-  :global(table) {
-    width: 100%;
-  }
-  :global(.ant-table-thead th) {
-    text-align: left;
-  }
-  :global(.ant-table-tbody > tr > td) {
-    padding-top: 2px;
-    padding-bottom: 2px;
-  }
-}
-.varNameCell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.varsSection {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.varsSectionHead {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.varsSectionTitle {
-  font-size: 13px;
-  font-weight: 650;
-  color: $ink;
-}
-.varsSectionSub {
-  font-size: 12px;
-  color: $muted;
-}
-/* ---- Modale Add/Edit output variable ---- */
-.omBody {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.omTabs {
-  display: flex;
-  gap: 20px;
-  border-bottom: 1px solid $border;
-}
-.omTab {
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: $muted;
-  background: none;
-  border: 0;
-  padding: 2px 0 10px;
-  margin-bottom: -1px;
-  cursor: pointer;
-  position: relative;
-
-  &:hover {
-    color: $ink-2;
-  }
-}
-.omTabOn {
-  @extend .omTab;
-  color: $ink;
-  cursor: default;
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 2px;
-    background: $primary;
-    border-radius: 2px;
-  }
-}
-.omField {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.omLabel {
-  font-size: 12px;
-  font-weight: 600;
-  color: $ink-2;
-}
-.omHint {
-  font-size: 12px;
-  color: $faint;
-}
-/* Source + Property collés dans une boîte bordée (même UX que le tableau) */
-.omExpr {
-  display: flex;
-  align-items: stretch;
-  border: 1px solid $border;
-  border-radius: $radius-sm;
-  overflow: hidden;
-
-  :global(.ant-select-selector) {
-    height: 32px !important;
-    align-items: center;
-  }
-  :global(input) {
-    height: 32px !important;
-  }
-}
-.omExprSel {
-  flex: none;
-  display: flex;
-  align-items: center;
-  border-right: 1px solid $border;
-}
-.omExprInput {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-}
-.omPickBtn {
-  flex: none;
-  align-self: stretch;
-  width: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-left: 1px solid $border;
-  background: transparent;
-  color: $ink-2;
-  cursor: pointer;
-
-  &:hover {
-    background: $surface-2;
-    color: #0577ff;
-  }
-}
-
-/* ---- Picker « dernière réponse » (arbre JSON cliquable → JSONPath) ---- */
-.rpBox {
-  width: 300px;
-  max-width: 80vw;
-}
-.rpHead {
-  padding: 8px 12px;
-  border-bottom: 1px solid $border;
-  font-size: 12px;
-  color: $muted;
-}
-.rpList {
-  max-height: 240px;
-  overflow: auto;
-  padding: 4px 0;
-}
-.rpRow,
-.rpNode {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 4px 12px 4px 0;
-  font-family: $mono;
-  font-size: 12px;
-  text-align: left;
-  border: 0;
-  background: transparent;
-}
-.rpRow {
-  cursor: pointer;
-
-  &:hover {
-    background: rgba(5, 119, 255, 0.08);
-  }
-}
-.rpNode {
-  color: $muted;
-}
-.rpKey {
-  color: #0577ff;
-  flex: none;
-}
-.rpVal {
-  color: $ink-2;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.rpMuted {
-  color: $faint;
-}
-.omFooter {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-.omFooterSpacer {
-  flex: 1 1 auto;
-}
-
-/* ---- Output variables : tableau fidèle Figma (10249:37165) ---- */
-.outTable {
-  width: 100%;
-  background: $surface;
-  border: 1px solid $border;
-  border-radius: 6px;
-  overflow: hidden;
-}
-.outHeadRow {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  background: $surface-2;
-  border-bottom: 1px solid $border;
-}
-.outHeadCell {
-  padding: 6px 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: $ink-2;
-  white-space: nowrap;
-
-  &:first-child {
-    border-right: 1px solid $border;
-  }
-}
-.outDataRow {
-  display: grid;
-  grid-template-columns: 220px 1fr 32px;
-
-  & + & {
-    border-top: 1px solid $border;
-  }
-}
-.outNameCell {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 10px 0 6px;
-  min-width: 0;
-  border-right: 1px solid $border;
-}
-.outIcon {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  background: rgba(5, 119, 255, 0.06);
-  border: 1px solid rgba(5, 119, 255, 0.06);
-  color: #0577ff;
-}
-.outName {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 500;
-  color: $ink;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.outEdit {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  color: $ink-2;
-  cursor: pointer;
-  padding: 0;
-
-  &:hover {
-    color: $ink;
-  }
-}
-.outValCell {
-  display: flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 8px;
-  min-width: 0;
-  border-right: 1px solid $border;
-  font-size: 13px;
-  font-weight: 500;
-  color: $ink-2;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.outDelCell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 32px;
-  border: 0;
-  background: transparent;
-  color: $fail;
-  cursor: pointer;
-
-  &:hover {
-    opacity: 0.7;
-  }
-}
-.varsChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-/* champ « valeur = variable {{URL}} » dans le canvas (Navigate + API Call) */
-.varField {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 30px;
-  padding: 2px 10px 2px 6px;
-  border: 1px solid $border;
-  border-radius: $radius-sm;
-  background: $surface;
-}
-.varFieldInput {
-  flex: 1 1 auto;
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  outline: none;
-  font: inherit;
-  font-size: 13px;
-  color: $ink;
-
-  &::placeholder {
-    color: $faint;
-  }
-}
-.varFieldBraces {
-  display: inline-flex;
-  align-items: center;
-  color: $ink-2;
-}
-
-/* ---- Panneau test : Preview (empty state + executions) ---- */
-.previewPane {
-  display: flex;
-  flex-direction: column;
-}
-.previewEmpty {
-  min-height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-.previewHint {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-  gap: 8px;
-  color: $ink-2;
-  font-size: 12.5px;
-}
-.kbd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 30px;
-  height: 30px;
-  padding: 0 7px;
-  border: 1px solid $border;
-  border-radius: 7px;
-  background: $surface;
-  color: $ink-2;
-}
-.kbdPrimary {
-  @extend .kbd;
-  background: $primary;
-  border-color: $primary;
-  color: #fff;
-}
-.execBlock {
-  border-top: 1px solid $border;
-}
-.execHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
-  color: $ink-2;
-}
-.execTitle {
-  font-size: 14px;
-  font-weight: 600;
-}
-.execList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 0 18px 20px;
-}
-.execRow {
-  display: flex;
-  align-items: stretch;
-  height: 40px;
-  border: 1px solid $border;
-  border-radius: 7px;
-  overflow: hidden;
-}
-.execStatusOk,
-.execStatusWarn {
-  flex: none;
-  width: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 700;
-  font-size: 12px;
-}
-.execStatusOk {
-  background: var(--color-success, #1fae7e);
-}
-.execStatusWarn {
-  background: var(--color-third, #f2b338);
-}
-.execId {
-  display: flex;
-  align-items: center;
-  padding-left: 12px;
-  font-weight: 700;
-  font-size: 13px;
-}
-.execDate {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-  padding-left: 20px;
-  color: $ink-2;
-  font-weight: 500;
-  font-size: 12.5px;
-}
-.execDur {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-right: 12px;
-  color: $ink-2;
-  font-weight: 500;
-  font-size: 12.5px;
-}
-
-/* ---- Advanced settings tab : checkboxes groupées ---- */
-.advPane {
-  padding: 10px 12px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.advGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.advTitle {
-  font-size: 13px;
-  font-weight: 500;
-  color: $muted;
-}
-.advDivider {
-  height: 1px;
-  background: $border;
-  margin: 2px 0;
-}
-.advLabelInfo {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-
-  svg {
-    color: $faint;
-  }
-}
-.advRowEdit {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.refEmpty {
-  padding: 40px 16px;
-  text-align: center;
-  color: $ink-2;
-  font-size: 14px;
-}
-
 /* card tabs : filet de séparation au-dessus de la barre d'onglets */
 .panelTabs {
   border-top: 1px solid $border;
@@ -1310,7 +659,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 
 /* ---- checks body (the redesign) ---- */
 .checksBody {
-  padding: 8px 12px 20px;
+  padding: 8px 14px 28px;
 }
 .framing {
   margin: 0 0 8px;
@@ -1355,30 +704,32 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 10px;
+  margin: 2px 0 8px;
 }
-.grpBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 9px 3px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
+.grpDotFail,
+.grpDotWarn {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
 }
-.grpBadgeFail {
-  @extend .grpBadge;
-  background: $fail-soft;
+.grpDotFail { background: $fail; }
+.grpDotWarn { background: $warn; }
+.grpTitle {
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.grpTitleFail {
+  @extend .grpTitle;
   color: $fail;
 }
-.grpBadgeWarn {
-  @extend .grpBadge;
-  background: $warn-soft;
+.grpTitleWarn {
+  @extend .grpTitle;
   color: $warn;
 }
 .grpNote {
-  font-size: 12px;
-  color: $muted;
+  font-size: 11.5px;
+  color: $faint;
 }
 .grpEmpty {
   font-size: 12px;
@@ -1468,7 +819,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   flex: 0 1 auto;
   min-width: 0;
   max-width: 100%;
-  border: 1px solid $border;
+  border: 1px solid $border-strong;
   border-radius: 6px;
   overflow: hidden;
 
@@ -1483,13 +834,8 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
     min-height: 26px !important;
     align-items: center;
   }
-  // texte des inputs / selects en medium
   :global(input) {
     height: 26px !important;
-    font-weight: 500;
-  }
-  :global(.ant-select-selection-item) {
-    font-weight: 500;
   }
 
   // chaque segment se dimensionne à son contenu, centré, texte à gauche
@@ -1512,129 +858,6 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   align-items: center;
 }
 
-/* Sujet du check : trigger + popover à onglets Response / Variables */
-.subjTrigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 6px 0 10px;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: $ink;
-  cursor: pointer;
-  white-space: nowrap;
-
-  svg {
-    color: $ink-2;
-    flex: none;
-  }
-}
-.subjTriggerLabel {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.subjTriggerVar {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.subjPop {
-  width: 244px;
-
-  :global(.ant-tabs-nav) {
-    margin: 0 !important;
-  }
-  :global(.ant-tabs-content-holder),
-  :global(.ant-tabs-content),
-  :global(.ant-tabs-tabpane) {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-  }
-}
-.subjList {
-  display: flex;
-  flex-direction: column;
-  padding: 4px 6px 6px;
-  max-height: 264px;
-  overflow-y: auto;
-}
-.subjItem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
-  border: 0;
-  border-radius: 6px;
-  background: none;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: $ink;
-  text-align: left;
-  cursor: pointer;
-
-  &:hover {
-    background: $surface-2;
-  }
-}
-.subjVarIcon {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.22);
-  color: #6366f1;
-  font-family: $mono;
-  font-size: 11px;
-}
-.subjFooter {
-  padding: 8px;
-  border-top: 1px solid $border;
-}
-.subjCreate {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px;
-  border: 1px solid $border;
-  border-radius: 7px;
-  background: $surface;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: $ink;
-  cursor: pointer;
-
-  &:hover {
-    background: $surface-2;
-  }
-}
-.subjEmpty {
-  padding: 14px;
-  color: $faint;
-  font-size: 12.5px;
-  text-align: center;
-}
-
-/* popup des selects de condition : min-width pour que label + coche cohabitent */
-:global(.ant-select-dropdown).selPopup {
-  min-width: 132px !important;
-}
-
 .exprFill {
   flex: 1 1 auto;
 }
@@ -1643,85 +866,6 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 .grow {
   flex: 1 1 auto !important;
   min-width: 56px;
-}
-
-/* membre droit = expression (littéraux + variables + opérateurs) */
-.rhsExpr {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 0 8px;
-  min-width: 0;
-}
-.rhsTerm {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.rhsNum {
-  width: 46px;
-  border: 0;
-  background: transparent;
-  outline: none;
-  font-family: $mono;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: $ink;
-
-  &::placeholder {
-    color: $faint;
-  }
-}
-.rhsVar {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-family: $mono;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: $ink;
-
-  .subjVarIcon {
-    width: 18px;
-    height: 18px;
-    font-size: 10px;
-  }
-}
-.rhsDel {
-  display: inline-flex;
-  align-items: center;
-  border: 0;
-  background: none;
-  color: $faint;
-  cursor: pointer;
-  padding: 0;
-
-  &:hover {
-    color: $fail;
-  }
-}
-.rhsAdd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border: 1px dashed $border-strong;
-  border-radius: 6px;
-  background: transparent;
-  color: $muted;
-  cursor: pointer;
-
-  &:hover {
-    color: $primary;
-    border-color: $primary;
-  }
-}
-.rhsVarOpt {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
 }
 
 // le bouton variables « {} » en fin de boîte
@@ -1778,15 +922,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 .conn {
   flex: none;
 }
-.checkIf {
-  flex: none;
-  width: 64px;
-  display: inline-flex;
-  align-items: center;
-  white-space: nowrap;
-  font-size: 13px;
-  color: var(--color-text-secondary, #667085);
-}
+.checkIf,
 .elseLabel {
   flex: none;
   white-space: nowrap;
@@ -2107,49 +1243,11 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   color: $ink-2;
 }
 
-/* Ligne compacte — clic ouvre l'onglet Checks */
-.fmBar {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 8px;
-  margin-left: -8px;
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: left;
-}
-.fmBar:hover {
-  background: rgba(0, 0, 0, 0.035);
-}
-.fmBar:hover .fmGo {
-  color: $ink;
-  transform: translateX(1px);
-}
-.fmCount {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: $ink-2;
-  white-space: nowrap;
-}
-.fmGo {
-  display: inline-flex;
-  align-items: center;
-  color: var(--color-text-tertiary, #98a2b3);
-  margin-left: 2px;
-  transition: color 0.15s ease, transform 0.15s ease;
-}
-
 /* B — groupé par sévérité */
 .fmGrouped {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-left: 24px;
 }
 .fmGroupRow {
   display: flex;

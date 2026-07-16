@@ -57,13 +57,19 @@ const CodeDrawer = ({
   onClose: () => void
 }) => {
   const [files, setFiles] = useState<ProtoFile[] | null>(null)
+  // Proto pour lequel `files` a été chargé. Sans ça, en changeant de proto
+  // (ProtoFrame est réutilisé par le routeur, pas remonté) l'ancien `files`
+  // restait affiché : le viewer semblait bloqué sur le premier fichier.
+  const [loadedSlug, setLoadedSlug] = useState<string>()
   const [active, setActive] = useState<string>()
   const [copied, setCopied] = useState(false)
   const [copiedPath, setCopiedPath] = useState(false)
 
   useEffect(() => {
-    if (!open || files) return
+    if (!open || loadedSlug === slug) return
     let cancelled = false
+    setFiles(null)
+    setActive(undefined)
     const prefix = `../protos/${slug}/`
     const paths = Object.keys(rawFiles)
       .filter((p) => p.startsWith(prefix))
@@ -84,11 +90,12 @@ const CodeDrawer = ({
       if (cancelled) return
       setFiles(loaded)
       setActive(loaded[0]?.name)
+      setLoadedSlug(slug)
     })
     return () => {
       cancelled = true
     }
-  }, [open, slug, files])
+  }, [open, slug, loadedSlug])
 
   const current = files?.find((f) => f.name === active) ?? files?.[0]
 
@@ -128,7 +135,15 @@ const CodeDrawer = ({
             <div style={{ minWidth: 220 }}>
               <Select
                 value={active}
-                onChange={(_e, v) => setActive(v)}
+                // Le onChange du Select ui-kit passe (value, option) OU (e, value)
+                // selon les cas ; on récupère l'argument qui est le nom de fichier
+                // (une string) pour ne pas se retrouver bloqué sur le 1er fichier.
+                onChange={(...args: unknown[]) => {
+                  const name = args.find(
+                    (x) => typeof x === 'string' && files.some((f) => f.name === x),
+                  ) as string | undefined
+                  if (name) setActive(name)
+                }}
                 options={files.map((f) => ({ label: f.name, value: f.name }))}
                 fullWidth
               />

@@ -178,6 +178,12 @@ export function useProtoComments(slug: string) {
     await supabase.from('proto_comments').delete().eq('id', id)
   }, [])
 
+  const deleteReply = useCallback(async (id: string) => {
+    if (!supabase) return
+    setReplies((cur) => cur.filter((r) => r.id !== id))
+    await supabase.from('proto_comment_replies').delete().eq('id', id)
+  }, [])
+
   return {
     comments,
     replies,
@@ -187,5 +193,6 @@ export function useProtoComments(slug: string) {
     addReply,
     setResolved,
     deleteComment,
+    deleteReply,
   }
 }
