@@ -12,6 +12,7 @@ import { FONT, type Comment, type Reply } from './types'
 import { fullDate, timeAgo } from './time'
 import { captureAnchor, resolveAnchorPoint } from './anchor'
 import UserAvatar from './UserAvatar'
+import MentionTextarea, { mentionsIn, type Person } from './MentionTextarea'
 
 export type PlacementMode = 'off' | 'comment' | 'emoji'
 
@@ -33,6 +34,7 @@ type Props = {
     body: string
     author_email: string
     anchor?: string | null
+    mentions?: string[]
   }) => Promise<Comment | null>
   addStamp: (input: {
     screen_id: string
@@ -86,6 +88,35 @@ const linkStyle: CSSProperties = {
   wordBreak: 'break-all',
 }
 
+const mentionStyle: CSSProperties = { color: '#d26334', fontWeight: 600 }
+
+/** Rendu d'un corps de commentaire : @mentions en orange + URLs cliquables. */
+const renderBody = (body: string, names: string[]): ReactNode[] => {
+  if (!names.length) return linkify(body)
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const re = new RegExp(
+    `@(${names.slice().sort((a, b) => b.length - a.length).map(esc).join('|')})`,
+    'g',
+  )
+  const out: ReactNode[] = []
+  let last = 0
+  let m: RegExpExecArray | null
+  let k = 0
+  while ((m = re.exec(body))) {
+    if (m.index > last)
+      out.push(<span key={`t${k}`}>{linkify(body.slice(last, m.index))}</span>)
+    out.push(
+      <span key={`m${k}`} style={mentionStyle}>
+        {m[0]}
+      </span>,
+    )
+    last = m.index + m[0].length
+    k++
+  }
+  if (last < body.length) out.push(<span key={`t${k}`}>{linkify(body.slice(last))}</span>)
+  return out
+}
+
 const CommentPins = ({
   activeScreen,
   me,
@@ -105,6 +136,20 @@ const CommentPins = ({
 }: Props) => {
   const [draft, setDraft] = useState<{ anchor: string | null; x: number; y: number } | null>(null)
   const layerRef = useRef<HTMLDivElement>(null)
+
+  // Annuaire des @mentions : bootstrap depuis les gens ayant déjà commenté
+  // (+ l'utilisateur courant). À compléter plus tard.
+  const directory: Person[] = (() => {
+    const map = new Map<string, Person>()
+    const add = (email?: string) => {
+      if (email && !map.has(email))
+        map.set(email, { email, name: deriveIdentity(email).name })
+    }
+    comments.forEach((c) => add(c.author_email))
+    replies.forEach((r) => add(r.author_email))
+    if (me) add(me.email)
+    return [...map.values()]
+  })()
 
   // Suivi live des positions : les pins sont ancrés à des éléments dont la
   // position change (scroll, resize, ouverture de drawer). Un tick par frame
@@ -232,6 +277,7 @@ const CommentPins = ({
           pt={selectedEntry.pt}
           replies={replies.filter((r) => r.comment_id === selectedEntry.c.id)}
           me={me}
+          directory={directory}
           onClose={() => onSelect(null)}
           onReply={(body) => addReply(selectedEntry.c.id, body, me.email)}
           onToggleResolved={() => setResolved(selectedEntry.c.id, !selectedEntry.c.resolved)}
@@ -246,8 +292,9 @@ const CommentPins = ({
         <Composer
           pt={draftPt}
           me={me}
+          directory={directory}
           onCancel={() => setDraft(null)}
-          onSubmit={async (body) => {
+          onSubmit={async (body, mentions) => {
             const created = await addComment({
               screen_id: activeScreen,
               anchor: draft.anchor,
@@ -255,6 +302,7 @@ const CommentPins = ({
               y: draft.y,
               body,
               author_email: me.email,
+              mentions,
             })
             setDraft(null)
             if (created) onSelect(created.id)
@@ -350,6 +398,7 @@ const ThreadCard = ({
   pt,
   replies,
   me,
+  directory,
   onClose,
   onReply,
   onToggleResolved,
@@ -359,12 +408,14 @@ const ThreadCard = ({
   pt: { left: number; top: number }
   replies: Reply[]
   me: CurrentUser
+  directory: Person[]
   onClose: () => void
   onReply: (body: string) => void
   onToggleResolved: () => void
   onDelete: () => void
 }) => {
   const [text, setText] = useState('')
+  const mentionNames = directory.map((d) => d.name)
   const submit = () => {
     const body = text.trim()
     if (!body) return
@@ -373,24 +424,34 @@ const ThreadCard = ({
   }
   return (
     <div data-comment-card style={{ ...styles.card, ...anchorStyle(pt) }} onClick={(e) => e.stopPropagation()}>
-      <Message authorEmail={comment.author_email} body={comment.body} createdAt={comment.created_at} />
+      <Message
+        authorEmail={comment.author_email}
+        body={comment.body}
+        createdAt={comment.created_at}
+        mentionNames={mentionNames}
+      />
 
       {replies.length > 0 && (
         <div style={styles.replies}>
           {replies.map((r) => (
-            <Message key={r.id} authorEmail={r.author_email} body={r.body} createdAt={r.created_at} />
+            <Message
+              key={r.id}
+              authorEmail={r.author_email}
+              body={r.body}
+              createdAt={r.created_at}
+              mentionNames={mentionNames}
+            />
           ))}
         </div>
       )}
 
-      <textarea
+      <MentionTextarea
         autoFocus
         value={text}
+        onChange={setText}
+        onSubmit={submit}
+        directory={directory}
         placeholder="Reply…"
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => {
-          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit()
-        }}
         style={styles.textarea}
       />
 
@@ -422,10 +483,12 @@ const Message = ({
   authorEmail,
   body,
   createdAt,
+  mentionNames = [],
 }: {
   authorEmail: string
   body: string
   createdAt: string
+  mentionNames?: string[]
 }) => {
   const who = deriveIdentity(authorEmail)
   return (
@@ -440,7 +503,7 @@ const Message = ({
             {timeAgo(createdAt)}
           </span>
         </div>
-        <div style={styles.body}>{linkify(body)}</div>
+        <div style={styles.body}>{renderBody(body, mentionNames)}</div>
       </div>
     </div>
   )
@@ -451,20 +514,20 @@ const Message = ({
 const Composer = ({
   pt,
   me,
+  directory,
   onCancel,
   onSubmit,
 }: {
   pt: { left: number; top: number }
   me: CurrentUser
+  directory: Person[]
   onCancel: () => void
-  onSubmit: (body: string) => void
+  onSubmit: (body: string, mentions: string[]) => void
 }) => {
   const [text, setText] = useState('')
-  const ref = useRef<HTMLTextAreaElement>(null)
-  useEffect(() => ref.current?.focus(), [])
   const submit = () => {
     const body = text.trim()
-    if (body) onSubmit(body)
+    if (body) onSubmit(body, mentionsIn(body, directory))
   }
   return (
     <>
@@ -476,14 +539,13 @@ const Composer = ({
             {me.name}
           </Text>
         </div>
-        <textarea
-          ref={ref}
+        <MentionTextarea
+          autoFocus
           value={text}
+          onChange={setText}
+          onSubmit={submit}
+          directory={directory}
           placeholder="Add a comment…"
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit()
-          }}
           style={styles.textarea}
         />
         <div style={styles.actions}>

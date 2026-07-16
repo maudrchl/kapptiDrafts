@@ -23,6 +23,22 @@ export const config = { runtime: 'edge' }
 // Catch-all : reçoit toutes les notifs.
 const ALWAYS_NOTIFY = ['maud.rochel@kapptivate.com']
 
+// Titre lisible d'un proto (le webhook n'a que le slug ; le titre vit côté client).
+const PROTO_TITLES: Record<string, string> = {
+  'ai-usage': 'AI Usage',
+  checks: 'Checks & API',
+  locations: 'Public & Private Locations',
+  observability: 'Observability Experience',
+  'send-results-by-email': 'Send results by email',
+  'exploration-ui': 'Exploration UI',
+  'run-queue': 'Run Queue',
+  'root-cause-analysis': 'Root Cause Analysis',
+  'observability-navigation': 'Observability Navigation',
+}
+const protoTitle = (slug: string) =>
+  PROTO_TITLES[slug] ||
+  slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+
 type WebhookBody = {
   type: 'INSERT' | 'UPDATE' | 'DELETE'
   table: string
@@ -90,14 +106,15 @@ export default async function handler(req: Request): Promise<Response> {
       `proto_comment_replies?comment_id=eq.${commentId}&select=author_email`,
     )
     replies.forEach((r) => r.author_email && recipients.add(r.author_email))
-    text = `💬 *${displayName(author)}* a répondu sur *${protoSlug}*\n>${excerpt(record.body)}`
+    text = `💬 *${displayName(author)}* a répondu sur *${protoTitle(protoSlug)}*\n>${excerpt(record.body)}`
   } else if (table === 'proto_comments') {
     // Les stamps emoji ne notifient pas.
     if (record.kind && record.kind !== 'comment') return new Response('ok')
     commentId = record.id
     protoSlug = record.proto_slug ?? ''
-    // Lot 2 : ajouter ici les @mentions parsées du body.
-    text = `📌 *${displayName(author)}* a commenté *${protoSlug}*\n>${excerpt(record.body)}`
+    // @mentions : les personnes taguées reçoivent aussi le DM.
+    ;(record.mentions ?? []).forEach((e: string) => e && recipients.add(e))
+    text = `📌 *${displayName(author)}* a commenté *${protoTitle(protoSlug)}*\n>${excerpt(record.body)}`
   } else {
     return new Response('ok')
   }

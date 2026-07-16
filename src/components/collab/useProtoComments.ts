@@ -114,6 +114,7 @@ export function useProtoComments(slug: string) {
       anchor?: string | null
       kind?: CommentKind
       emoji?: string | null
+      mentions?: string[]
     }): Promise<Comment | null> => {
       if (!supabase) return null
       const { data, error } = await supabase
