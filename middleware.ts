@@ -3,9 +3,12 @@ import { SESSION_COOKIE, parseCookies, verifySession } from './lib/oidc'
 /**
  * Protège toute l'app : sans session valide, redirige vers le login Google.
  * Les routes /api/auth/* sont exclues via le matcher (sinon boucle de redirection).
+ * /api/notify aussi : c'est un webhook Supabase authentifié par un secret
+ * (x-webhook-secret), pas par le cookie de session → il ne doit pas être
+ * redirigé vers le login Google.
  */
 export const config = {
-  matcher: ['/((?!api/auth).*)'],
+  matcher: ['/((?!api/auth|api/notify).*)'],
 }
 
 /**
