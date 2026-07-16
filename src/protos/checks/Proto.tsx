@@ -11,6 +11,10 @@ import {
   Table,
   Tag,
   Text,
+  Toggle,
+  Modal,
+  Popover,
+  IconChevronDown,
   IconColouredLogo,
   IconSquareArrowOutUpRight,
   IconLayoutGrid,
@@ -38,6 +42,7 @@ import {
   IconSave,
   IconFlag,
   IconGlobe,
+  IconMail,
   IconNetwork,
   IconPlay,
   IconPlus,
@@ -48,12 +53,16 @@ import {
   IconTimer,
   IconListFilter,
   IconCornerDownLeft,
+  IconArrowRightFromLine,
+  IconPencil,
 } from '@kapptivate/ui-kit'
 import { useReportScreen } from '../../context/ScreenContext'
 import styles from './checks.module.scss'
 import {
   INITIAL_CONDITIONS,
+  MAIL_INITIAL_CONDITIONS,
   SUBJECTS,
+  MAIL_SUBJECTS,
   NUM_OPS,
   UNITS,
   predsFor,
@@ -82,19 +91,59 @@ const OUT_SOURCES = [
   { label: 'Status code', value: 'status' },
   { label: 'Full body', value: 'body' },
 ]
-const USED_VARS = ['baseUrl', 'authToken']
-// Globales disponibles quand un output met à jour une variable globale.
-const GLOBAL_VARS = ['URL', 'baseUrl', 'authToken']
+// Variables globales réellement définies dans le test (cf. table Global variables).
+const GLOBAL_VARS = ['URL']
+
+// Dernière réponse du step (exemple) — sert à générer le JSONPath au clic,
+// pour éviter d'écrire le langage à la main (retour client).
+const SAMPLE_RESPONSE = {
+  access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+  token_type: 'Bearer',
+  expires_in: 3600,
+  user: {
+    id: 42,
+    name: 'Ada Lovelace',
+    email: 'ada@example.com',
+    roles: ['admin', 'qa'],
+  },
+}
+type RespRow = { path: string; label: string; preview: string; depth: number; leaf: boolean }
+const fmtVal = (v: any): string =>
+  typeof v === 'string' ? `"${v.length > 22 ? v.slice(0, 22) + '…' : v}"` : String(v)
+const buildRespRows = (obj: any, prefix = '$', depth = 0, out: RespRow[] = []): RespRow[] => {
+  const entries: [string, any][] = Array.isArray(obj)
+    ? obj.map((v, i) => [`[${i}]`, v])
+    : Object.entries(obj)
+  entries.forEach(([k, v]) => {
+    const isIndex = k.startsWith('[')
+    const path = isIndex ? `${prefix}${k}` : `${prefix}.${k}`
+    if (v && typeof v === 'object') {
+      out.push({ path, label: k, preview: Array.isArray(v) ? `[${v.length}]` : '{ }', depth, leaf: false })
+      buildRespRows(v, path, depth + 1, out)
+    } else {
+      out.push({ path, label: k, preview: fmtVal(v), depth, leaf: true })
+    }
+  })
+  return out
+}
+const RESPONSE_ROWS = buildRespRows(SAMPLE_RESPONSE)
 
 const toOptions = (arr: string[]) => arr.map((v) => ({ label: v, value: v }))
 const optVal = (v: any): string => (v && typeof v === 'object' ? v.value : v)
-const ACTION_OPTIONS = ['API Call', 'Navigate', 'Click', 'Fill in', 'Assert', 'Wait']
+const ACTION_OPTIONS = ['API Call', 'Get mail', 'Navigate', 'Click', 'Fill in', 'Assert', 'Wait']
 const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
 // ---- type des tables clé/valeur (Headers / Query parameters) ----
 type KV = { id: string; k: string; v: string }
-// ---- variables extraites de la réponse ----
-type OutVar = { id: string; name: string; source: string; path: string }
+// ---- terme d'une expression numérique (membre droit d'un check num) ----
+// op = opérateur AVANT ce terme (ignoré pour le premier) ; kind num = littéral, var = variable.
+type Term = { id: string; op: string; kind: 'num' | 'var'; value: string }
+const EXPR_OPS = ['+', '−', '×', '÷']
+// ---- output variables (produites par le step) ----
+// source/path servent à la modale d'édition ; last = dernière valeur (affichée masquée)
+type OutVar = { id: string; name: string; source: string; path: string; last: string }
+// Brouillon de la modale Add/Edit output variable (cf. Figma « output variable »).
+type OutDraft = OutVar & { target: 'new' | 'global'; defaultOn: boolean; defaultVal: string }
 
 const ChecksProto = () => {
   const [tab, setTab] = useState('checks')
@@ -102,15 +151,30 @@ const ChecksProto = () => {
   const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('or')
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropSev, setDropSev] = useState<Severity | null>(null)
-  // Sélection de la step : ouvre le panneau (drawer) + fond grey.
-  const [stepSelected, setStepSelected] = useState(true)
+  // Sélection de la step (1 = API Call, 2 = Get mail ; null = panneau test).
+  const [selStep, setSelStep] = useState<number | null>(1)
+  const stepSelected = selStep !== null
   // Onglet du panneau test (affiché quand aucune step n'est sélectionnée).
   const [testTab, setTestTab] = useState('preview')
-  const [conds, setConds] = useState<Condition[]>(() =>
-    INITIAL_CONDITIONS.map((c) => ({ ...c })),
-  )
+  // Conditions par step.
+  const [condsByStep, setCondsByStep] = useState<Record<number, Condition[]>>(() => ({
+    1: INITIAL_CONDITIONS.map((c) => ({ ...c })),
+    2: MAIL_INITIAL_CONDITIONS.map((c) => ({ ...c })),
+  }))
+  const activeStep = selStep ?? 1
+  const conds = condsByStep[activeStep] ?? []
+  const setConds = (updater: Condition[] | ((cur: Condition[]) => Condition[])) =>
+    setCondsByStep((cur) => ({
+      ...cur,
+      [activeStep]: typeof updater === 'function' ? updater(cur[activeStep] ?? []) : updater,
+    }))
+  // Sujets proposés selon le step : réponse HTTP (API) ou email (Get mail).
+  const stepSubjects = activeStep === 2 ? MAIL_SUBJECTS : SUBJECTS
+  const respTabLabel = activeStep === 2 ? 'Message' : 'Response'
   const [method, setMethod] = useState('GET')
   const [action, setAction] = useState('API Call')
+  const [action2, setAction2] = useState('Get mail')
+  const [mailbox, setMailbox] = useState('')
   const [startUrl, setStartUrl] = useState('https://kapptivate.com')
   // Texte éditable saisi APRÈS le tag variable {{URL}} dans les champs du canvas.
   const [navPath, setNavPath] = useState('')
@@ -123,10 +187,14 @@ const ChecksProto = () => {
   const [queryParams, setQueryParams] = useState<KV[]>(() => [emptyRow()])
   const [body, setBody] = useState('')
 
-  // ---- Variables tab : variables extraites de la réponse ----
+  // ---- Variables tab : output variables + modale Add/Edit ----
   const [outVars, setOutVars] = useState<OutVar[]>(() => [
-    { id: nextId(), name: 'authToken', source: 'json', path: '$.access_token' },
+    { id: nextId(), name: 'TOKEN', source: 'json', path: '$.access_token', last: '*******************' },
   ])
+  const [outDraft, setOutDraft] = useState<OutDraft | null>(null)
+  const [outDraftMode, setOutDraftMode] = useState<'add' | 'edit'>('add')
+  // Popover « piocher dans la dernière réponse » → génère le JSONPath.
+  const [pickOpen, setPickOpen] = useState(false)
 
   // ---- Advanced settings tab (checkboxes) ----
   const [overrideDns, setOverrideDns] = useState(false)
@@ -135,6 +203,7 @@ const ChecksProto = () => {
   const [followRedirects, setFollowRedirects] = useState(true)
   const [ignoreError, setIgnoreError] = useState(false)
   const [skipDuringRun, setSkipDuringRun] = useState(false)
+  const [addCapabilities, setAddCapabilities] = useState(false)
 
   useReportScreen(tab)
 
@@ -160,6 +229,18 @@ const ChecksProto = () => {
     setDragId(null)
     setDropSev(null)
   }
+
+  // Croisée Checks × Variables : le sujet d'une condition peut être une
+  // variable (produite par le step ou globale) → « {{X}} is exactly … sinon fail ».
+  const varNames = Array.from(
+    new Set(outVars.map((v) => v.name.trim()).filter(Boolean)),
+  )
+  // Membre droit des conditions numériques : expression (littéraux + variables + opérateurs).
+  // Clé = id de condition ; absent = simple littéral (c.val).
+  const [rhs, setRhs] = useState<Record<string, Term[]>>({})
+  // Picker de sujet à onglets (Response / Variables), façon popover d'insertion.
+  const [subjOpen, setSubjOpen] = useState<string | null>(null)
+  const [subjTab, setSubjTab] = useState<'response' | 'variables' | 'json'>('response')
 
   /* ---------- checks renderers (functions, NOT components → keep input focus) ---------- */
   const varsBtn = <span className={styles.exprVars}>{'{}'}</span>
@@ -189,6 +270,91 @@ const ChecksProto = () => {
     />
   )
 
+  // Membre droit = expression : littéraux + variables (tags) reliés par opérateurs.
+  const exprBuilder = (c: Condition) => {
+    const terms: Term[] =
+      rhs[c.id] ?? [{ id: `${c.id}-0`, op: '+', kind: 'num', value: c.val ?? '' }]
+    const setTerms = (next: Term[]) => setRhs((cur) => ({ ...cur, [c.id]: next }))
+    const editTerm = (id: string, p: Partial<Term>) =>
+      setTerms(terms.map((t) => (t.id === id ? { ...t, ...p } : t)))
+    const addTerm = (kind: 'num' | 'var', value: string) =>
+      setTerms([...terms, { id: nextId(), op: '+', kind, value }])
+    const removeTerm = (id: string) => {
+      const n = terms.filter((t) => t.id !== id)
+      setTerms(n.length ? n : [{ id: nextId(), op: '+', kind: 'num', value: '' }])
+    }
+    return (
+      <div className={styles.rhsExpr}>
+        {terms.map((t, i) => (
+          <span key={t.id} className={styles.rhsTerm}>
+            {i > 0 && (
+              <Select
+                size="s"
+                borderless
+                className={styles.rhsOp}
+                popupClassName={styles.selPopup}
+                width="42px"
+                minWidth="0"
+                options={toOptions(EXPR_OPS)}
+                value={t.op}
+                onChange={(_e: unknown, v: string) => editTerm(t.id, { op: optVal(v) })}
+              />
+            )}
+            {t.kind === 'num' ? (
+              <input
+                className={styles.rhsNum}
+                placeholder="0"
+                value={t.value}
+                onChange={(e) => editTerm(t.id, { value: e.target.value })}
+              />
+            ) : (
+              <span className={styles.rhsVar}>
+                <span className={styles.subjVarIcon}>{'{}'}</span>
+                {t.value}
+                <button
+                  className={styles.rhsDel}
+                  aria-label="Remove term"
+                  onClick={() => removeTerm(t.id)}
+                >
+                  <IconMinusCircle size={13} />
+                </button>
+              </span>
+            )}
+          </span>
+        ))}
+        <Dropdown
+          trigger="click"
+          placement="bottomLeft"
+          menu={{
+            onClick: ({ key }: { key: string }) =>
+              key === 'num' ? addTerm('num', '') : addTerm('var', key),
+            items: [
+              { key: 'num', label: 'Number' },
+              ...(varNames.length
+                ? [
+                    { type: 'divider' as const },
+                    ...varNames.map((n) => ({
+                      key: n,
+                      label: (
+                        <span className={styles.rhsVarOpt}>
+                          <span className={styles.subjVarIcon}>{'{}'}</span>
+                          {n}
+                        </span>
+                      ),
+                    })),
+                  ]
+                : []),
+            ],
+          }}
+        >
+          <button className={styles.rhsAdd} aria-label="Add term">
+            <IconPlus size={13} />
+          </button>
+        </Dropdown>
+      </div>
+    )
+  }
+
   const exprTail = (c: Condition) => {
     if (c.kind === 'num' || c.kind === 'time') {
       return (
@@ -201,8 +367,8 @@ const ChecksProto = () => {
             value={c.op ?? '='}
             onChange={(_e: unknown, v: string) => patch(c.id, { op: optVal(v) })}
           />
-          {valInput(c)}
-          {c.kind === 'time' ? (
+          {exprBuilder(c)}
+          {c.kind === 'time' && (
             <Select
               size="s"
               borderless
@@ -211,8 +377,6 @@ const ChecksProto = () => {
               value={c.unit ?? 'seconds'}
               onChange={(_e: unknown, v: string) => patch(c.id, { unit: optVal(v) })}
             />
-          ) : (
-            varsBtn
           )}
         </>
       )
@@ -251,16 +415,120 @@ const ChecksProto = () => {
     )
   }
 
+  // Arbre de la dernière réponse : clic sur un attribut → renvoie son JSONPath.
+  // Réutilisé par la modale output ET la 3e tab du picker de check.
+  const responseTree = (onPick: (path: string) => void) => (
+    <div className={styles.rpBox}>
+      <div className={styles.rpHead}>Last response · click a value</div>
+      <div className={styles.rpList}>
+        {RESPONSE_ROWS.map((row) =>
+          row.leaf ? (
+            <button
+              key={row.path}
+              className={styles.rpRow}
+              style={{ paddingLeft: 10 + row.depth * 14 }}
+              onClick={() => onPick(row.path)}
+            >
+              <span className={styles.rpKey}>{row.label}</span>
+              <span className={styles.rpVal}>{row.preview}</span>
+            </button>
+          ) : (
+            <div
+              key={row.path}
+              className={styles.rpNode}
+              style={{ paddingLeft: 10 + row.depth * 14 }}
+            >
+              <span className={styles.rpKey}>{row.label}</span>
+              <span className={styles.rpMuted}>{row.preview}</span>
+            </div>
+          ),
+        )}
+      </div>
+    </div>
+  )
+
+  // Sujet du check : popover à onglets Response / Variables / JSON attribute.
+  const subjectPicker = (c: Condition) => {
+    const isVar = c.subj.startsWith('{{')
+    const isPath = c.subj.startsWith('$')
+    const pick = (subj: string) => {
+      patch(c.id, resetForKind(subj))
+      setSubjOpen(null)
+    }
+    const responseList = (
+      <div className={styles.subjList}>
+        {stepSubjects.map((s) => (
+          <button key={s.label} className={styles.subjItem} onClick={() => pick(s.label)}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+    )
+    const variablesList = (
+      <div className={styles.subjList}>
+        {varNames.length === 0 && <div className={styles.subjEmpty}>No variables yet.</div>}
+        {varNames.map((n) => (
+          <button key={n} className={styles.subjItem} onClick={() => pick(`{{${n}}}`)}>
+            <span className={styles.subjVarIcon}>{'{}'}</span>
+            {n}
+          </button>
+        ))}
+      </div>
+    )
+    const content = (
+      <div className={styles.subjPop}>
+        <Tabs
+          type="card"
+          activeKey={subjTab}
+          onChange={(k) => setSubjTab(k as 'response' | 'variables' | 'json')}
+          tabs={[
+            { key: 'response', label: respTabLabel, children: responseList },
+            { key: 'variables', label: 'Variables', children: variablesList },
+            ...(activeStep === 2
+              ? []
+              : [{ key: 'json', label: 'JSON attribute', children: responseTree((path) => pick(path)) }]),
+          ]}
+        />
+        {subjTab === 'variables' && (
+          <div className={styles.subjFooter}>
+            <button className={styles.subjCreate}>
+              <IconPlus size={14} /> Create global variable
+            </button>
+          </div>
+        )}
+      </div>
+    )
+    return (
+      <Popover
+        trigger="click"
+        placement="bottomLeft"
+        noPadding
+        arrow={false}
+        open={subjOpen === c.id}
+        setOpen={(o) => {
+          setSubjOpen(o ? c.id : null)
+          if (o) setSubjTab(isVar ? 'variables' : isPath ? 'json' : 'response')
+        }}
+        content={content}
+      >
+        <button type="button" className={styles.subjTrigger}>
+          {isVar ? (
+            <span className={styles.subjTriggerVar}>
+              <span className={styles.subjVarIcon}>{'{}'}</span>
+              {c.subj.replace(/^\{\{|\}\}$/g, '')}
+            </span>
+          ) : (
+            <span className={styles.subjTriggerLabel}>{c.subj}</span>
+          )}
+          <IconChevronDown size={14} />
+        </button>
+      </Popover>
+    )
+  }
+
   const expr = (c: Condition) => (
     <div className={`${styles.expr} ${styles.exprFill}`}>
-      <Select
-        size="s"
-        borderless
-        popupClassName={styles.selPopup}
-        options={SUBJECTS.map((s) => ({ label: s.label, value: s.label }))}
-        value={c.subj}
-        onChange={(_e: unknown, v: string) => patch(c.id, resetForKind(optVal(v)))}
-      />
+      {subjectPicker(c)}
       {exprTail(c)}
     </div>
   )
@@ -416,30 +684,33 @@ const ChecksProto = () => {
 
   /* ---------- récap des conditions DANS LE FORMULAIRE (canvas) : ligne compacte,
      le clic ouvre l'onglet Checks du panneau de droite ---------- */
-  const formSummary = () => {
-    if (conds.length === 0) return null
+  const formSummary = (step: number) => {
+    const cs = condsByStep[step] ?? []
+    if (cs.length === 0) return null
+    const f = cs.filter((c) => c.sev === 'fail')
+    const w = cs.filter((c) => c.sev === 'warn')
     return (
       <button
         type="button"
         className={styles.fmBar}
         onClick={(e) => {
           e.stopPropagation()
-          setStepSelected(true)
+          setSelStep(step)
           setTab('checks')
         }}
         title="Edit checks"
       >
         <span className={styles.fmLabel}>Checks</span>
-        {fails.length > 0 && (
+        {f.length > 0 && (
           <span className={styles.fmCount}>
             <span className={styles.dotFail} />
-            {fails.length} {fails.length > 1 ? 'fails' : 'fail'}
+            {f.length} {f.length > 1 ? 'fails' : 'fail'}
           </span>
         )}
-        {warns.length > 0 && (
+        {w.length > 0 && (
           <span className={styles.fmCount}>
             <span className={styles.dotWarn} />
-            {warns.length} {warns.length > 1 ? 'warnings' : 'warning'}
+            {w.length} {w.length > 1 ? 'warnings' : 'warning'}
           </span>
         )}
       </button>
@@ -511,7 +782,19 @@ const ChecksProto = () => {
   const genCount = (rows: KV[]) =>
     rows.filter((r) => r.k.trim() !== '' || r.v.trim() !== '').length
 
-  const generalTab = () => (
+  const generalTab = () => {
+    // Step Get mail : General = référence visuelle (pas de request config).
+    if (activeStep === 2) {
+      return (
+        <div className={styles.advPane}>
+          <div className={styles.advGroup}>
+            <div className={styles.advTitle}>Reference screenshot</div>
+            <div className={styles.refEmpty}>No reference screenshot available for this step</div>
+          </div>
+        </div>
+      )
+    }
+    return (
     <div className={styles.genPane}>
       <div className={styles.subTabs}>
         <button
@@ -545,14 +828,44 @@ const ChecksProto = () => {
         />
       )}
     </div>
-  )
+    )
+  }
 
-  const patchOutVar = (id: string, next: Partial<OutVar>) =>
-    setOutVars((cur) => cur.map((v) => (v.id === id ? { ...v, ...next } : v)))
-  const addOutVar = () =>
-    setOutVars((cur) => [...cur, { id: nextId(), name: '', source: 'body', path: '' }])
   const removeOutVar = (id: string) =>
     setOutVars((cur) => cur.filter((v) => v.id !== id))
+  const openAddOut = () => {
+    setOutDraftMode('add')
+    setOutDraft({
+      id: nextId(),
+      name: '',
+      source: 'json',
+      path: '',
+      last: '',
+      target: 'new',
+      defaultOn: false,
+      defaultVal: '',
+    })
+  }
+  const openEditOut = (r: OutVar) => {
+    setOutDraftMode('edit')
+    setOutDraft({ ...r, target: 'new', defaultOn: false, defaultVal: '' })
+  }
+  const saveOutDraft = () => {
+    if (!outDraft) return
+    const rec: OutVar = {
+      id: outDraft.id,
+      name: outDraft.name,
+      source: outDraft.source,
+      path: outDraft.path,
+      last: outDraft.last,
+    }
+    setOutVars((cur) =>
+      cur.some((v) => v.id === rec.id) ? cur.map((v) => (v.id === rec.id ? rec : v)) : [...cur, rec],
+    )
+    setOutDraft(null)
+  }
+  const patchDraft = (next: Partial<OutDraft>) =>
+    setOutDraft((d) => (d ? { ...d, ...next } : d))
 
   const variablesTab = () => (
     <div className={styles.varsPane}>
@@ -593,76 +906,43 @@ const ChecksProto = () => {
         ]}
       />
 
-      {/* Output variables (produites depuis la réponse) */}
+      {/* Output variables (produites par le step) — cf. Figma 10249:37165 */}
       <div className={styles.varsSection}>
-        <div className={styles.varsSectionHead}>
-          <span className={styles.varsSectionTitle}>Output variables</span>
-          <span className={styles.varsSectionSub}>Saved from the response to reuse in later steps</span>
-        </div>
-        <div className={styles.kvTable}>
+        <div className={styles.outTable}>
+          <div className={styles.outHeadRow}>
+            <div className={styles.outHeadCell}>Output variables ({outVars.length})</div>
+            <div className={styles.outHeadCell}>Last values</div>
+          </div>
           {outVars.map((r) => (
-            <div key={r.id} className={styles.outRow}>
-              <div className={styles.outCell}>
-                <Input
-                  size="s"
-                  borderless
-                  fullWidth
-                  placeholder="Variable name"
-                  value={r.name}
-                  onChange={(e) => patchOutVar(r.id, { name: e.target.value })}
-                />
+            <div key={r.id} className={styles.outDataRow}>
+              <div className={styles.outNameCell}>
+                <span className={styles.outIcon}>
+                  <IconArrowRightFromLine size={12} />
+                </span>
+                <span className={styles.outName}>{r.name || 'variable'}</span>
+                <button
+                  className={styles.outEdit}
+                  aria-label="Edit output variable"
+                  onClick={() => openEditOut(r)}
+                >
+                  <IconPencil size={12} />
+                </button>
               </div>
-              <div className={styles.outCell}>
-                <Select
-                  size="s"
-                  borderless
-                  fullWidth
-                  popupClassName={styles.selPopup}
-                  options={OUT_SOURCES}
-                  value={r.source}
-                  onChange={(_e: unknown, v: string) => patchOutVar(r.id, { source: optVal(v) })}
-                />
-              </div>
-              <div className={styles.outCell}>
-                <Input
-                  size="s"
-                  borderless
-                  fullWidth
-                  mono
-                  placeholder="e.g. $.access_token"
-                  value={r.path}
-                  onChange={(e) => patchOutVar(r.id, { path: e.target.value })}
-                />
-              </div>
+              <div className={styles.outValCell}>{r.last || '—'}</div>
               <button
-                className={styles.outDel}
+                className={styles.outDelCell}
                 aria-label="Remove"
                 onClick={() => removeOutVar(r.id)}
               >
-                <IconMinusCircle size={14} />
+                <IconMinusCircle size={12} />
               </button>
             </div>
           ))}
         </div>
         <div className={styles.addWrap}>
-          <Button color="secondary" size="s" icon={IconPlus} onClick={addOutVar}>
+          <Button color="secondary" size="s" icon={IconPlus} onClick={openAddOut}>
             Add variable
           </Button>
-        </div>
-      </div>
-
-      {/* Used in this step */}
-      <div className={styles.varsSection}>
-        <div className={styles.varsSectionHead}>
-          <span className={styles.varsSectionTitle}>Used in this step</span>
-          <span className={styles.varsSectionSub}>Variables referenced by the request</span>
-        </div>
-        <div className={styles.varsChips}>
-          {USED_VARS.map((u) => (
-            <Tag key={u} color="dark-blue" size="sm" smallPadding mono>
-              {`{{${u}}}`}
-            </Tag>
-          ))}
         </div>
       </div>
     </div>
@@ -683,37 +963,59 @@ const ChecksProto = () => {
     />
   )
 
-  const advancedTab = () => (
-    <div className={styles.advPane}>
-      <div className={styles.advGroup}>
-        <div className={styles.advTitle}>API Call Settings</div>
-        {advCheckbox('adv-dns', 'Override DNS', overrideDns, setOverrideDns)}
-        {advCheckbox('adv-ssl', 'Ignore SSL certificate', ignoreSsl, setIgnoreSsl)}
-        {advCheckbox('adv-cookies', 'Preserve cookies', preserveCookies, setPreserveCookies)}
-      </div>
-
-      <div className={styles.advGroup}>
-        <div className={styles.advTitle}>Redirection</div>
-        {advCheckbox('adv-redirects', 'Automatically follow redirects', followRedirects, setFollowRedirects)}
-      </div>
-
-      <div className={styles.advDivider} />
-
-      <div className={styles.advGroup}>
-        <div className={styles.advTitle}>Execution settings</div>
-        {advCheckbox(
-          'adv-ignore-error',
-          <span className={styles.advLabelInfo}>
-            Ignore error on this step
-            <IconInfo size={15} />
-          </span>,
-          ignoreError,
-          setIgnoreError,
-        )}
-        {advCheckbox('adv-skip', 'Skip during run', skipDuringRun, setSkipDuringRun)}
-      </div>
+  const execSettingsGroup = (
+    <div className={styles.advGroup}>
+      <div className={styles.advTitle}>Execution settings</div>
+      {advCheckbox(
+        'adv-ignore-error',
+        <span className={styles.advLabelInfo}>
+          Ignore error on this step
+          <IconInfo size={15} />
+        </span>,
+        ignoreError,
+        setIgnoreError,
+      )}
+      {advCheckbox('adv-skip', 'Skip during run', skipDuringRun, setSkipDuringRun)}
     </div>
   )
+
+  const advancedTab = () => {
+    // Step Get mail : Execution settings + Capabilities (pas d'options HTTP).
+    if (activeStep === 2) {
+      return (
+        <div className={styles.advPane}>
+          {execSettingsGroup}
+          <div className={styles.advDivider} />
+          <div className={styles.advGroup}>
+            <div className={styles.advTitle}>Capabilities</div>
+            <div className={styles.advRowEdit}>
+              {advCheckbox('adv-caps', 'Add custom capabilities', addCapabilities, setAddCapabilities)}
+              <Button color="secondary" size="s" icon={IconPencil} />
+            </div>
+          </div>
+        </div>
+      )
+    }
+    return (
+      <div className={styles.advPane}>
+        <div className={styles.advGroup}>
+          <div className={styles.advTitle}>API Call Settings</div>
+          {advCheckbox('adv-dns', 'Override DNS', overrideDns, setOverrideDns)}
+          {advCheckbox('adv-ssl', 'Ignore SSL certificate', ignoreSsl, setIgnoreSsl)}
+          {advCheckbox('adv-cookies', 'Preserve cookies', preserveCookies, setPreserveCookies)}
+        </div>
+
+        <div className={styles.advGroup}>
+          <div className={styles.advTitle}>Redirection</div>
+          {advCheckbox('adv-redirects', 'Automatically follow redirects', followRedirects, setFollowRedirects)}
+        </div>
+
+        <div className={styles.advDivider} />
+
+        {execSettingsGroup}
+      </div>
+    )
+  }
 
   // Champ avec le tag variable {{URL}} + une saisie texte éditable + braces.
   const urlField = (value: string, setValue: (v: string) => void) => (
@@ -725,6 +1027,21 @@ const ChecksProto = () => {
         className={styles.varFieldInput}
         value={value}
         onChange={(e) => setValue(e.target.value)}
+      />
+      <span className={styles.varFieldBraces}>
+        <IconBraces size={12} />
+      </span>
+    </div>
+  )
+
+  // Champ « Mailbox » du step Get mail (input simple + braces).
+  const mailboxField = () => (
+    <div className={styles.varField} onClick={(e) => e.stopPropagation()}>
+      <input
+        className={styles.varFieldInput}
+        placeholder="Mailbox"
+        value={mailbox}
+        onChange={(e) => setMailbox(e.target.value)}
       />
       <span className={styles.varFieldBraces}>
         <IconBraces size={12} />
@@ -835,7 +1152,7 @@ const ChecksProto = () => {
 
         <div className={styles.body}>
           {/* canvas — clic hors step = désélection (referme le panneau) */}
-          <div className={styles.canvas} onClick={() => setStepSelected(false)}>
+          <div className={styles.canvas} onClick={() => setSelStep(null)}>
             <div className={styles.canvasInner}>
               <div className={styles.startRow}>
                 <span className={styles.startFlag}><IconFlag size={16} /></span>
@@ -854,27 +1171,24 @@ const ChecksProto = () => {
                   </span>
                   <div>
                     <div className={styles.stepGroupTitle}>Step group #</div>
-                    <div className={styles.stepGroupSub}>1 step</div>
+                    <div className={styles.stepGroupSub}>2 steps</div>
                   </div>
                   <button className={styles.stepGroupMore}>
                     <IconMoreHorizontal size={18} />
                   </button>
                 </div>
 
+                {/* step 1 — API Call */}
                 <div
-                  className={stepSelected ? styles.stepBodySelected : styles.stepBody}
+                  className={selStep === 1 ? styles.stepBodySelected : styles.stepBody}
                   onClick={(e) => {
                     e.stopPropagation()
-                    // Clic sur la carte → ouvre (ou toggle) sur l'onglet General.
-                    if (!stepSelected) setTab('general')
-                    setStepSelected((v) => !v)
+                    setSelStep((cur) => (cur === 1 ? null : 1))
+                    setTab('general')
                   }}
                 >
                   <div className={styles.stepCard}>
-                    <div
-                      className={styles.stepTop}
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <div className={styles.stepTop} onClick={(e) => e.stopPropagation()}>
                       <span className={styles.stepNum}>1</span>
                       <Select
                         size="s"
@@ -893,7 +1207,35 @@ const ChecksProto = () => {
                       />
                     </div>
                     {urlField(apiPath, setApiPath)}
-                    {formSummary()}
+                    {formSummary(1)}
+                  </div>
+                </div>
+
+                <div className={styles.stepSep} />
+
+                {/* step 2 — Get mail */}
+                <div
+                  className={selStep === 2 ? styles.stepBodySelected : styles.stepBody}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelStep((cur) => (cur === 2 ? null : 2))
+                    setTab('general')
+                  }}
+                >
+                  <div className={styles.stepCard}>
+                    <div className={styles.stepTop} onClick={(e) => e.stopPropagation()}>
+                      <span className={styles.stepNum}>2</span>
+                      <Select
+                        size="s"
+                        width="150px"
+                        icon={IconMail}
+                        options={toOptions(ACTION_OPTIONS)}
+                        value={action2}
+                        onChange={(_e: unknown, v: string) => setAction2(v)}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>{mailboxField()}</div>
+                    </div>
+                    {formSummary(2)}
                   </div>
                 </div>
 
@@ -915,8 +1257,8 @@ const ChecksProto = () => {
             {stepSelected ? (
               <>
             <div className={styles.panelHeader}>
-              <span className={styles.panelTitleNum}>1</span>
-              <span className={styles.panelTitle}>API Call</span>
+              <span className={styles.panelTitleNum}>{activeStep}</span>
+              <span className={styles.panelTitle}>{activeStep === 2 ? 'Get mail' : 'API Call'}</span>
               <div className={styles.panelHeaderActions}>
                 <Dropdown
                   trigger="click"
@@ -969,6 +1311,155 @@ const ChecksProto = () => {
           </aside>
         </div>
       </div>
+
+      {outDraft && (
+        <Modal
+          open
+          width={520}
+          title={outDraftMode === 'edit' ? 'Edit output variable' : 'Add output variable'}
+          onCancel={() => setOutDraft(null)}
+        >
+          <Modal.Content>
+            <div className={styles.omBody}>
+              <div className={styles.omTabs}>
+                <button
+                  className={outDraft.target === 'new' ? styles.omTabOn : styles.omTab}
+                  onClick={() => patchDraft({ target: 'new', name: '' })}
+                >
+                  Store as new variable
+                </button>
+                <button
+                  className={outDraft.target === 'global' ? styles.omTabOn : styles.omTab}
+                  onClick={() => patchDraft({ target: 'global', name: '' })}
+                >
+                  Update a global variable
+                </button>
+              </div>
+
+              <div className={styles.omField}>
+                <span className={styles.omLabel}>
+                  {outDraft.target === 'global' ? 'Global variable' : 'Name'}
+                </span>
+                {outDraft.target === 'global' ? (
+                  <Select
+                    size="m"
+                    fullWidth
+                    searchable
+                    popupClassName={styles.selPopup}
+                    placeholder="Select global variable…"
+                    options={GLOBAL_VARS.map((g) => ({ label: g, value: g }))}
+                    value={outDraft.name || undefined}
+                    onChange={(_e: unknown, v: string) => patchDraft({ name: optVal(v) })}
+                  />
+                ) : (
+                  <>
+                    <Input
+                      size="m"
+                      fullWidth
+                      placeholder="variable_name"
+                      value={outDraft.name}
+                      onChange={(e) => patchDraft({ name: e.target.value })}
+                    />
+                    <span className={styles.omHint}>No spaces or special characters allowed.</span>
+                  </>
+                )}
+              </div>
+
+              <div className={styles.omField}>
+                <span className={styles.omLabel}>Source</span>
+                <div className={styles.omExpr}>
+                  <div className={styles.omExprSel}>
+                    <Select
+                      size="m"
+                      borderless
+                      popupClassName={styles.selPopup}
+                      options={OUT_SOURCES}
+                      value={outDraft.source}
+                      onChange={(_e: unknown, v: string) => patchDraft({ source: optVal(v) })}
+                    />
+                  </div>
+                  <div className={styles.omExprInput}>
+                    <Input
+                      size="m"
+                      borderless
+                      fullWidth
+                      mono
+                      placeholder="Example: $.userId"
+                      value={outDraft.path}
+                      onChange={(e) => patchDraft({ path: e.target.value })}
+                    />
+                  </div>
+                  <Popover
+                    trigger="click"
+                    placement="bottomRight"
+                    noPadding
+                    arrow={false}
+                    zIndex={1100}
+                    open={pickOpen}
+                    setOpen={setPickOpen}
+                    content={responseTree((path) => {
+                      patchDraft({ path, source: 'json' })
+                      setPickOpen(false)
+                    })}
+                  >
+                    <button
+                      type="button"
+                      className={styles.omPickBtn}
+                      title="Pick from the last response"
+                    >
+                      <IconBraces size={14} />
+                    </button>
+                  </Popover>
+                </div>
+                <span className={styles.omHint}>
+                  Click <IconBraces size={12} /> to pick a value from the last response — the path
+                  is generated for you.
+                </span>
+              </div>
+
+              <Toggle
+                title="Set default value"
+                value={outDraft.defaultOn}
+                onChange={(v) => patchDraft({ defaultOn: v })}
+              />
+              {outDraft.defaultOn && (
+                <div className={styles.omField}>
+                  <Input
+                    size="m"
+                    fullWidth
+                    placeholder="Default value"
+                    value={outDraft.defaultVal}
+                    onChange={(e) => patchDraft({ defaultVal: e.target.value })}
+                  />
+                </div>
+              )}
+            </div>
+          </Modal.Content>
+          <Modal.Footer>
+            <div className={styles.omFooter}>
+              {outDraftMode === 'edit' && (
+                <Button
+                  color="danger-s"
+                  icon={IconTrash}
+                  onClick={() => {
+                    removeOutVar(outDraft.id)
+                    setOutDraft(null)
+                  }}
+                >
+                  Delete
+                </Button>
+              )}
+              <span className={styles.omFooterSpacer} />
+              <Button color="invisible" onClick={() => setOutDraft(null)}>
+                Cancel
+              </Button>
+              <Button color="primary" onClick={saveOutDraft}>
+                {outDraftMode === 'edit' ? 'Save' : 'Add'}
+              </Button>
+            </div>
+          </Modal.Footer>
+        </Modal>
+      )}
     </div>
   )
 }

@@ -33,13 +33,22 @@ export const SUBJECTS: { label: string; kind: SubjectKind }[] = [
   { label: 'Content transfer time', kind: 'time' },
 ]
 
+// Sujets pour un step « Get mail » (assertions email).
+export const MAIL_SUBJECTS: { label: string; kind: SubjectKind }[] = [
+  { label: 'Sender', kind: 'text' },
+  { label: 'Recipient', kind: 'text' },
+  { label: 'Subject', kind: 'text' },
+  { label: 'Content', kind: 'text' },
+  { label: 'Attachments', kind: 'num' },
+]
+
 export const NUM_OPS = ['=', '<', '≤', '>', '≥']
 export const TEXT_PREDS = ['is exactly', 'contains', 'starts with', 'ends with']
 export const BODY_PREDS = ['is valid JSON', 'is empty', 'contains', 'is exactly']
 export const UNITS = ['seconds', 'ms', 'minutes']
 
 export const subjectKind = (label: string): SubjectKind =>
-  SUBJECTS.find((s) => s.label === label)?.kind ?? 'text'
+  [...SUBJECTS, ...MAIL_SUBJECTS].find((s) => s.label === label)?.kind ?? 'text'
 
 export const predsFor = (kind: SubjectKind) =>
   kind === 'body' ? BODY_PREDS : TEXT_PREDS
@@ -78,7 +87,14 @@ export const shortUnit = (u: string | null) =>
 export const INITIAL_CONDITIONS: Condition[] = [
   { id: 'c1', subj: 'Status code', kind: 'num', op: '=', pred: null, val: '200', unit: null, headerName: null, sev: 'fail' },
   { id: 'c2', subj: 'Response body', kind: 'body', op: null, pred: 'is valid JSON', val: null, unit: null, headerName: null, sev: 'fail' },
-  { id: 'c3', subj: 'Time to first byte', kind: 'time', op: '≤', pred: null, val: '10', unit: 'seconds', headerName: null, sev: 'warn' },
+  { id: 'c3', subj: 'Response time', kind: 'time', op: '>', pred: null, val: '10', unit: 'seconds', headerName: null, sev: 'warn' },
+]
+
+// Conditions par défaut du step « Get mail ».
+export const MAIL_INITIAL_CONDITIONS: Condition[] = [
+  { id: 'm1', subj: 'Sender', kind: 'text', op: null, pred: 'is exactly', val: 'noreply@kapptivate.com', unit: null, headerName: null, sev: 'fail' },
+  { id: 'm2', subj: 'Subject', kind: 'text', op: null, pred: 'contains', val: 'Welcome', unit: null, headerName: null, sev: 'fail' },
+  { id: 'm3', subj: 'Content', kind: 'text', op: null, pred: 'contains', val: 'activate your account', unit: null, headerName: null, sev: 'fail' },
 ]
 
 /* ---------- Négation, pour la chip du canvas (condition qui déclenche) ---------- */

@@ -379,6 +379,10 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   flex-direction: column;
   gap: 10px;
 }
+.stepSep {
+  height: 1px;
+  background: $border;
+}
 .stepTop {
   display: flex;
   align-items: center;
@@ -794,40 +798,277 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   font-size: 12px;
   color: $muted;
 }
-/* table Output variables : même compacité que la table Headers (.kvTable) */
-.outRow {
+/* ---- Modale Add/Edit output variable ---- */
+.omBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.omTabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid $border;
+}
+.omTab {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: $muted;
+  background: none;
+  border: 0;
+  padding: 2px 0 10px;
+  margin-bottom: -1px;
+  cursor: pointer;
+  position: relative;
+
+  &:hover {
+    color: $ink-2;
+  }
+}
+.omTabOn {
+  @extend .omTab;
+  color: $ink;
+  cursor: default;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: $primary;
+    border-radius: 2px;
+  }
+}
+.omField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.omLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: $ink-2;
+}
+.omHint {
+  font-size: 12px;
+  color: $faint;
+}
+/* Source + Property collés dans une boîte bordée (même UX que le tableau) */
+.omExpr {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  overflow: hidden;
+
+  :global(.ant-select-selector) {
+    height: 32px !important;
+    align-items: center;
+  }
+  :global(input) {
+    height: 32px !important;
+  }
+}
+.omExprSel {
+  flex: none;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid $border;
+}
+.omExprInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.omPickBtn {
+  flex: none;
+  align-self: stretch;
+  width: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-left: 1px solid $border;
+  background: transparent;
+  color: $ink-2;
+  cursor: pointer;
+
+  &:hover {
+    background: $surface-2;
+    color: #0577ff;
+  }
+}
+
+/* ---- Picker « dernière réponse » (arbre JSON cliquable → JSONPath) ---- */
+.rpBox {
+  width: 300px;
+  max-width: 80vw;
+}
+.rpHead {
+  padding: 8px 12px;
+  border-bottom: 1px solid $border;
+  font-size: 12px;
+  color: $muted;
+}
+.rpList {
+  max-height: 240px;
+  overflow: auto;
+  padding: 4px 0;
+}
+.rpRow,
+.rpNode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 12px 4px 0;
+  font-family: $mono;
+  font-size: 12px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+}
+.rpRow {
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(5, 119, 255, 0.08);
+  }
+}
+.rpNode {
+  color: $muted;
+}
+.rpKey {
+  color: #0577ff;
+  flex: none;
+}
+.rpVal {
+  color: $ink-2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rpMuted {
+  color: $faint;
+}
+.omFooter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.omFooterSpacer {
+  flex: 1 1 auto;
+}
+
+/* ---- Output variables : tableau fidèle Figma (10249:37165) ---- */
+.outTable {
+  width: 100%;
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.outHeadRow {
   display: grid;
-  grid-template-columns: 1.1fr 1.1fr 1.4fr 32px;
+  grid-template-columns: 220px 1fr;
+  background: $surface-2;
+  border-bottom: 1px solid $border;
+}
+.outHeadCell {
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink-2;
+  white-space: nowrap;
+
+  &:first-child {
+    border-right: 1px solid $border;
+  }
+}
+.outDataRow {
+  display: grid;
+  grid-template-columns: 220px 1fr 32px;
 
   & + & {
     border-top: 1px solid $border;
   }
 }
-.outCell {
+.outNameCell {
   display: flex;
   align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px 0 6px;
   min-width: 0;
-
-  &:not(:last-child) {
-    border-right: 1px solid $border;
-  }
-  /* conteneur de l'Input/Select ui-kit → remplit la cellule */
-  > div {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
+  border-right: 1px solid $border;
 }
-.outDel {
-  display: flex;
+.outIcon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: rgba(5, 119, 255, 0.06);
+  border: 1px solid rgba(5, 119, 255, 0.06);
+  color: #0577ff;
+}
+.outName {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.outEdit {
+  flex: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 0;
   background: transparent;
-  color: $muted;
+  color: $ink-2;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    color: $ink;
+  }
+}
+.outValCell {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 8px;
+  min-width: 0;
+  border-right: 1px solid $border;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink-2;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.outDelCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: $fail;
   cursor: pointer;
 
   &:hover {
-    color: $fail;
+    opacity: 0.7;
   }
 }
 .varsChips {
@@ -1010,6 +1251,18 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   svg {
     color: $faint;
   }
+}
+.advRowEdit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.refEmpty {
+  padding: 40px 16px;
+  text-align: center;
+  color: $ink-2;
+  font-size: 14px;
 }
 
 /* card tabs : filet de séparation au-dessus de la barre d'onglets */
@@ -1230,8 +1483,13 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
     min-height: 26px !important;
     align-items: center;
   }
+  // texte des inputs / selects en medium
   :global(input) {
     height: 26px !important;
+    font-weight: 500;
+  }
+  :global(.ant-select-selection-item) {
+    font-weight: 500;
   }
 
   // chaque segment se dimensionne à son contenu, centré, texte à gauche
@@ -1254,6 +1512,124 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   align-items: center;
 }
 
+/* Sujet du check : trigger + popover à onglets Response / Variables */
+.subjTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 6px 0 10px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+  cursor: pointer;
+  white-space: nowrap;
+
+  svg {
+    color: $ink-2;
+    flex: none;
+  }
+}
+.subjTriggerLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.subjTriggerVar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.subjPop {
+  width: 244px;
+
+  :global(.ant-tabs-nav) {
+    margin: 0 !important;
+  }
+  :global(.ant-tabs-content-holder),
+  :global(.ant-tabs-content),
+  :global(.ant-tabs-tabpane) {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+}
+.subjList {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 6px 6px;
+  max-height: 264px;
+  overflow-y: auto;
+}
+.subjItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: $surface-2;
+  }
+}
+.subjVarIcon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  color: #6366f1;
+  font-family: $mono;
+  font-size: 11px;
+}
+.subjFooter {
+  padding: 8px;
+  border-top: 1px solid $border;
+}
+.subjCreate {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid $border;
+  border-radius: 7px;
+  background: $surface;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+  cursor: pointer;
+
+  &:hover {
+    background: $surface-2;
+  }
+}
+.subjEmpty {
+  padding: 14px;
+  color: $faint;
+  font-size: 12.5px;
+  text-align: center;
+}
+
 /* popup des selects de condition : min-width pour que label + coche cohabitent */
 :global(.ant-select-dropdown).selPopup {
   min-width: 132px !important;
@@ -1267,6 +1643,85 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 .grow {
   flex: 1 1 auto !important;
   min-width: 56px;
+}
+
+/* membre droit = expression (littéraux + variables + opérateurs) */
+.rhsExpr {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0 8px;
+  min-width: 0;
+}
+.rhsTerm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.rhsNum {
+  width: 46px;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-family: $mono;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: $ink;
+
+  &::placeholder {
+    color: $faint;
+  }
+}
+.rhsVar {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: $mono;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: $ink;
+
+  .subjVarIcon {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+}
+.rhsDel {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: none;
+  color: $faint;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    color: $fail;
+  }
+}
+.rhsAdd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px dashed $border-strong;
+  border-radius: 6px;
+  background: transparent;
+  color: $muted;
+  cursor: pointer;
+
+  &:hover {
+    color: $primary;
+    border-color: $primary;
+  }
+}
+.rhsVarOpt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 // le bouton variables « {} » en fin de boîte
