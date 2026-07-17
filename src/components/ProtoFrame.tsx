@@ -53,7 +53,15 @@ const ProtoFrame = ({
   const toggleSharePanel = async () => {
     const next = !shareOpen
     setShareOpen(next)
-    if (next) setShares(await listShares(slug))
+    if (!next) return
+    // Un lien est généré par défaut : s'il n'en existe aucun, on en crée un.
+    // (On peut ensuite en créer d'autres depuis le panneau.)
+    let list = await listShares(slug)
+    if (list.length === 0) {
+      const token = await createShare(slug)
+      if (token) list = await listShares(slug)
+    }
+    setShares(list)
   }
   const onCreate = async () => {
     setCreating(true)
@@ -103,7 +111,7 @@ const ProtoFrame = ({
           {shareOpen && (
             <div style={styles.sharePanel}>
               <div style={styles.sharePanelHead}>
-                <span style={styles.sharePanelTitle}>Interview links</span>
+                <span style={styles.sharePanelTitle}>Share</span>
                 <button type="button" style={styles.panelClose} onClick={() => setShareOpen(false)} title="Close">
                   ×
                 </button>
@@ -113,7 +121,7 @@ const ProtoFrame = ({
               </p>
               <button type="button" style={styles.createBtn} onClick={onCreate} disabled={creating}>
                 <IconLink size={13} />
-                <span>{creating ? 'Creating…' : 'Create a new link'}</span>
+                <span>{creating ? 'Creating…' : 'Create another link'}</span>
               </button>
               <div style={styles.shareList}>
                 {shares.length === 0 ? (

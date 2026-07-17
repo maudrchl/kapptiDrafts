@@ -164,7 +164,7 @@ const CollabLayer = ({
         {onToggleShare && (
           <ToolBtn
             icon={IconLink}
-            label="Interview links for this proto"
+            label="Share this proto"
             active={shareActive}
             onClick={onToggleShare}
           />
