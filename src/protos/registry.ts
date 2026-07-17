@@ -145,11 +145,15 @@ export const protos: ProtoEntry[] = Object.entries(metaModules)
       return null
     }
 
+    // « Last update » = dernier commit git du dossier (auto, jamais périmé) ;
+    // le `updatedAt` du meta sert de filet, puis la date de création git.
+    const gd = __PROTO_DATES__[slug]
     return {
       ...mod.default,
       slug,
       route: `/p/${slug}`,
       Component: lazy(loader),
+      updatedAt: gd?.updated ?? mod.default.updatedAt ?? gd?.created,
     }
   })
   .filter((entry): entry is ProtoEntry => entry !== null)
@@ -181,8 +185,11 @@ export const catalog: CatalogEntry[] = [
       tag: p.tag,
     }),
   ),
-  ...legacyProtos.map(
-    (p): CatalogEntry => ({
+  ...legacyProtos.map((p): CatalogEntry => {
+    // Archives HTML : datées par git sur leur fichier (clé = href), sinon
+    // le `updatedAt` éventuel du meta, sinon la date de création git.
+    const gd = __PROTO_DATES__[p.href]
+    return {
       slug: p.slug,
       kind: 'html',
       target: p.href,
@@ -191,8 +198,8 @@ export const catalog: CatalogEntry[] = [
       collection: p.collection,
       description: p.description,
       icon: p.icon ?? IconComponent,
-      updatedAt: p.updatedAt,
+      updatedAt: gd?.updated ?? p.updatedAt ?? gd?.created,
       tag: p.tag,
-    }),
-  ),
+    }
+  }),
 ]

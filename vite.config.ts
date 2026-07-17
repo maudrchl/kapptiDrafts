@@ -2,6 +2,65 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import fs from 'fs'
+import { execFileSync } from 'child_process'
+
+// Racine du projet. `process.cwd()` est fiable sous vite build/dev (lancé
+// depuis la racine) alors que `__dirname` d'une config ESM bundlée peut pointer
+// vers un fichier temporaire.
+const ROOT = process.cwd()
+
+// Date (YYYY-MM-DD) du commit le plus récent (ou le plus ancien si `reverse`)
+// touchant `pathspec`. `undefined` si git indisponible ou chemin sans commit.
+function gitDate(pathspec: string, reverse: boolean): string | undefined {
+  try {
+    const args = ['log', '--format=%cd', '--date=short']
+    args.push(reverse ? '--reverse' : '-1')
+    args.push('--', pathspec)
+    const out = execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' })
+    return out.split('\n').find((l) => l.trim())?.trim() || undefined
+  } catch {
+    return undefined
+  }
+}
+
+// Dates par proto, dérivées de git au build → « Last update » toujours à jour
+// (dernier commit) sans entretien manuel, avec la date de création en fallback.
+// Clé = slug (dossier des protos React) ou href `/folder/....html` (archives).
+function protoDates(): Record<string, { created?: string; updated?: string }> {
+  const map: Record<string, { created?: string; updated?: string }> = {}
+  const add = (key: string, pathspec: string) => {
+    map[key] = { created: gitDate(pathspec, true), updated: gitDate(pathspec, false) }
+  }
+  const base = path.resolve(ROOT, 'src/protos')
+  try {
+    for (const dir of fs.readdirSync(base)) {
+      if (dir.startsWith('_') || dir.startsWith('.')) continue
+      if (!fs.existsSync(path.join(base, dir, 'meta.ts'))) continue
+      add(dir, `src/protos/${dir}`)
+    }
+  } catch {
+    // pas de dossier protos : rien à dater
+  }
+  const pub = path.resolve(ROOT, 'public')
+  const walk = (d: string) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const fp = path.join(d, e.name)
+      if (e.isDirectory()) walk(fp)
+      else if (e.name.endsWith('.html')) {
+        const rel = path.relative(pub, fp).split(path.sep).join('/')
+        add(`/${rel}`, `public/${rel}`)
+      }
+    }
+  }
+  try {
+    walk(path.join(pub, 'folder'))
+  } catch {
+    // pas d'archives HTML : rien à dater
+  }
+  return map
+}
+
+const PROTO_DATES = protoDates()
 
 // Identifiant de build, figé à chaque `vite build`. Injecté dans le bundle via
 // `__BUILD_ID__` et écrit dans `version.json` : l'app compare les deux au runtime
@@ -67,6 +126,7 @@ function folderRewritesPlugin(): Plugin {
 export default defineConfig({
   define: {
     __BUILD_ID__: JSON.stringify(BUILD_ID),
+    __PROTO_DATES__: JSON.stringify(PROTO_DATES),
   },
 
   plugins: [folderRewritesPlugin(), react(), versionPlugin()],

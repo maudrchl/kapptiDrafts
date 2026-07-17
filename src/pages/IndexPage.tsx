@@ -4,6 +4,7 @@ import {
   Text,
   SearchInput,
   Tag,
+  Tooltip,
   Button,
   Table,
   Tabs,
@@ -83,29 +84,34 @@ const parseISO = (iso?: string): Date | null => {
 }
 
 // Date absolue courte, ex. "8 Jul 2026" (pour le tooltip).
+// Date absolue numérique pour le tooltip, ex. "06/08/2026" (JJ/MM/AAAA).
 const absDate = (iso?: string): string => {
   const d = parseISO(iso)
   return d
     ? new Intl.DateTimeFormat('en-GB', {
-        day: 'numeric',
-        month: 'short',
+        day: '2-digit',
+        month: '2-digit',
         year: 'numeric',
       }).format(d)
     : ''
 }
 
-// Libellé relatif : Today / Yesterday / N days ago, sinon date absolue.
+// Libellé relatif idiomatique à toutes les échelles : today / yesterday /
+// N days ago / last week / N weeks ago / N months ago / N years ago.
+// (Date absolue au survol via le tooltip `title` de la cellule.)
 const fmtDate = (iso?: string): string => {
   const d = parseISO(iso)
   if (!d) return '—'
   const dayMs = 86_400_000
   const midnight = (x: Date) =>
     new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
-  const diff = Math.round((midnight(new Date()) - midnight(d)) / dayMs)
-  if (diff === 0) return 'today'
-  if (diff === 1) return 'yesterday'
-  if (diff > 1 && diff < 7) return `${diff} days ago`
-  return absDate(iso)
+  const days = Math.round((midnight(new Date()) - midnight(d)) / dayMs)
+  const rel = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
+  if (days <= 0) return 'today'
+  if (days < 7) return rel.format(-days, 'day')
+  if (days < 30) return rel.format(-Math.round(days / 7), 'week')
+  if (days < 365) return rel.format(-Math.round(days / 30), 'month')
+  return rel.format(-Math.round(days / 365), 'year')
 }
 
 // Présence temps réel sur TOUS les fichiers, React comme archives HTML : ces
@@ -318,13 +324,26 @@ const IndexPage = () => {
       width: 160,
       sorter: withPin((a, b) => (a.updatedAt ?? '').localeCompare(b.updatedAt ?? '')),
       sortIcon: renderSortIcon,
-      render: (updatedAt?: string) => (
-        <span title={absDate(updatedAt)}>
+      // Libellé relatif + date absolue en tooltip (DS) au survol. Le Tooltip
+      // enveloppe directement le Text (pas de span pleine largeur) pour se
+      // centrer sur le texte. Pas de tooltip quand il n'y a pas de date.
+      render: (updatedAt?: string) => {
+        const abs = absDate(updatedAt)
+        const label = (
           <Text size="s" color="secondary">
             {fmtDate(updatedAt)}
           </Text>
-        </span>
-      ),
+        )
+        // Ancre en inline-block réduite à la largeur du texte, sinon le tooltip
+        // se centre sur toute la cellule (Text s'étale en bloc).
+        return abs ? (
+          <Tooltip content={abs}>
+            <span style={{ display: 'inline-block' }}>{label}</span>
+          </Tooltip>
+        ) : (
+          label
+        )
+      },
     },
     {
       title: (
