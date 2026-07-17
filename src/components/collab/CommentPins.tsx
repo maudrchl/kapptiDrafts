@@ -10,7 +10,7 @@ import { Button, Text, IconCheck, IconTrash } from '@kapptivate/ui-kit'
 import { deriveIdentity, type CurrentUser } from '../../context/CurrentUser'
 import { FONT, type Comment, type Reply } from './types'
 import { fullDate, timeAgo } from './time'
-import { captureAnchor, resolveAnchorPoint } from './anchor'
+import { captureAnchor, resolveAnchorPoint, anchorElement } from './anchor'
 import UserAvatar from './UserAvatar'
 import MentionTextarea, { mentionsIn, type Person } from './MentionTextarea'
 import { supabase } from '../../lib/supabase'
@@ -231,14 +231,28 @@ const CommentPins = ({
   const placed = comments
     .filter(isVisible)
     .map((c) => {
-      // Ancre explicite (id unique) : visible dès que l'élément est dans le DOM.
-      // Viewport legacy ou sélecteur structurel `@…` (non unique entre écrans) :
-      // on filtre par écran pour éviter un match sur un écran voisin.
-      const globallyUnique = !!c.anchor && !c.anchor.startsWith('@')
-      if (!globallyUnique && c.screen_id !== activeScreen) return null
-      const pt = resolveAnchorPoint(c)
-      if (!pt) return null
-      return { c, pt }
+      const onThisScreen = !c.screen_id || c.screen_id === activeScreen
+      // Ancre `data-anchor` unique : peut s'afficher sur n'importe quel écran
+      // tant que l'élément est présent. Les autres ancres (sélecteur `@…` ou
+      // viewport legacy, non uniques entre écrans) sont scopées à leur écran.
+      const isDataAnchor = !!c.anchor && !c.anchor.startsWith('@')
+      if (!isDataAnchor && !onThisScreen) return null
+
+      // Élément d'ancrage présent → position exacte.
+      const el = c.anchor ? anchorElement(c.anchor) : null
+      if (el) {
+        const r = el.getBoundingClientRect()
+        if (r.width !== 0 || r.height !== 0) {
+          return { c, pt: { left: r.left + c.x * r.width, top: r.top + c.y * r.height } }
+        }
+      }
+      // Élément introuvable : plutôt que de faire disparaître le commentaire
+      // (ancre obsolète après une refonte du proto), on le replace à sa position
+      // stockée s'il appartient à l'écran courant. Sinon on le masque.
+      if (onThisScreen) {
+        return { c, pt: { left: c.x * window.innerWidth, top: c.y * window.innerHeight } }
+      }
+      return null
     })
     .filter((v): v is { c: Comment; pt: { left: number; top: number } } => v !== null)
 
@@ -761,7 +775,7 @@ const styles: Record<string, CSSProperties> = {
     pointerEvents: 'auto',
     width: 300,
     maxWidth: '80vw',
-    padding: 12,
+    padding: '20px 12px 12px',
     display: 'flex',
     flexDirection: 'column',
     gap: 10,
