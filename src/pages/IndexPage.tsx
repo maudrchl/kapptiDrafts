@@ -6,6 +6,7 @@ import {
   Tag,
   Button,
   Table,
+  Tabs,
   Dropdown,
   SortIcon,
   FilterIcon,
@@ -50,6 +51,12 @@ const STATUS_ACCENT: Record<ProtoStatus, string> = {
   'wip dev': '#2563eb',
   QA: '#7c3aed',
   deployed: '#16a34a',
+}
+
+// Couleur propre par tag (badge/statut de la ligne) — distinct du violet générique.
+const TAG_ACCENT: Record<string, string> = {
+  Brand: '#db2777', // rose
+  PM: '#0ea5e9', // bleu
 }
 
 // Fond de pastille par statut → donne le ressenti actif (coloré) vs deployed (posé)
@@ -327,7 +334,12 @@ const IndexPage = () => {
       render: (_: ProtoStatus, p: Row) => (
         <div style={styles.statusCell}>
           <span
-            style={{ ...styles.dot, background: p.tag ? '#7c3aed' : STATUS_ACCENT[p.status] }}
+            style={{
+              ...styles.dot,
+              background: p.tag
+                ? (TAG_ACCENT[p.tag] ?? '#7c3aed')
+                : STATUS_ACCENT[p.status],
+            }}
           />
           <Text size="s">{p.tag ?? p.status}</Text>
         </div>
@@ -379,19 +391,16 @@ const IndexPage = () => {
       </div>
 
       <div style={{ marginTop: 16 }}>
-        <div style={styles.tabs}>
-          {TAB_DEFS.map((t) => (
-            <Button
-              key={t.key}
-              color={tab === t.key ? 'secondary' : 'invisible'}
-              icon={t.icon}
-              counter={t.items.length}
-              onClick={() => setTab(t.key)}
-            >
-              {t.label}
-            </Button>
-          ))}
-        </div>
+        <Tabs
+          tabs={TAB_DEFS.map((t) => {
+            const Icon = t.icon
+            return { key: t.key, label: t.label, icon: <Icon size={14} /> }
+          })}
+          activeKey={tab}
+          onChange={(k: string) =>
+            setTab(k as 'active' | 'brand' | 'pm' | 'deployed' | 'archived')
+          }
+        />
 
         <div style={{ marginTop: 16 }}>
           {currentItems.length === 0 ? (
@@ -429,7 +438,6 @@ const styles: Record<string, CSSProperties> = {
   page: { flex: 1, minWidth: 0, padding: '7rem' },
   logo: { height: 30, width: 'auto', display: 'block', marginBottom: 8 },
   protoCell: { display: 'flex', alignItems: 'center', gap: 12 },
-  tabs: { display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
   titleRow: { display: 'flex', alignItems: 'center', gap: 6 },
   iconBox: {
     width: 36,
