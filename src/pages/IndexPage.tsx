@@ -404,7 +404,7 @@ const IndexPage = () => {
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder="Search a prototype…"
+              placeholder="Search"
               fullwidth
             />
           </div>
