@@ -415,11 +415,11 @@ const IndexPage = () => {
             <div style={{ padding: '3rem 0' }}>
               <EmptyState
                 icon={<IconSearchX color="var(--color-text-secondary)" />}
-                text="No prototype"
+                text={search.trim() || statusFilter !== 'all' ? 'No result' : 'Nothing here'}
                 description={
                   search.trim() || statusFilter !== 'all'
-                    ? 'No result in this tab for the current search or filter.'
-                    : 'Nothing here yet.'
+                    ? 'No file in this tab matches your search or filter.'
+                    : 'No file in this tab yet.'
                 }
               />
             </div>
