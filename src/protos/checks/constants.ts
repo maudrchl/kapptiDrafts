@@ -86,8 +86,6 @@ export const shortUnit = (u: string | null) =>
 
 export const INITIAL_CONDITIONS: Condition[] = [
   { id: 'c1', subj: 'Status code', kind: 'num', op: '=', pred: null, val: '200', unit: null, headerName: null, sev: 'fail' },
-  { id: 'c2', subj: 'Response body', kind: 'body', op: null, pred: 'is valid JSON', val: null, unit: null, headerName: null, sev: 'fail' },
-  { id: 'c3', subj: 'Response time', kind: 'time', op: '>', pred: null, val: '10', unit: 'seconds', headerName: null, sev: 'warn' },
 ]
 
 // Conditions par défaut du step « Get mail ».

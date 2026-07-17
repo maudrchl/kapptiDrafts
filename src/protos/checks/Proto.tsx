@@ -2,6 +2,7 @@ import { useState, type Dispatch, type SetStateAction, type ReactNode } from 're
 import {
   Select,
   Input,
+  SearchInput,
   Button,
   ButtonGroup,
   Breadcrumb,
@@ -97,19 +98,42 @@ const GLOBAL_VARS = ['URL']
 // Dernière réponse du step (exemple) — sert à générer le JSONPath au clic,
 // pour éviter d'écrire le langage à la main (retour client).
 const SAMPLE_RESPONSE = {
-  access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+  access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MiIsIm5hbWUiOiJBZGEgTG92ZWxhY2UifQ.s3cr3tS1gn4tur3',
   token_type: 'Bearer',
   expires_in: 3600,
+  refresh_token: 'rt_9f8c2a1b7d6e5f4a3b2c1d0e',
+  scope: 'read write admin',
   user: {
     id: 42,
     name: 'Ada Lovelace',
     email: 'ada@example.com',
+    verified: true,
     roles: ['admin', 'qa'],
+    plan: 'enterprise',
+    address: { street: '12 Analytical Ave', city: 'London', zip: 'EC1A 1BB', country: 'UK' },
+    preferences: { theme: 'dark', language: 'en', notifications: true },
+  },
+  organization: {
+    id: 'org_7781',
+    name: 'Rocket Corp',
+    seats: 120,
+    owner_id: 42,
+  },
+  orders: [
+    { id: 'ORD-001', total: 42.5, currency: 'EUR', status: 'paid', items: 3 },
+    { id: 'ORD-002', total: 18.0, currency: 'EUR', status: 'pending', items: 1 },
+    { id: 'ORD-003', total: 99.9, currency: 'USD', status: 'refunded', items: 5 },
+  ],
+  meta: {
+    request_id: 'req_5c2e9a',
+    page: 1,
+    per_page: 20,
+    total: 57,
+    took_ms: 128,
   },
 }
-type RespRow = { path: string; label: string; preview: string; depth: number; leaf: boolean }
-const fmtVal = (v: any): string =>
-  typeof v === 'string' ? `"${v.length > 22 ? v.slice(0, 22) + '…' : v}"` : String(v)
+type RespRow = { path: string; label: string; preview: string; raw?: string; depth: number; leaf: boolean }
+const fmtVal = (v: any): string => (typeof v === 'string' ? `"${v}"` : String(v))
 const buildRespRows = (obj: any, prefix = '$', depth = 0, out: RespRow[] = []): RespRow[] => {
   const entries: [string, any][] = Array.isArray(obj)
     ? obj.map((v, i) => [`[${i}]`, v])
@@ -121,7 +145,7 @@ const buildRespRows = (obj: any, prefix = '$', depth = 0, out: RespRow[] = []): 
       out.push({ path, label: k, preview: Array.isArray(v) ? `[${v.length}]` : '{ }', depth, leaf: false })
       buildRespRows(v, path, depth + 1, out)
     } else {
-      out.push({ path, label: k, preview: fmtVal(v), depth, leaf: true })
+      out.push({ path, label: k, preview: fmtVal(v), raw: String(v), depth, leaf: true })
     }
   })
   return out
@@ -209,6 +233,21 @@ const ChecksProto = () => {
 
   const patch = (id: string, next: Partial<Condition>) =>
     setConds((cur) => cur.map((c) => (c.id === id ? { ...c, ...next } : c)))
+  // Applique un sujet à une condition. Pour un attribut JSON, pré-remplit aussi
+  // la valeur attendue avec celle du dernier run (retour Maud).
+  const chooseSubject = (condId: string, subj: string) => {
+    const base = resetForKind(subj)
+    const raw = subj.startsWith('$')
+      ? RESPONSE_ROWS.find((r) => r.leaf && r.path === subj)?.raw
+      : undefined
+    patch(condId, raw != null ? { ...base, val: raw } : base)
+    // on repart d'une valeur propre (pas d'ancienne expression additive)
+    setRhs((cur) => {
+      const n = { ...cur }
+      delete n[condId]
+      return n
+    })
+  }
   const remove = (id: string) =>
     setConds((cur) => cur.filter((c) => c.id !== id))
   const add = (sev: Severity) =>
@@ -241,6 +280,9 @@ const ChecksProto = () => {
   // Picker de sujet à onglets (Response / Variables), façon popover d'insertion.
   const [subjOpen, setSubjOpen] = useState<string | null>(null)
   const [subjTab, setSubjTab] = useState<'response' | 'variables' | 'json'>('response')
+  // Sélecteur JSON attribute ouvert en grand (modale) : id de la condition ciblée.
+  const [treeModalCond, setTreeModalCond] = useState<string | null>(null)
+  const [treeQuery, setTreeQuery] = useState('')
 
   /* ---------- checks renderers (functions, NOT components → keep input focus) ---------- */
   const varsBtn = <span className={styles.exprVars}>{'{}'}</span>
@@ -326,8 +368,17 @@ const ChecksProto = () => {
           trigger="click"
           placement="bottomLeft"
           menu={{
-            onClick: ({ key }: { key: string }) =>
-              key === 'num' ? addTerm('num', '') : addTerm('var', key),
+            onClick: ({ key }: { key: string }) => {
+              if (key === 'num') {
+                addTerm('num', '')
+              } else if (terms.length === 1) {
+                // remplacer la valeur unique par la variable (cas courant :
+                // "utiliser une variable au lieu du nombre") plutôt qu'ajouter un terme
+                setTerms([{ ...terms[0], kind: 'var', value: key }])
+              } else {
+                addTerm('var', key)
+              }
+            },
             items: [
               { key: 'num', label: 'Number' },
               ...(varNames.length
@@ -419,7 +470,6 @@ const ChecksProto = () => {
   // Réutilisé par la modale output ET la 3e tab du picker de check.
   const responseTree = (onPick: (path: string) => void) => (
     <div className={styles.rpBox}>
-      <div className={styles.rpHead}>Last response · click a value</div>
       <div className={styles.rpList}>
         {RESPONSE_ROWS.map((row) =>
           row.leaf ? (
@@ -428,6 +478,7 @@ const ChecksProto = () => {
               className={styles.rpRow}
               style={{ paddingLeft: 10 + row.depth * 14 }}
               onClick={() => onPick(row.path)}
+              title={`${row.path} = ${row.preview}`}
             >
               <span className={styles.rpKey}>{row.label}</span>
               <span className={styles.rpVal}>{row.preview}</span>
@@ -452,7 +503,7 @@ const ChecksProto = () => {
     const isVar = c.subj.startsWith('{{')
     const isPath = c.subj.startsWith('$')
     const pick = (subj: string) => {
-      patch(c.id, resetForKind(subj))
+      chooseSubject(c.id, subj)
       setSubjOpen(null)
     }
     const responseList = (
@@ -486,7 +537,30 @@ const ChecksProto = () => {
             { key: 'variables', label: 'Variables', children: variablesList },
             ...(activeStep === 2
               ? []
-              : [{ key: 'json', label: 'JSON attribute', children: responseTree((path) => pick(path)) }]),
+              : [
+                  {
+                    key: 'json',
+                    label: 'JSON attribute',
+                    children: (
+                      <div className={styles.jsonTab}>
+                        <Button
+                          color="secondary"
+                          size="s"
+                          fullWidth
+                          icon={IconSquareArrowOutUpRight}
+                          onClick={() => {
+                            setSubjOpen(null)
+                            setTreeQuery('')
+                            setTreeModalCond(c.id)
+                          }}
+                        >
+                          Open in full view
+                        </Button>
+                        {responseTree((path) => pick(path))}
+                      </div>
+                    ),
+                  },
+                ]),
           ]}
         />
         {subjTab === 'variables' && (
@@ -869,42 +943,27 @@ const ChecksProto = () => {
 
   const variablesTab = () => (
     <div className={styles.varsPane}>
-      {/* Global variables */}
-      <Table
-        rowKey="key"
-        compact
-        verticalBorders
-        data={[{ key: 'url', name: 'URL', value: startUrl }]}
-        columns={[
-          {
-            title: <div style={{ textAlign: 'left' }}>Global variables</div>,
-            dataIndex: 'name',
-            width: '30%',
-            onHeaderCell: () => ({ colSpan: 2 }),
-            render: (_: unknown, r: any) => (
-              <div className={styles.varNameCell}>
-                <Tag color="dark-blue" size="sm" icon={IconBraces} />
-                <Text weight="medium">{r.name}</Text>
-              </div>
-            ),
-          },
-          {
-            title: '',
-            dataIndex: 'value',
-            onHeaderCell: () => ({ colSpan: 0 }),
-            render: (_: unknown, r: any) => (
-              <Input
-                size="m"
-                borderless
-                fullWidth
-                placeholder="Enter value..."
-                value={r.value}
-                onChange={(e) => setStartUrl(e.target.value)}
-              />
-            ),
-          },
-        ]}
-      />
+      {/* Global variables — même structure div que Output pour aligner la
+          colonne nom (220px) et garder la même compacité. */}
+      <div className={styles.outTable}>
+        <div className={styles.gvHeadRow}>Global variables</div>
+        <div className={styles.gvDataRow}>
+          <div className={styles.outNameCell}>
+            <Tag color="dark-blue" size="sm" icon={IconBraces} />
+            <span className={styles.outName}>URL</span>
+          </div>
+          <div className={styles.gvValCell}>
+            <Input
+              size="m"
+              borderless
+              fullWidth
+              placeholder="Enter value..."
+              value={startUrl}
+              onChange={(e) => setStartUrl(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Output variables (produites par le step) — cf. Figma 10249:37165 */}
       <div className={styles.varsSection}>
@@ -1458,6 +1517,75 @@ const ChecksProto = () => {
               </Button>
             </div>
           </Modal.Footer>
+        </Modal>
+      )}
+
+      {treeModalCond && (
+        <Modal
+          open
+          width={680}
+          title="Select a JSON attribute"
+          onCancel={() => setTreeModalCond(null)}
+        >
+          <Modal.Content maxHeight="70vh">
+            <div className={styles.treeModalBody}>
+              <SearchInput
+                value={treeQuery}
+                onChange={setTreeQuery}
+                placeholder="Filter attributes by key, path or value..."
+                fullwidth
+              />
+              {(() => {
+                const q = treeQuery.trim().toLowerCase()
+                const rows = q
+                  ? RESPONSE_ROWS.filter(
+                      (r) => r.leaf && `${r.label} ${r.path} ${r.preview}`.toLowerCase().includes(q),
+                    )
+                  : RESPONSE_ROWS
+                const onPick = (path: string) => {
+                  chooseSubject(treeModalCond, path)
+                  setTreeModalCond(null)
+                }
+                return (
+                  <div className={styles.treeModalTree}>
+                    {q && (
+                      <div className={styles.rpHead}>
+                        {rows.length} matching attribute{rows.length === 1 ? '' : 's'}
+                      </div>
+                    )}
+                    <div className={styles.rpList}>
+                      {rows.length === 0 ? (
+                        <div className={styles.subjEmpty}>No attribute matches this filter.</div>
+                      ) : (
+                        rows.map((row) =>
+                          row.leaf ? (
+                            <button
+                              key={row.path}
+                              className={styles.rpRow}
+                              style={{ paddingLeft: q ? 12 : 10 + row.depth * 14 }}
+                              onClick={() => onPick(row.path)}
+                            >
+                              <span className={styles.rpKey}>{q ? row.path : row.label}</span>
+                              <span className={styles.rpVal}>{row.preview}</span>
+                            </button>
+                          ) : (
+                            <div
+                              key={row.path}
+                              className={styles.rpNode}
+                              style={{ paddingLeft: 10 + row.depth * 14 }}
+                            >
+                              <span className={styles.rpKey}>{row.label}</span>
+                              <span className={styles.rpMuted}>{row.preview}</span>
+                            </div>
+                          ),
+                        )
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+          </Modal.Content>
         </Modal>
       )}
     </div>

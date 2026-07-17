@@ -898,13 +898,13 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 
   &:hover {
     background: $surface-2;
-    color: #0577ff;
+    color: $primary;
   }
 }
 
 /* ---- Picker « dernière réponse » (arbre JSON cliquable → JSONPath) ---- */
 .rpBox {
-  width: 300px;
+  width: 100%;
   max-width: 80vw;
 }
 .rpHead {
@@ -924,7 +924,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 4px 12px 4px 0;
+  padding: 4px 16px 4px 0;
   font-family: $mono;
   font-size: 12px;
   text-align: left;
@@ -934,26 +934,84 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 .rpRow {
   cursor: pointer;
 
+  // hover primary très léger (accent-soft était un peu fort)
   &:hover {
-    background: rgba(5, 119, 255, 0.08);
+    background: color-mix(in srgb, var(--color-primary, #ed7846) 8%, transparent);
   }
 }
 .rpNode {
   color: $muted;
 }
 .rpKey {
-  color: #0577ff;
+  color: $primary;
   flex: none;
 }
 .rpVal {
   color: $ink-2;
+  flex: 1 1 auto;
   min-width: 0;
+  // une ligne, tronquée si trop longue mais SANS déborder du dropdown
+  // (la valeur complète reste lisible via "Open in full view")
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .rpMuted {
   color: $faint;
+}
+
+/* Onglet JSON attribute : bouton "ouvrir en grand" au-dessus de l'arbre. */
+.jsonTab {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 8px 0;
+}
+.rpExpandBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-end;
+  margin: 6px 8px 0;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: $primary;
+  cursor: pointer;
+
+  svg {
+    flex: none;
+  }
+  &:hover {
+    background: $accent-soft;
+  }
+}
+
+/* Modale "grand" sélecteur d'attribut JSON (réponses volumineuses). */
+.treeModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.treeModalTree {
+  width: 100%;
+  border: 1px solid $border;
+  border-radius: 8px;
+  overflow: hidden;
+
+  .rpList {
+    max-height: 52vh;
+  }
+  // en grand on montre la valeur en entier (détail), pas de troncature
+  .rpVal {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
 }
 .omFooter {
   display: flex;
@@ -972,6 +1030,27 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   border: 1px solid $border;
   border-radius: 6px;
   overflow: hidden;
+}
+// Global variables : header sur toute la largeur, data en 220px + valeur
+// (même colonne nom que la table Output → alignées).
+.gvHeadRow {
+  padding: 6px 8px;
+  background: $surface-2;
+  border-bottom: 1px solid $border;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink-2;
+}
+.gvDataRow {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+}
+.gvValCell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 32px;
+  padding: 0 2px;
 }
 .outHeadRow {
   display: grid;
@@ -1467,10 +1546,10 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   flex-wrap: nowrap;
   flex: 0 1 auto;
   min-width: 0;
-  max-width: 100%;
+  // pas de max-width / overflow:hidden : l'attribut JSON s'affiche en entier
+  // plutôt que d'être coupé en "...".
   border: 1px solid $border;
   border-radius: 6px;
-  overflow: hidden;
 
   // les selects se dimensionnent à leur contenu
   :global(.ant-select) {
@@ -1534,8 +1613,8 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   }
 }
 .subjTriggerLabel {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  // Attribut affiché en entier (une ligne), sans ellipsis.
+  white-space: nowrap;
 }
 .subjTriggerVar {
   display: inline-flex;
@@ -1547,7 +1626,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   white-space: nowrap;
 }
 .subjPop {
-  width: 244px;
+  width: 360px;
 
   :global(.ant-tabs-nav) {
     margin: 0 !important;
@@ -1593,9 +1672,9 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   width: 22px;
   height: 22px;
   border-radius: 6px;
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.22);
-  color: #6366f1;
+  background: $accent-soft;
+  border: 1px solid $accent-soft;
+  color: $primary;
   font-family: $mono;
   font-size: 11px;
 }
