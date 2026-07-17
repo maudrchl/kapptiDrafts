@@ -883,6 +883,16 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   display: flex;
   align-items: center;
 }
+// Note en lieu et place du champ quand la source n'a pas de chemin (body / status).
+.omExprNote {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 13px;
+  color: $ink-2;
+}
 .omPickBtn {
   flex: none;
   align-self: stretch;
@@ -1174,7 +1184,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   border: 0;
   background: transparent;
   outline: none;
-  font: inherit;
+  font-family: $mono;
   font-size: 13px;
   color: $ink;
 

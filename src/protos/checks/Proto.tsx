@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type SetStateAction, type ReactNode } from 'react'
+import { useState, useEffect, type Dispatch, type SetStateAction, type ReactNode } from 'react'
 import {
   Select,
   Input,
@@ -211,14 +211,26 @@ const ChecksProto = () => {
   const [queryParams, setQueryParams] = useState<KV[]>(() => [emptyRow()])
   const [body, setBody] = useState('')
 
+  // Les Query Parameters pilotent la query string de l'URL de l'API Call :
+  // on reconstruit `?k=v&...` à chaque modif en gardant la partie chemin.
+  useEffect(() => {
+    setApiPath((prev) => {
+      const base = prev.split('?')[0]
+      const qs = queryParams
+        .filter((r) => r.k.trim() !== '')
+        .map((r) => `${r.k.trim()}=${r.v.trim()}`)
+        .join('&')
+      return qs ? `${base}?${qs}` : base
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryParams])
+
   // ---- Variables tab : output variables + modale Add/Edit ----
   const [outVars, setOutVars] = useState<OutVar[]>(() => [
     { id: nextId(), name: 'TOKEN', source: 'json', path: '$.access_token', last: '*******************' },
   ])
   const [outDraft, setOutDraft] = useState<OutDraft | null>(null)
   const [outDraftMode, setOutDraftMode] = useState<'add' | 'edit'>('add')
-  // Popover « piocher dans la dernière réponse » → génère le JSONPath.
-  const [pickOpen, setPickOpen] = useState(false)
 
   // ---- Advanced settings tab (checkboxes) ----
   const [overrideDns, setOverrideDns] = useState(false)
@@ -280,9 +292,15 @@ const ChecksProto = () => {
   // Picker de sujet à onglets (Response / Variables), façon popover d'insertion.
   const [subjOpen, setSubjOpen] = useState<string | null>(null)
   const [subjTab, setSubjTab] = useState<'response' | 'variables' | 'json'>('response')
-  // Sélecteur JSON attribute ouvert en grand (modale) : id de la condition ciblée.
-  const [treeModalCond, setTreeModalCond] = useState<string | null>(null)
+  // Sélecteur JSON attribute en grand (modale, recherche + arbre), PARTAGÉ par
+  // les conditions ET la création d'output variable : on stocke le callback de
+  // sélection (onPick) plutôt qu'un id de condition.
+  const [treePick, setTreePick] = useState<{ onPick: (path: string) => void } | null>(null)
   const [treeQuery, setTreeQuery] = useState('')
+  const openTree = (onPick: (path: string) => void) => {
+    setTreeQuery('')
+    setTreePick({ onPick })
+  }
 
   /* ---------- checks renderers (functions, NOT components → keep input focus) ---------- */
   const varsBtn = <span className={styles.exprVars}>{'{}'}</span>
@@ -550,8 +568,7 @@ const ChecksProto = () => {
                           icon={IconSquareArrowOutUpRight}
                           onClick={() => {
                             setSubjOpen(null)
-                            setTreeQuery('')
-                            setTreeModalCond(c.id)
+                            openTree((path) => chooseSubject(c.id, path))
                           }}
                         >
                           Open in full view
@@ -1437,43 +1454,66 @@ const ChecksProto = () => {
                       onChange={(_e: unknown, v: string) => patchDraft({ source: optVal(v) })}
                     />
                   </div>
-                  <div className={styles.omExprInput}>
-                    <Input
-                      size="m"
-                      borderless
-                      fullWidth
-                      mono
-                      placeholder="Example: $.userId"
-                      value={outDraft.path}
-                      onChange={(e) => patchDraft({ path: e.target.value })}
-                    />
-                  </div>
-                  <Popover
-                    trigger="click"
-                    placement="bottomRight"
-                    noPadding
-                    arrow={false}
-                    zIndex={1100}
-                    open={pickOpen}
-                    setOpen={setPickOpen}
-                    content={responseTree((path) => {
-                      patchDraft({ path, source: 'json' })
-                      setPickOpen(false)
-                    })}
-                  >
-                    <button
-                      type="button"
-                      className={styles.omPickBtn}
-                      title="Pick from the last response"
-                    >
-                      <IconBraces size={14} />
-                    </button>
-                  </Popover>
+
+                  {/* Le second champ dépend de la source. */}
+                  {outDraft.source === 'json' && (
+                    <>
+                      <div className={styles.omExprInput}>
+                        <Input
+                          size="m"
+                          borderless
+                          fullWidth
+                          mono
+                          placeholder="Example: $.access_token"
+                          value={outDraft.path}
+                          onChange={(e) => patchDraft({ path: e.target.value })}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.omPickBtn}
+                        title="Pick from the last response"
+                        onClick={() => openTree((path) => patchDraft({ path, source: 'json' }))}
+                      >
+                        <IconBraces size={14} />
+                      </button>
+                    </>
+                  )}
+
+                  {outDraft.source === 'header' && (
+                    <div className={styles.omExprInput}>
+                      <Input
+                        size="m"
+                        borderless
+                        fullWidth
+                        mono
+                        placeholder="Header name, e.g. Authorization"
+                        value={outDraft.path}
+                        onChange={(e) => patchDraft({ path: e.target.value })}
+                      />
+                    </div>
+                  )}
+
+                  {(outDraft.source === 'body' || outDraft.source === 'status') && (
+                    <div className={styles.omExprNote}>
+                      {outDraft.source === 'body'
+                        ? 'Stores the entire response body.'
+                        : 'Stores the HTTP status code.'}
+                    </div>
+                  )}
                 </div>
-                <span className={styles.omHint}>
-                  Click <IconBraces size={12} /> to pick a value from the last response — the path
-                  is generated for you.
-                </span>
+
+                {outDraft.source === 'json' && (
+                  <span className={styles.omHint}>
+                    Click <IconBraces size={12} /> to pick a value from the last response - the path
+                    is generated for you.
+                  </span>
+                )}
+                {outDraft.source === 'body' && (
+                  <span className={styles.omHint}>
+                    Keep the whole payload in one variable to assert on it later.
+                  </span>
+                )}
               </div>
 
               <Toggle
@@ -1520,12 +1560,12 @@ const ChecksProto = () => {
         </Modal>
       )}
 
-      {treeModalCond && (
+      {treePick && (
         <Modal
           open
           width={680}
           title="Select a JSON attribute"
-          onCancel={() => setTreeModalCond(null)}
+          onCancel={() => setTreePick(null)}
         >
           <Modal.Content maxHeight="70vh">
             <div className={styles.treeModalBody}>
@@ -1543,8 +1583,8 @@ const ChecksProto = () => {
                     )
                   : RESPONSE_ROWS
                 const onPick = (path: string) => {
-                  chooseSubject(treeModalCond, path)
-                  setTreeModalCond(null)
+                  treePick.onPick(path)
+                  setTreePick(null)
                 }
                 return (
                   <div className={styles.treeModalTree}>
