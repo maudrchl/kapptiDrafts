@@ -443,7 +443,7 @@ const IndexPage = () => {
 
 const styles: Record<string, CSSProperties> = {
   // flex:1 + minWidth:0 car AntdTheme enveloppe l'app dans un conteneur flex
-  page: { flex: 1, minWidth: 0, padding: '7rem' },
+  page: { flex: 1, minWidth: 0, padding: '4rem 7rem 7rem' },
   logo: { height: 30, width: 'auto', display: 'block', marginBottom: 8 },
   protoCell: { display: 'flex', alignItems: 'center', gap: 12 },
   titleRow: { display: 'flex', alignItems: 'center', gap: 6 },
