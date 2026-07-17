@@ -5,11 +5,15 @@
 }
 
 /* Le thème ui-kit met un padding vertical de 9px mais garde l'horizontal
-   d'antd (16px) → le bord gauche/droit de la table paraît plus grand que le
-   haut/bas. On aligne les bords (1re / dernière cellule) sur le vertical. */
+   d'antd (16px) → bords gauche/droit plus grands que le haut/bas. On égalise :
+   vertical ET bords de la table à 12px (un peu plus aéré que 9). L'espacement
+   inter-colonnes garde le 16px par défaut. */
+.tableWrap :global(.ant-table-cell) {
+  padding-block: 12px !important;
+}
 .tableWrap :global(.ant-table-cell:first-child) {
-  padding-left: 9px !important;
+  padding-left: 12px !important;
 }
 .tableWrap :global(.ant-table-cell:last-child) {
-  padding-right: 9px !important;
+  padding-right: 12px !important;
 }
