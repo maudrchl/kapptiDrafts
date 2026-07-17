@@ -12,6 +12,8 @@ import {
   IconHistory,
   IconEye,
   IconEyeOff,
+  IconCode,
+  IconLink,
 } from '@kapptivate/ui-kit'
 import { collabEnabled } from '../../lib/supabase'
 import { useCurrentUser, isAdmin } from '../../context/CurrentUser'
@@ -29,7 +31,19 @@ const EMOJIS = ['🔥', '❤️', '👏', '🎉', '😍', '🚀', '👀', '💡'
  * Orchestre la collaboration sur un proto : présence, pins de commentaires,
  * stamps emoji, historique. Rendu par ProtoFrame, dans le ScreenProvider.
  */
-const CollabLayer = ({ slug }: { slug: string }) => {
+const CollabLayer = ({
+  slug,
+  onOpenCode,
+  onToggleShare,
+  shareActive,
+}: {
+  slug: string
+  /** Ouvre le drawer de code (chrome ProtoFrame). Absent en vue scoped. */
+  onOpenCode?: () => void
+  /** Ouvre/ferme le panneau de liens de partage. Absent si scoped / collab off. */
+  onToggleShare?: () => void
+  shareActive?: boolean
+}) => {
   const { user } = useCurrentUser()
   const activeScreen = useActiveScreen()
   const goToScreen = useGoToScreen()
@@ -146,6 +160,18 @@ const CollabLayer = ({ slug }: { slug: string }) => {
           counter={openCount || undefined}
           onClick={() => setHistoryOpen(true)}
         />
+        {(onToggleShare || onOpenCode) && <span style={styles.divider} />}
+        {onToggleShare && (
+          <ToolBtn
+            icon={IconLink}
+            label="Interview links for this proto"
+            active={shareActive}
+            onClick={onToggleShare}
+          />
+        )}
+        {onOpenCode && (
+          <ToolBtn icon={IconCode} label="View this proto's source code" onClick={onOpenCode} />
+        )}
       </div>
 
       <Drawer open={historyOpen} onClose={() => setHistoryOpen(false)} title="Comments" width={380}>

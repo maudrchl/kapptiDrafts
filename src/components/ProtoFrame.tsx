@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import { IconCode, IconLink, IconCheck, IconTrash } from '@kapptivate/ui-kit'
+import { IconLink, IconCheck, IconTrash } from '@kapptivate/ui-kit'
 import logo from '../assets/kapptidrafts-logo.svg'
 import CodeDrawer from './CodeDrawer'
 import { ScreenProvider } from '../context/ScreenContext'
@@ -73,8 +73,15 @@ const ProtoFrame = ({
       {children}
 
       {/* Collaboration : présence, commentaires épinglés, historique.
-          Active aussi sur un lien d'interview (l'invité peut commenter). */}
-      <CollabLayer slug={slug} />
+          Active aussi sur un lien d'interview (l'invité peut commenter).
+          Les actions Share + Code du chrome sont rendues dans SA toolbar du bas
+          (masquées en vue scoped, et Share seulement si la collab est active). */}
+      <CollabLayer
+        slug={slug}
+        onOpenCode={scoped ? undefined : () => setCodeOpen(true)}
+        onToggleShare={scoped || !collabEnabled ? undefined : toggleSharePanel}
+        shareActive={shareOpen}
+      />
 
       {/* Liseré (décoratif, ne capte pas les clics) */}
       <div style={styles.ring} aria-hidden />
@@ -91,29 +98,6 @@ const ProtoFrame = ({
             </Link>
             <span style={styles.sep}>/</span>
             <span style={styles.title}>{title}</span>
-          </div>
-
-          <div style={styles.topRight}>
-            {collabEnabled && (
-              <button
-                type="button"
-                style={{ ...styles.chromeBtn, ...(shareOpen ? styles.chromeBtnActive : null) }}
-                onClick={toggleSharePanel}
-                title="Interview links for this proto"
-              >
-                <IconLink size={13} />
-                <span>Share</span>
-              </button>
-            )}
-            <button
-              type="button"
-              style={styles.chromeBtn}
-              onClick={() => setCodeOpen(true)}
-              title="View this proto's source code"
-            >
-              <IconCode size={13} />
-              <span>Code</span>
-            </button>
           </div>
 
           {shareOpen && (
@@ -201,38 +185,11 @@ const styles: Record<string, CSSProperties> = {
   logo: { height: 13, width: 'auto', display: 'block' },
   sep: { color: '#c0c4cc' },
   title: { fontWeight: 600, color: '#1a1a1a' },
-  topRight: {
-    position: 'fixed',
-    top: 12,
-    right: 12,
-    zIndex: 2147483647,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-  },
-  chromeBtn: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    padding: '6px 11px',
-    fontSize: 12,
-    fontWeight: 600,
-    fontFamily:
-      'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-    color: '#475467',
-    cursor: 'pointer',
-    background: 'rgba(255,255,255,0.82)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    border: '1px solid #ececf0',
-    borderRadius: 8,
-    boxShadow: '0 2px 8px rgba(16,24,40,0.10)',
-  },
-  chromeBtnActive: { background: '#1c4a47', color: '#fff', borderColor: '#1c4a47' },
   sharePanel: {
     position: 'fixed',
-    top: 52,
-    right: 12,
+    bottom: 66,
+    left: '50%',
+    transform: 'translateX(-50%)',
     zIndex: 2147483647,
     width: 320,
     maxWidth: 'calc(100vw - 24px)',
