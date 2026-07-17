@@ -16,6 +16,7 @@ import {
   IconFileType,
   IconPin,
   IconArchive,
+  IconRocket,
   IconChevronRight,
 } from '@kapptivate/ui-kit'
 import logo from '../assets/kapptidrafts-logo.svg'
@@ -113,6 +114,7 @@ const IndexPage = () => {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | ProtoStatus>('all')
   const [archiveOpen, setArchiveOpen] = useState(false)
+  const [deployedOpen, setDeployedOpen] = useState(false)
 
   useEffect(() => {
     document.title = 'kapptiDrafts'
@@ -148,17 +150,22 @@ const IndexPage = () => {
       })
   }, [search, statusFilter, pinned])
 
-  // Dossier « Archive » : les protos rangés dans la collection Archive sont
-  // sortis de la liste principale et repliés dans une section dédiée en bas.
+  // La liste principale ne garde que les protos actifs : les déployés et les
+  // archivés sont sortis dans leurs propres sections repliables en bas.
   const mainItems = useMemo(
-    () => items.filter((p) => p.collection !== 'Archive'),
+    () => items.filter((p) => p.collection !== 'Archive' && p.status !== 'deployed'),
+    [items],
+  )
+  const deployedItems = useMemo(
+    () => items.filter((p) => p.collection !== 'Archive' && p.status === 'deployed'),
     [items],
   )
   const archivedItems = useMemo(
     () => items.filter((p) => p.collection === 'Archive'),
     [items],
   )
-  // Ouvert au clic, ou d'office si une recherche remonte un proto archivé.
+  // Ouvert au clic, ou d'office si une recherche/filtre remonte ces protos.
+  const showDeployed = deployedOpen || search.trim() !== '' || statusFilter === 'deployed'
   const showArchived = archiveOpen || search.trim() !== ''
 
   // Menu contextuel (clic droit) d'une ligne : épingler / désépingler.
@@ -358,6 +365,45 @@ const IndexPage = () => {
                   onClickRow={open}
                   persistSortKey="kapptidrafts:sort-protos-v2"
                 />
+              </div>
+            )}
+
+            {deployedItems.length > 0 && (
+              <div style={styles.archiveSection}>
+                <button
+                  type="button"
+                  style={styles.archiveHead}
+                  onClick={() => setDeployedOpen((v) => !v)}
+                  aria-expanded={showDeployed}
+                >
+                  <span
+                    style={{
+                      ...styles.archiveChevron,
+                      transform: showDeployed ? 'rotate(90deg)' : 'none',
+                    }}
+                  >
+                    <IconChevronRight size={16} />
+                  </span>
+                  <IconRocket size={16} color={STATUS_ACCENT.deployed} />
+                  <Text size="s" weight="medium" color="secondary">
+                    Deployed
+                  </Text>
+                  <Text size="s" color="secondary">
+                    · {deployedItems.length}
+                  </Text>
+                </button>
+
+                {showDeployed && (
+                  <div className={css.tableWrap} style={{ marginTop: 12 }}>
+                    <Table
+                      rowKey="slug"
+                      outerBorders
+                      data={deployedItems}
+                      columns={columns}
+                      onClickRow={open}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
