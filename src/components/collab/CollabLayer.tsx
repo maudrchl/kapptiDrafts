@@ -24,6 +24,7 @@ import { usePresence } from './usePresence'
 import CommentPins, { type PlacementMode } from './CommentPins'
 import CommentsDrawer from './CommentsDrawer'
 import PresenceBar from './PresenceBar'
+import EmojiPicker from './EmojiPicker'
 
 const EMOJIS = ['🔥', '❤️', '👏', '🎉', '😍', '🚀', '👀', '💡']
 
@@ -61,6 +62,8 @@ const CollabLayer = ({
 
   const [mode, setMode] = useState<PlacementMode>('off')
   const [activeEmoji, setActiveEmoji] = useState(EMOJIS[0])
+  // Sélecteur d'emojis complet (bouton « + » de la palette).
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [showResolved, setShowResolved] = useState(false)
   // Masque TOUS les marqueurs (pins de commentaires + stamps emoji).
   const [markersHidden, setMarkersHidden] = useState(false)
@@ -85,6 +88,11 @@ const CollabLayer = ({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  // Quitter le mode emoji referme le sélecteur.
+  useEffect(() => {
+    if (mode !== 'emoji') setPickerOpen(false)
+  }, [mode])
 
   if (!collabEnabled) return null
 
@@ -115,7 +123,8 @@ const CollabLayer = ({
         deleteReply={deleteReply}
       />
 
-      {/* Palette emoji (au-dessus de la toolbar, en mode emoji). */}
+      {/* Palette emoji (au-dessus de la toolbar, en mode emoji). Le « + » ouvre
+          le sélecteur complet (tous les emojis, façon Meet). */}
       {mode === 'emoji' && !historyOpen && (
         <div style={styles.palette}>
           {EMOJIS.map((e) => (
@@ -130,7 +139,28 @@ const CollabLayer = ({
               {e}
             </button>
           ))}
+          <span style={styles.divider} />
+          <button
+            data-emoji-more
+            type="button"
+            onClick={() => setPickerOpen((o) => !o)}
+            aria-label="More emojis"
+            aria-pressed={pickerOpen}
+            style={{ ...styles.emojiBtn, ...(pickerOpen ? styles.emojiBtnActive : null) }}
+          >
+            +
+          </button>
         </div>
+      )}
+
+      {mode === 'emoji' && !historyOpen && pickerOpen && (
+        <EmojiPicker
+          onPick={(e) => {
+            setActiveEmoji(e)
+            setPickerOpen(false)
+          }}
+          onClose={() => setPickerOpen(false)}
+        />
       )}
 
       {/* Toolbar flottante, bas-centre (façon Figma). */}
