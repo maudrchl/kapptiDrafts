@@ -58,6 +58,11 @@ const TAG_ACCENT: Record<string, string> = {
   Brand: '#db2777', // rose
   PM: '#0ea5e9', // bleu
 }
+// Fond clair correspondant (pastille d'icône des lignes taguées).
+const TAG_ICON_BG: Record<string, string> = {
+  Brand: 'rgba(219,39,119,0.12)',
+  PM: 'rgba(14,165,233,0.12)',
+}
 
 // Fond de pastille par statut → donne le ressenti actif (coloré) vs deployed (posé)
 const STATUS_ICON_BG: Record<ProtoStatus, string> = {
@@ -245,15 +250,18 @@ const IndexPage = () => {
       render: (_: string, p: Row) => {
         const Icon = p.icon
         const status = p.status
+        // Une ligne taguée (Brand/PM) prend la couleur de son tag ; sinon le statut.
+        const accent = p.tag ? (TAG_ACCENT[p.tag] ?? '#7c3aed') : STATUS_ACCENT[status]
+        const accentBg = p.tag
+          ? (TAG_ICON_BG[p.tag] ?? 'rgba(124,58,237,0.12)')
+          : STATUS_ICON_BG[status]
         return (
           <Dropdown trigger="contextMenu" menu={pinMenu(p)} placement="bottomLeft">
             {/* Clic gauche = navigation explicite (le wrapper Dropdown
                 interceptait le clic sur cette cellule) ; clic droit = épingler. */}
             <div style={{ ...styles.protoCell, cursor: 'pointer' }} onClick={() => open(p)}>
-              <span
-                style={{ ...styles.iconBox, background: STATUS_ICON_BG[status] }}
-              >
-                <Icon size={18} color={STATUS_ACCENT[status]} />
+              <span style={{ ...styles.iconBox, background: accentBg }}>
+                <Icon size={18} color={accent} />
               </span>
               <div>
                 <div style={styles.titleRow}>
