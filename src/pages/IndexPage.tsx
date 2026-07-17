@@ -25,7 +25,6 @@ import logo from '../assets/kapptidrafts-logo.svg'
 import IconBrush from '../protos/BrushIcon'
 import {
   catalog,
-  protos,
   STATUS_ORDER,
   type CatalogEntry,
   type ProtoStatus,
@@ -109,9 +108,11 @@ const fmtDate = (iso?: string): string => {
   return absDate(iso)
 }
 
-// Seuls les protos React portent la présence temps réel (les archives HTML ne
-// montent pas la couche collab). Liste stable dérivée du registry.
-const REACT_SLUGS = protos.map((p) => p.slug)
+// Présence temps réel sur TOUS les fichiers, React comme archives HTML : ces
+// dernières montent désormais la couche collab via une iframe hôte (route
+// `/html/:slug`), donc elles rejoignent le même canal de présence. Liste stable
+// dérivée du catalogue.
+const ALL_SLUGS = catalog.map((c) => c.slug)
 
 // Icône de tri du design system (rendue dans le slot natif de la Table antd)
 const renderSortIcon = ({
@@ -123,7 +124,7 @@ const renderSortIcon = ({
 const IndexPage = () => {
   const navigate = useNavigate()
   const { user } = useCurrentUser()
-  const presence = useAllPresence(REACT_SLUGS, user)
+  const presence = useAllPresence(ALL_SLUGS, user)
   const { pinned, togglePin } = useProtoPins()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | ProtoStatus>('all')
@@ -145,8 +146,10 @@ const IndexPage = () => {
   }, [tab])
 
   const open = (p: Row) => {
+    // React → sa route SPA ; HTML legacy → route hôte iframe (garde la collab)
+    // au lieu de quitter l'app vers le fichier statique.
     if (p.kind === 'react') navigate(p.target)
-    else window.location.href = encodeURI(p.target)
+    else navigate(`/html/${p.slug}`)
   }
 
   // Recherche + filtre statut, puis tri de base : épinglés d'abord, ensuite par
@@ -363,8 +366,8 @@ const IndexPage = () => {
       ),
     },
     {
-      // Présence temps réel : avatars des personnes qui regardent ce proto,
-      // tout à droite de la ligne. Cellule vide si personne (ou proto HTML).
+      // Présence temps réel : avatars des personnes qui regardent ce fichier
+      // (React ou HTML), tout à droite de la ligne. Cellule vide si personne.
       title: '',
       key: 'presence',
       width: 120,

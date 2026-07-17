@@ -34,6 +34,9 @@ const SharePage = () => {
 
   if (slug === undefined) return <PageLoader />
 
+  // Partage = protos React uniquement (les archives HTML ne sont pas partageables :
+  // l'iframe /folder/* est bloquée par le middleware hors login → cf. bouton Share
+  // masqué sur ces docs). Un token HTML retombe donc sur "lien indisponible".
   const entry = slug ? protos.find((p) => p.slug === slug) : undefined
   if (!entry) {
     return (

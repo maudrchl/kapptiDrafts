@@ -21,12 +21,18 @@ const ProtoFrame = ({
   slug,
   children,
   scoped = false,
+  noCode = false,
+  noShare = false,
 }: {
   title: string
   slug: string
   children: ReactNode
   /** Vue « lien d'interview » : masque le chrome de l'app (garde la collab). */
   scoped?: boolean
+  /** Pas de code source consultable (ex. archive HTML) : masque le bouton et le drawer Code. */
+  noCode?: boolean
+  /** Pas de partage (ex. archive HTML : l'iframe /folder/* est bloquée hors login). */
+  noShare?: boolean
 }) => {
   const [codeOpen, setCodeOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
@@ -86,8 +92,8 @@ const ProtoFrame = ({
           (masquées en vue scoped, et Share seulement si la collab est active). */}
       <CollabLayer
         slug={slug}
-        onOpenCode={scoped ? undefined : () => setCodeOpen(true)}
-        onToggleShare={scoped || !collabEnabled ? undefined : toggleSharePanel}
+        onOpenCode={scoped || noCode ? undefined : () => setCodeOpen(true)}
+        onToggleShare={scoped || noShare || !collabEnabled ? undefined : toggleSharePanel}
         shareActive={shareOpen}
       />
 
@@ -153,7 +159,7 @@ const ProtoFrame = ({
             </div>
           )}
 
-          <CodeDrawer slug={slug} open={codeOpen} onClose={() => setCodeOpen(false)} />
+          {!noCode && <CodeDrawer slug={slug} open={codeOpen} onClose={() => setCodeOpen(false)} />}
         </>
       )}
     </ScreenProvider>
