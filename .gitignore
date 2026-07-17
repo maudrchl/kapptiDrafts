@@ -3,3 +3,8 @@
 node_modules
 /dist
 .DS_Store
+
+# Artefacts de build TS/Vite (générés — ne pas suivre)
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
