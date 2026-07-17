@@ -12,6 +12,7 @@
   "dependencies": {
     "@kapptivate/ui-kit": "1.47.0",
     "@supabase/supabase-js": "^2.109.0",
+    "@xyflow/react": "^12.11.2",
     "antd": "5.16.4",
     "dayjs": "1.11.13",
     "formik": "2.4.5",

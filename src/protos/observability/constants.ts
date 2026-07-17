@@ -44,10 +44,7 @@ export const PAGE_META: Record<
   svcmap: {
     title: 'Service map',
     sub: 'Visualize dependencies and traffic flow between your services',
-    actions: [
-      { label: 'Refresh', primary: false },
-      { label: 'Configure', primary: true },
-    ],
+    actions: [{ label: 'Refresh', primary: false }],
   },
   k8s: {
     title: 'Kubernetes',
