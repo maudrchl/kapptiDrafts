@@ -557,9 +557,11 @@ const ThreadCard = ({
       />
 
       <div style={styles.actions}>
-        <Button size="s" color="secondary" icon={IconCheck} onClick={onToggleResolved}>
-          {comment.resolved ? 'Reopen' : 'Resolve'}
-        </Button>
+        {isAdmin && (
+          <Button size="s" color="secondary" icon={IconCheck} onClick={onToggleResolved}>
+            {comment.resolved ? 'Reopen' : 'Resolve'}
+          </Button>
+        )}
         <div style={{ flex: 1 }} />
         {(comment.author_email === me.email || isAdmin) && (
           <Button size="s" color="danger-s" icon={IconTrash} onClick={onDelete}>
