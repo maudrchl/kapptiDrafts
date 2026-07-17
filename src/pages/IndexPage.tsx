@@ -373,7 +373,7 @@ const IndexPage = () => {
         <div>
           <img src={logo} alt="kapptiDrafts" style={styles.logo} />
           <Text size="s" color="secondary">
-            {catalog.length} prototype{catalog.length > 1 ? 's' : ''} · a lab to
+            {catalog.length} file{catalog.length > 1 ? 's' : ''} · a lab to
             explore and track product work
           </Text>
         </div>
@@ -386,18 +386,6 @@ const IndexPage = () => {
         </Button>
       </header>
 
-      {/* Toolbar : recherche (le tri et le filtre statut sont dans le tableau) */}
-      <div style={styles.toolbar}>
-        <div style={{ width: 320, maxWidth: '100%' }}>
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder="Search a prototype…"
-            fullwidth
-          />
-        </div>
-      </div>
-
       <div style={{ marginTop: 16 }}>
         <Tabs
           tabs={TAB_DEFS.map((t) => {
@@ -409,6 +397,18 @@ const IndexPage = () => {
             setTab(k as 'active' | 'brand' | 'pm' | 'deployed' | 'archived')
           }
         />
+
+        {/* Recherche sous les onglets : filtre le contenu de l'onglet actif. */}
+        <div style={{ ...styles.toolbar, marginTop: 16 }}>
+          <div style={{ width: 320, maxWidth: '100%' }}>
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search a prototype…"
+              fullwidth
+            />
+          </div>
+        </div>
 
         <div style={{ marginTop: 16 }}>
           {currentItems.length === 0 ? (
