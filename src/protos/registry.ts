@@ -94,7 +94,7 @@ export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
     tag: 'PM',
     description: 'Suivi des conditions du POC 2 — LeBonCoin × kapptivate',
     icon: IconRocket,
-    href: '/folder/Suivi POC 2 - LBC.html',
+    href: '/suivi-poc2-lbc',
   },
   {
     slug: 'exploration-ui',
