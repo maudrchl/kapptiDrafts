@@ -3,3 +3,13 @@
 .tableWrap table {
   width: 100% !important;
 }
+
+/* Le thème ui-kit met un padding vertical de 9px mais garde l'horizontal
+   d'antd (16px) → le bord gauche/droit de la table paraît plus grand que le
+   haut/bas. On aligne les bords (1re / dernière cellule) sur le vertical. */
+.tableWrap :global(.ant-table-cell:first-child) {
+  padding-left: 9px !important;
+}
+.tableWrap :global(.ant-table-cell:last-child) {
+  padding-right: 9px !important;
+}
