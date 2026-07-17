@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi POC 2 — LBC × kapptivate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#1C4A47;
+    --green-deep:#0c2422;
+    --green-card:#123330;
+    --orange:#ED7846;
+    --soft:#E6F4EA;
+    --muted:#8fb3ab;
+    --red:#e0564a;
+    --blue:#5aa9c9;
+    --amber:#e6b455;
+    --green-ok:#5bbf8a;
+    --line:rgba(230,244,234,.10);
+    --display:'Geist',system-ui,sans-serif;
+    --body:'Geist',system-ui,sans-serif;
+    --mono:'Geist Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:var(--body);
+    color:var(--soft);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(237,120,70,.14), transparent 60%),
+      linear-gradient(160deg, #0f2d2a 0%, var(--green-deep) 70%);
+    min-height:100vh;
+    padding:40px 24px 80px;
+    line-height:1.5;
+  }
+  .wrap{max-width:920px;margin:0 auto}
+
+  /* Header */
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);margin:0 0 8px}
+  h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0 0 6px;color:#fff;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 28px}
+  .sub b{color:var(--soft);font-weight:600}
+
+  /* Progress */
+  .panel{background:var(--green-card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:14px}
+  .prog-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .prog-top .big{font-family:var(--display);font-size:22px;font-weight:700;color:#fff}
+  .prog-top .big span{color:var(--muted);font-weight:500;font-size:15px}
+  .bar{height:10px;background:rgba(0,0,0,.28);border-radius:99px;overflow:hidden;display:flex}
+  .bar i{display:block;height:100%;transition:width .4s ease}
+  .bar .s-ok{background:var(--green-ok)}
+  .bar .s-prog{background:var(--amber)}
+  .bar .s-block{background:var(--red)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:9px;height:9px;border-radius:99px;display:inline-block}
+  .go-banner{margin-top:16px;padding:12px 16px;border-radius:12px;font-size:13.5px;display:flex;gap:10px;align-items:center}
+  .go-no{background:rgba(224,86,74,.12);border:1px solid rgba(224,86,74,.4);color:#f3a89f}
+  .go-yes{background:rgba(91,191,138,.12);border:1px solid rgba(91,191,138,.4);color:#a9e3c4}
+
+  /* Filters */
+  .filters{display:flex;gap:8px;margin:20px 0 14px;flex-wrap:wrap}
+  .filters button{
+    font-family:var(--body);font-size:13px;color:var(--muted);
+    background:transparent;border:1px solid var(--line);border-radius:99px;
+    padding:7px 14px;cursor:pointer;transition:.15s;
+  }
+  .filters button:hover{color:var(--soft);border-color:rgba(230,244,234,.25)}
+  .filters button.active{background:var(--orange);border-color:var(--orange);color:#2a1006;font-weight:600}
+
+  /* Card */
+  .card{background:var(--green-card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:12px;transition:.2s}
+  .card.blocking{border-left:3px solid var(--red)}
+  .card-head{display:flex;gap:12px;align-items:flex-start}
+  .num{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:3px;min-width:22px}
+  .card-title{flex:1}
+  .card-title h3{margin:0;font-family:var(--display);font-size:16.5px;font-weight:600;color:#fff}
+  .badges{display:flex;gap:7px;margin-top:7px;flex-wrap:wrap}
+  .badge{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:6px}
+  .b-block{background:rgba(224,86,74,.16);color:#f3a89f}
+  .b-score{background:rgba(230,244,234,.07);color:var(--muted)}
+  .b-new{background:rgba(90,169,201,.15);color:#9dd0e3}
+  .why{color:var(--muted);font-size:13.5px;margin:12px 0 0;padding-left:34px}
+  .why b{color:var(--soft);font-weight:500}
+
+  /* Status control */
+  .status-row{display:flex;gap:6px;margin:14px 0 0 34px;flex-wrap:wrap}
+  .status-row button{
+    font-family:var(--body);font-size:12.5px;background:transparent;
+    border:1px solid var(--line);border-radius:8px;padding:6px 12px;
+    color:var(--muted);cursor:pointer;transition:.15s;display:flex;align-items:center;gap:6px;
+  }
+  .status-row button:hover{color:var(--soft)}
+  .status-row button.on[data-s="todo"]{background:rgba(230,244,234,.1);border-color:rgba(230,244,234,.3);color:var(--soft)}
+  .status-row button.on[data-s="prog"]{background:rgba(230,180,85,.16);border-color:var(--amber);color:#f0d090}
+  .status-row button.on[data-s="ok"]{background:rgba(91,191,138,.16);border-color:var(--green-ok);color:#a9e3c4}
+  .status-row button.on[data-s="block"]{background:rgba(224,86,74,.16);border-color:var(--red);color:#f3a89f}
+
+  .notes{margin:12px 0 0 34px}
+  .notes textarea{
+    width:100%;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:10px;
+    color:var(--soft);font-family:var(--body);font-size:13.5px;padding:10px 12px;resize:vertical;
+    min-height:44px;line-height:1.45;
+  }
+  .notes textarea:focus{outline:none;border-color:rgba(237,120,70,.5)}
+  .notes textarea::placeholder{color:rgba(143,179,171,.6)}
+
+  .foot{display:flex;justify-content:space-between;align-items:center;margin-top:24px;font-size:12px;color:var(--muted);flex-wrap:wrap;gap:12px}
+  .foot button{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 12px;font-family:var(--body);font-size:12px;cursor:pointer}
+  .foot button:hover{color:var(--red);border-color:rgba(224,86,74,.4)}
+  .saved{font-family:var(--mono);opacity:0;transition:opacity .3s;color:var(--green-ok)}
+  .saved.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="kicker">Suivi de re-test</p>
+  <h1>POC 2 — LBC × kapptivate</h1>
+  <p class="sub">Points à valider avant de relancer un POC, issus de la synthèse du <b>22/04/2026</b> (verdict : No-Go en l'état). Statuts et notes sauvegardés automatiquement dans ce fichier.</p>
+
+  <div class="panel">
+    <div class="prog-top">
+      <div class="big"><span id="okCount">0</span> validés <span>/ 9 points</span></div>
+      <div class="big" id="blockLabel" style="font-size:15px;color:var(--red)"></div>
+    </div>
+    <div class="bar">
+      <i class="s-ok" id="barOk" style="width:0%"></i>
+      <i class="s-prog" id="barProg" style="width:0%"></i>
+      <i class="s-block" id="barBlock" style="width:0%"></i>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--green-ok)"></i>Validé</span>
+      <span><i class="dot" style="background:var(--amber)"></i>En cours</span>
+      <span><i class="dot" style="background:var(--red)"></i>Bloqué</span>
+      <span><i class="dot" style="background:rgba(230,244,234,.25)"></i>À faire</span>
+    </div>
+    <div id="goBanner" class="go-banner go-no"></div>
+  </div>
+
+  <div class="filters">
+    <button class="active" data-f="all">Tous</button>
+    <button data-f="block">Bloquants</button>
+    <button data-f="open">Reste à faire</button>
+    <button data-f="ok">Validés</button>
+  </div>
+
+  <div id="list"></div>
+
+  <div class="foot">
+    <span class="saved" id="savedTag">enregistré</span>
+    <button id="resetBtn">Réinitialiser le suivi</button>
+  </div>
+</div>
+
+<script>
+// Persistance partagée via /api/kv (prod) avec repli localStorage (dev / hors session).
+// L'API renvoie aussi `canEdit` : true seulement pour le profil autorisé (Mood).
+let canEdit = true;
+window.storage = {
+  async get(key){
+    try{
+      const r = await fetch('/api/kv?key=' + encodeURIComponent(key), { credentials: 'same-origin' });
+      if(r.ok){ return await r.json(); } // { value, canEdit }
+    }catch(e){}
+    return { value: localStorage.getItem(key), canEdit: true };
+  },
+  async set(key, value){
+    try{
+      const r = await fetch('/api/kv', { method:'PUT', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ key, value }) });
+      if(r.ok) return;
+    }catch(e){}
+    try{ localStorage.setItem(key, value); }catch(e){}
+  },
+  async delete(key){
+    try{
+      const r = await fetch('/api/kv?key=' + encodeURIComponent(key), { method:'DELETE', credentials:'same-origin' });
+      if(r.ok) return;
+    }catch(e){}
+    try{ localStorage.removeItem(key); }catch(e){}
+  },
+};
+
+const ITEMS = [
+  {
+    id:"mcp", n:1, title:"MCP kapptivate",
+    blocking:false, tag:{cls:"b-new", txt:"nouveau"},
+    why:"Jugé <b>très prometteur</b> lors du point du 22 avril. À cadrer et démontrer comme levier principal (piloter/fixer les tests via le MCP)."
+  },
+  {
+    id:"ia-chat", n:2, title:"Discussion IA intégrée dans l'outil",
+    blocking:false, tag:{cls:"b-score", txt:"IA 1,5/5"},
+    why:"Aujourd'hui pas d'échange avec l'IA : rédaction de scripts en dehors de l'appli. Besoin de : trouver une réponse dans la doc, fixer un test, générer un script directement dans kapptivate."
+  },
+  {
+    id:"cicd", n:3, title:"CI/CD : démonstration bout en bout",
+    blocking:true, tag:{cls:"b-block", txt:"bloquant"},
+    why:"Critère bloquant <b>non validé</b> pendant le POC. À sécuriser : exécution CI, reporting, seuils d'échec, intégration pipelines."
+  },
+  {
+    id:"revers", n:4, title:"Réversibilité / export",
+    blocking:true, tag:{cls:"b-block", txt:"bloquant"}, tag2:{cls:"b-score", txt:"2,5/5"},
+    why:"Bloquant partiel : code visible en mode expert mais édition et téléchargement problématiques. Besoin d'un export exploitable (code/config), téléchargement fonctionnel, récupération du projet."
+  },
+  {
+    id:"perf", n:5, title:"Performance & scalabilité",
+    blocking:false, tag:{cls:"b-score", txt:"perf 1/5 · scal 1/5"},
+    why:"Point faible majeur : lenteurs (web et surtout mobile), blocages de 2 à 3 min, file d'attente limitant le parallèle en multi-users. Réassurance attendue : temps moyen, runners, parallélisation, capacité multi-users."
+  },
+  {
+    id:"observ", n:6, title:"Observabilité / debug",
+    blocking:false, tag:{cls:"b-score", txt:"debug 1/5"},
+    why:"Debug live difficile (relance depuis le début, pas de step courant). Besoin : step courant, logs, raisons de blocage, reprise au step fautif. Peut s'améliorer via le MCP."
+  },
+  {
+    id:"nocode", n:7, title:"No-code réellement accessible",
+    blocking:false, tag:{cls:"b-score", txt:"2,33/5"},
+    why:"No-code limité sur cas réels : retouches fréquentes de sélecteurs (HTML/CSS/XPath) et ajout de script webdriver.io. Attendu : meilleurs sélecteurs, support composants dynamiques, scroll mobile natif, moins de scripting."
+  },
+  {
+    id:"doc", n:8, title:"Documentation & onboarding",
+    blocking:false, tag:{cls:"b-score", txt:"UX"},
+    why:"Manque d'aide contextuelle, d'infobulles et d'exemples. Attendu : aide contextuelle, exemples concrets pour dashboards, variables, modules, et bonnes pratiques de sélection."
+  },
+  {
+    id:"mobile", n:9, title:"Validation mobile (Android + iOS)",
+    blocking:false, tag:{cls:"b-score", txt:"robustesse 2/5"},
+    why:"Frein majeur sur iOS (reset appli impossible, scroll horizontal non géré) et Android (saisie non robuste, lenteurs). Attendu : démo réaliste avec reset applicatif, saisie robuste, gestes natifs."
+  }
+];
+
+const KEY = "poc2-lbc-tracker-v1";
+let state = { status:{}, notes:{} };
+
+async function load(){
+  try{
+    const r = await window.storage.get(KEY);
+    if(r){
+      if(r.value){ state = JSON.parse(r.value); }
+      if(typeof r.canEdit === "boolean"){ canEdit = r.canEdit; }
+    }
+  }catch(e){ /* première ouverture : rien à charger */ }
+  if(!state.status) state.status = {};
+  if(!state.notes) state.notes = {};
+}
+let saveTimer;
+async function save(){
+  try{ await window.storage.set(KEY, JSON.stringify(state)); flashSaved(); }
+  catch(e){ console.error("save failed", e); }
+}
+function flashSaved(){
+  const t = document.getElementById("savedTag");
+  t.classList.add("show");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>t.classList.remove("show"), 1200);
+}
+
+const STATUSES = [
+  {s:"todo", label:"À faire"},
+  {s:"prog", label:"En cours"},
+  {s:"ok", label:"Validé"},
+  {s:"block", label:"Bloqué"}
+];
+
+let filter = "all";
+
+function statusOf(id){ return state.status[id] || "todo"; }
+
+function render(){
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  ITEMS.forEach(it=>{
+    const st = statusOf(it.id);
+    if(filter==="block" && !it.blocking) return;
+    if(filter==="ok" && st!=="ok") return;
+    if(filter==="open" && st==="ok") return;
+
+    const card = document.createElement("div");
+    card.className = "card" + (it.blocking ? " blocking" : "");
+    let badges = "";
+    if(it.blocking) badges += `<span class="badge b-block">bloquant</span>`;
+    if(it.tag && it.tag.cls!=="b-block") badges += `<span class="badge ${it.tag.cls}">${it.tag.txt}</span>`;
+    if(it.tag2) badges += `<span class="badge ${it.tag2.cls}">${it.tag2.txt}</span>`;
+
+    card.innerHTML = `
+      <div class="card-head">
+        <div class="num">${String(it.n).padStart(2,'0')}</div>
+        <div class="card-title">
+          <h3>${it.title}</h3>
+          <div class="badges">${badges}</div>
+        </div>
+      </div>
+      <p class="why">${it.why}</p>
+      <div class="status-row" data-id="${it.id}">
+        ${STATUSES.map(x=>`<button data-s="${x.s}" class="${st===x.s?'on':''}" ${canEdit?'':'disabled'}>${x.label}</button>`).join("")}
+      </div>
+      <div class="notes">
+        <textarea data-id="${it.id}" ${canEdit?'':'readonly'} placeholder="Notes, preuves, lien vers la démo, responsable…">${(state.notes[it.id]||"").replace(/</g,"&lt;")}</textarea>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  if(canEdit){
+    list.querySelectorAll(".status-row button").forEach(b=>{
+      b.onclick = ()=>{
+        const id = b.parentElement.getAttribute("data-id");
+        state.status[id] = b.getAttribute("data-s");
+        save(); render(); updateSummary();
+      };
+    });
+    list.querySelectorAll(".notes textarea").forEach(t=>{
+      t.oninput = ()=>{ state.notes[t.getAttribute("data-id")] = t.value; save(); };
+    });
+  }
+}
+
+function updateSummary(){
+  let ok=0, prog=0, block=0;
+  ITEMS.forEach(it=>{
+    const s = statusOf(it.id);
+    if(s==="ok") ok++; else if(s==="prog") prog++; else if(s==="block") block++;
+  });
+  const total = ITEMS.length;
+  document.getElementById("okCount").textContent = ok;
+  document.getElementById("barOk").style.width = (ok/total*100)+"%";
+  document.getElementById("barProg").style.width = (prog/total*100)+"%";
+  document.getElementById("barBlock").style.width = (block/total*100)+"%";
+
+  const blockers = ITEMS.filter(it=>it.blocking);
+  const blockersOk = blockers.filter(it=>statusOf(it.id)==="ok").length;
+  document.getElementById("blockLabel").textContent = `Bloquants : ${blockersOk}/${blockers.length}`;
+
+  const banner = document.getElementById("goBanner");
+  if(ok===total){
+    banner.className = "go-banner go-yes";
+    banner.textContent = "Tout est validé : feu vert pour lancer le POC 2.";
+  } else if(blockersOk===blockers.length){
+    banner.className = "go-banner go-yes";
+    banner.textContent = `Les 2 bloquants sont levés. Reste ${total-ok} point(s) non bloquant(s) à sécuriser avant le POC 2.`;
+  } else {
+    banner.className = "go-banner go-no";
+    banner.textContent = `${blockers.length-blockersOk} bloquant(s) encore ouvert(s) : conditions du POC 2 non réunies.`;
+  }
+}
+
+document.querySelectorAll(".filters button").forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll(".filters button").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    filter = b.getAttribute("data-f");
+    render();
+  };
+});
+
+document.getElementById("resetBtn").onclick = async ()=>{
+  if(!confirm("Réinitialiser tous les statuts et notes ?")) return;
+  state = { status:{}, notes:{} };
+  try{ await window.storage.delete(KEY); }catch(e){}
+  render(); updateSummary();
+};
+
+(async ()=>{
+  await load();
+  render();
+  updateSummary();
+  if(!canEdit){
+    const reset = document.getElementById("resetBtn");
+    if(reset){ reset.style.display = "none"; }
+    const saved = document.getElementById("savedTag");
+    if(saved){ saved.textContent = "lecture seule"; saved.classList.add("show"); saved.style.opacity = "0.7"; }
+  }
+})();
+</script>
+</body>
+</html>

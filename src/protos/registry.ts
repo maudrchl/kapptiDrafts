@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import type { ComponentType, LazyExoticComponent } from 'react'
-import { IconListStart, IconActivity, IconComponent, IconNavigation } from '@kapptivate/ui-kit'
+import { IconListStart, IconActivity, IconComponent, IconNavigation, IconRocket } from '@kapptivate/ui-kit'
 import IconBrush from './BrushIcon'
 
 export type ProtoIcon = ComponentType<{ size?: number; color?: string }>
@@ -46,6 +46,8 @@ export type ProtoMeta = {
   hidden?: boolean
   /** Date de dernière mise à jour (ISO, ex. '2026-07-08') */
   updatedAt?: string
+  /** Étiquette libre affichée dans le catalogue (ex: "Project management"). */
+  tag?: string
 }
 
 export type ProtoEntry = ProtoMeta & {
@@ -86,9 +88,19 @@ export type CatalogEntry = ProtoMeta & {
  */
 export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
   {
+    slug: 'suivi-poc2-lbc',
+    title: 'Suivi PoC LBC',
+    status: 'wip design',
+    tag: 'PM',
+    description: 'Suivi des conditions du POC 2 — LeBonCoin × kapptivate',
+    icon: IconRocket,
+    href: '/folder/Suivi POC 2 - LBC.html',
+  },
+  {
     slug: 'exploration-ui',
     title: 'Exploration UI',
     status: 'wip design',
+    tag: 'Brand',
     description: 'Explorations de branding — lockups, palette & composants',
     icon: IconBrush,
     href: '/folder/Exploration UI.html',
@@ -166,6 +178,7 @@ export const catalog: CatalogEntry[] = [
       description: p.description,
       icon: p.icon ?? IconComponent,
       updatedAt: p.updatedAt,
+      tag: p.tag,
     }),
   ),
   ...legacyProtos.map(
@@ -179,6 +192,7 @@ export const catalog: CatalogEntry[] = [
       description: p.description,
       icon: p.icon ?? IconComponent,
       updatedAt: p.updatedAt,
+      tag: p.tag,
     }),
   ),
 ]

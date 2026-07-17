@@ -6,7 +6,6 @@ import {
   Tag,
   Button,
   Table,
-  Tabs,
   Dropdown,
   SortIcon,
   FilterIcon,
@@ -16,8 +15,13 @@ import {
   IconCode,
   IconFileType,
   IconPin,
+  IconMousePointer2,
+  IconFlag,
+  IconRocket,
+  IconArchive,
 } from '@kapptivate/ui-kit'
 import logo from '../assets/kapptidrafts-logo.svg'
+import IconBrush from '../protos/BrushIcon'
 import {
   catalog,
   protos,
@@ -111,7 +115,9 @@ const IndexPage = () => {
   const { pinned, togglePin } = useProtoPins()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | ProtoStatus>('all')
-  const [tab, setTab] = useState<'active' | 'deployed' | 'archived'>('active')
+  const [tab, setTab] = useState<
+    'active' | 'brand' | 'pm' | 'deployed' | 'archived'
+  >('active')
 
   useEffect(() => {
     document.title = 'kapptiDrafts'
@@ -147,21 +153,52 @@ const IndexPage = () => {
       })
   }, [search, statusFilter, pinned])
 
-  // Trois familles, réparties en onglets : actifs (WIP/QA), déployés, archivés.
+  // Répartition en onglets. Un tag/collection dédié (Brand, PM, Archive) prime
+  // sur le statut ; le reste se répartit entre actifs (WIP/QA) et déployés.
   const activeItems = useMemo(
-    () => items.filter((p) => p.collection !== 'Archive' && p.status !== 'deployed'),
+    () =>
+      items.filter(
+        (p) =>
+          p.collection !== 'Archive' &&
+          p.tag !== 'Brand' &&
+          p.tag !== 'PM' &&
+          p.status !== 'deployed',
+      ),
     [items],
   )
   const deployedItems = useMemo(
-    () => items.filter((p) => p.collection !== 'Archive' && p.status === 'deployed'),
+    () =>
+      items.filter(
+        (p) =>
+          p.collection !== 'Archive' &&
+          p.tag !== 'Brand' &&
+          p.tag !== 'PM' &&
+          p.status === 'deployed',
+      ),
+    [items],
+  )
+  const brandItems = useMemo(
+    () => items.filter((p) => p.collection !== 'Archive' && p.tag === 'Brand'),
+    [items],
+  )
+  const pmItems = useMemo(
+    () => items.filter((p) => p.collection !== 'Archive' && p.tag === 'PM'),
     [items],
   )
   const archivedItems = useMemo(
     () => items.filter((p) => p.collection === 'Archive'),
     [items],
   )
+  // Onglets = boutons segmentés : icône + intitulé + compteur natif du Button.
+  const TAB_DEFS = [
+    { key: 'active' as const, label: 'Active prototypes', icon: IconMousePointer2, items: activeItems },
+    { key: 'brand' as const, label: 'Brand', icon: IconBrush, items: brandItems },
+    { key: 'pm' as const, label: 'PM', icon: IconFlag, items: pmItems },
+    { key: 'deployed' as const, label: 'Deployed', icon: IconRocket, items: deployedItems },
+    { key: 'archived' as const, label: 'Archived', icon: IconArchive, items: archivedItems },
+  ]
   const currentItems =
-    tab === 'deployed' ? deployedItems : tab === 'archived' ? archivedItems : activeItems
+    TAB_DEFS.find((t) => t.key === tab)?.items ?? activeItems
 
   // Menu contextuel (clic droit) d'une ligne : épingler / désépingler.
   const pinMenu = (p: Row) => ({
@@ -289,8 +326,10 @@ const IndexPage = () => {
       // Statut en lecture seule — la source de vérité est le `meta.ts` du proto.
       render: (_: ProtoStatus, p: Row) => (
         <div style={styles.statusCell}>
-          <span style={{ ...styles.dot, background: STATUS_ACCENT[p.status] }} />
-          <Text size="s">{p.status}</Text>
+          <span
+            style={{ ...styles.dot, background: p.tag ? '#7c3aed' : STATUS_ACCENT[p.status] }}
+          />
+          <Text size="s">{p.tag ?? p.status}</Text>
         </div>
       ),
     },
@@ -340,15 +379,19 @@ const IndexPage = () => {
       </div>
 
       <div style={{ marginTop: 16 }}>
-        <Tabs
-          tabs={[
-            { key: 'active', label: `Active · ${activeItems.length}` },
-            { key: 'deployed', label: `Deployed · ${deployedItems.length}` },
-            { key: 'archived', label: `Archived · ${archivedItems.length}` },
-          ]}
-          activeKey={tab}
-          onChange={(k: string) => setTab(k as 'active' | 'deployed' | 'archived')}
-        />
+        <div style={styles.tabs}>
+          {TAB_DEFS.map((t) => (
+            <Button
+              key={t.key}
+              color={tab === t.key ? 'secondary' : 'invisible'}
+              icon={t.icon}
+              counter={t.items.length}
+              onClick={() => setTab(t.key)}
+            >
+              {t.label}
+            </Button>
+          ))}
+        </div>
 
         <div style={{ marginTop: 16 }}>
           {currentItems.length === 0 ? (
@@ -386,6 +429,7 @@ const styles: Record<string, CSSProperties> = {
   page: { flex: 1, minWidth: 0, padding: '7rem' },
   logo: { height: 30, width: 'auto', display: 'block', marginBottom: 8 },
   protoCell: { display: 'flex', alignItems: 'center', gap: 12 },
+  tabs: { display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
   titleRow: { display: 'flex', alignItems: 'center', gap: 6 },
   iconBox: {
     width: 36,
