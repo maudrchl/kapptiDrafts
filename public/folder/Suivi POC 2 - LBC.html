@@ -153,6 +153,45 @@
     <span class="saved" id="savedTag">enregistré</span>
     <button id="resetBtn">Réinitialiser le suivi</button>
   </div>
+
+  <style>
+    .insights{margin-top:24px}
+    .insights h2{font-size:16px;margin:0;letter-spacing:-.01em}
+    .ins-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .ins-head a{color:var(--muted);font-size:12px;text-decoration:none;white-space:nowrap}
+    .ins-head a:hover{color:var(--soft)}
+    .ins-sub{color:var(--muted);font-size:12.5px;margin:2px 0 4px}
+    .ins-row{display:grid;grid-template-columns:112px 1fr auto auto;gap:14px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+    .ins-title{font-size:13.5px;color:var(--soft)}
+    .ins-meta{font-size:11.5px;color:var(--muted);font-family:var(--mono);white-space:nowrap;text-align:right}
+    .ins-badge{display:inline-flex;align-items:center;justify-content:center;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:600;font-family:var(--mono);white-space:nowrap}
+    .b-deploye{color:var(--green-ok);background:rgba(91,191,138,.16)}
+    .b-delivery{color:var(--orange);background:rgba(237,120,70,.16)}
+    .b-planifie{color:var(--amber);background:rgba(230,180,85,.16)}
+    .b-roadmap{color:#b79bf5;background:rgba(167,139,250,.18)}
+    .b-triage{color:var(--muted);background:rgba(143,179,171,.14)}
+    .ins-ticket{font-size:11px;color:var(--muted);text-decoration:none;font-family:var(--mono);white-space:nowrap}
+    .ins-ticket:hover{color:var(--orange)}
+    .ins-ticket.empty{opacity:0}
+  </style>
+  <div class="panel insights">
+    <div class="ins-head">
+      <h2>Suivi petits insights</h2>
+      <a href="https://app.notion.com/p/kapptivate/2851c6485ddc809ab63bf9d0b1414f08?v=3a01c6485ddc8010a503000c27c5431e&source=copy_link" target="_blank" rel="noopener noreferrer">source : Notion ↗</a>
+    </div>
+    <p class="ins-sub">Insights produit taggés « LBC » — snapshot du tableau Notion « Product Inputs ».</p>
+    <div class="ins-list">
+      <div class="ins-row"><span class="ins-badge b-deploye">Déployé</span><span class="ins-title">Assertion visuelle pour les tests smartphone</span><span class="ins-meta">Fort · S</span><a class="ins-ticket" href="https://linear.app/kapptivate/issue/KTMAPP-2205" target="_blank" rel="noopener noreferrer">KTMAPP-2205 ↗</a></div>
+      <div class="ins-row"><span class="ins-badge b-deploye">Déployé</span><span class="ins-title">Désactiver la prise des screenshots pour réduire le temps d'un test</span><span class="ins-meta">Fort · S</span><a class="ins-ticket" href="https://linear.app/kapptivate/issue/KTMAPP-2203" target="_blank" rel="noopener noreferrer">KTMAPP-2203 ↗</a></div>
+      <div class="ins-row"><span class="ins-badge b-deploye">Déployé</span><span class="ins-title">Réduire le temps d'exécution des tests</span><span class="ins-meta">Fort · M</span><a class="ins-ticket" href="https://linear.app/kapptivate/issue/KTMAPP-2203" target="_blank" rel="noopener noreferrer">KTMAPP-2203 ↗</a></div>
+      <div class="ins-row"><span class="ins-badge b-deploye">Déployé</span><span class="ins-title">Gestion du reset app sur iOS</span><span class="ins-meta">Fort · S</span><a class="ins-ticket" href="https://linear.app/kapptivate/issue/KTMAPP-2204" target="_blank" rel="noopener noreferrer">KTMAPP-2204 ↗</a></div>
+      <div class="ins-row"><span class="ins-badge b-delivery">En delivery</span><span class="ins-title">Les messages d'erreur sur les custom steps ne sont pas affichés</span><span class="ins-meta">Fort · S</span><a class="ins-ticket" href="https://linear.app/kapptivate/issue/KTMAPP-2206" target="_blank" rel="noopener noreferrer">KTMAPP-2206 ↗</a></div>
+      <div class="ins-row"><span class="ins-badge b-planifie">Planifié</span><span class="ins-title">Support des sliders horizontaux en scroll</span><span class="ins-meta">Faible · M</span><a class="ins-ticket" href="https://linear.app/kapptivate/issue/KTMAPP-2474" target="_blank" rel="noopener noreferrer">KTMAPP-2474 ↗</a></div>
+      <div class="ins-row"><span class="ins-badge b-planifie">Planifié</span><span class="ins-title">Les tests sont bloqués au démarrage</span><span class="ins-meta">Fort · M</span><a class="ins-ticket" href="https://linear.app/kapptivate/issue/KTMAPP-2345" target="_blank" rel="noopener noreferrer">KTMAPP-2345 ↗</a></div>
+      <div class="ins-row"><span class="ins-badge b-roadmap">Roadmap</span><span class="ins-title">Tuto d'arrivée sur le produit</span><span class="ins-meta">Fort</span><span class="ins-ticket empty">—</span></div>
+      <div class="ins-row"><span class="ins-badge b-triage">Triage</span><span class="ins-title">Latence / désactiver les animations ?</span><span class="ins-meta">Fort</span><span class="ins-ticket empty">—</span></div>
+    </div>
+  </div>
 </div>
 
 <script>
