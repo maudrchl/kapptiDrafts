@@ -127,13 +127,22 @@ const IndexPage = () => {
   const { pinned, togglePin } = useProtoPins()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | ProtoStatus>('all')
-  const [tab, setTab] = useState<
-    'active' | 'brand' | 'pm' | 'deployed' | 'archived'
-  >('active')
+  type IndexTab = 'active' | 'brand' | 'pm' | 'deployed' | 'archived'
+  const TAB_KEYS: IndexTab[] = ['active', 'brand', 'pm', 'deployed', 'archived']
+  const TAB_STORE_KEY = 'kapptidrafts:index-tab'
+  // Onglet persisté → on reste sur la même tab après un refresh.
+  const [tab, setTab] = useState<IndexTab>(() => {
+    const saved = localStorage.getItem(TAB_STORE_KEY) as IndexTab | null
+    return saved && TAB_KEYS.includes(saved) ? saved : 'active'
+  })
 
   useEffect(() => {
     document.title = 'kapptiDrafts'
   }, [])
+
+  useEffect(() => {
+    localStorage.setItem(TAB_STORE_KEY, tab)
+  }, [tab])
 
   const open = (p: Row) => {
     if (p.kind === 'react') navigate(p.target)

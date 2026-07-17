@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import fs from 'fs';
 // Identifiant de build, figé à chaque `vite build`. Injecté dans le bundle via
 // `__BUILD_ID__` et écrit dans `version.json` : l'app compare les deux au runtime
 // pour détecter qu'un nouveau déploiement est en ligne.
@@ -22,11 +23,36 @@ function versionPlugin() {
         },
     };
 }
+// Rejoue en dev les rewrites "slug propre -> /folder/xxx.html" de vercel.json,
+// sinon les URLs propres des protos HTML (ex. /suivi-poc2-lbc) ne marchent
+// qu'en prod. Source de vérité unique = vercel.json.
+function folderRewritesPlugin() {
+    let rules = [];
+    try {
+        const cfg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'vercel.json'), 'utf8'));
+        rules = (cfg.rewrites ?? []).filter((r) => r.destination?.startsWith('/folder/') && !r.source.includes('('));
+    }
+    catch {
+        // pas de vercel.json en local : rien à rejouer
+    }
+    return {
+        name: 'folder-rewrites-dev',
+        configureServer(server) {
+            server.middlewares.use((req, _res, next) => {
+                const url = (req.url ?? '').split('?')[0];
+                const hit = rules.find((r) => r.source === url);
+                if (hit)
+                    req.url = hit.destination;
+                next();
+            });
+        },
+    };
+}
 export default defineConfig({
     define: {
         __BUILD_ID__: JSON.stringify(BUILD_ID),
     },
-    plugins: [react(), versionPlugin()],
+    plugins: [folderRewritesPlugin(), react(), versionPlugin()],
     resolve: {
         alias: {
             react: path.resolve(__dirname, 'node_modules/react'),
