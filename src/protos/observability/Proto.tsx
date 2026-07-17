@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react'
+import { useState, useEffect, useRef, type ComponentType, type MouseEvent as ReactMouseEvent } from 'react'
 import {
   Button,
   SearchInput,
@@ -42,6 +42,12 @@ import {
   IconBox,
   IconLayers,
   IconSearchX,
+  Flex,
+  Text,
+  Dropdown,
+  IconSlidersHorizontal,
+  IconListFilter,
+  IconGauge,
 } from '@kapptivate/ui-kit'
 import {
   PanelLeftClose,
@@ -54,7 +60,36 @@ import {
   Plus,
   Pin,
   ArrowUpRight,
+  Maximize2,
+  Minimize2,
+  RefreshCw,
+  Share2,
+  Orbit,
 } from 'lucide-react'
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  Background,
+  BackgroundVariant,
+  Controls,
+  MiniMap,
+  Panel,
+  Handle,
+  Position,
+  BaseEdge,
+  EdgeLabelRenderer,
+  getBezierPath,
+  useInternalNode,
+  useReactFlow,
+  useNodesState,
+  useEdgesState,
+  MarkerType,
+  type Node as FlowNode,
+  type Edge as FlowEdge,
+  type NodeProps,
+  type EdgeProps,
+} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
 import { useReportScreen, useScreenNavigation } from '../../context/ScreenContext'
 import styles from './explore-tabs.module.scss'
 import PersesView from './PersesView'
@@ -989,13 +1024,244 @@ const sampleEdgeCalls = (edge: { from: string; to: string }, count: number) => {
   })
 }
 
-const ServiceMapView = ({
-  onGoToLogs,
-  onGoToTraces,
+/* ─── Service map — React Flow (inspiré dash0 : nœuds colorés par santé,
+   flux orientés animés, layout Flow gauche→droite ou Force organique) ─── */
+type SvcHealth = 'healthy' | 'warn' | 'critical'
+type SvcMetric = 'requests' | 'errors' | 'duration'
+
+const HEALTH_COLOR: Record<SvcHealth, string> = {
+  healthy: 'var(--color-success, #12b76a)',
+  warn: '#f2b338',
+  critical: 'var(--color-error, #e0372e)',
+}
+const HEALTH_LABEL: Record<SvcHealth, string> = {
+  healthy: 'Healthy',
+  warn: 'Degraded',
+  critical: 'Unhealthy',
+}
+// Santé = pire des deux dimensions : taux d'erreur (seuils fixes 0.5 / 1.5 %)
+// et durée moyenne vs seuils configurables (Configure > Status thresholds).
+const healthOf = (s: ServiceNode, warnMs: number, critMs: number): SvcHealth => {
+  const e = parseFloat(s.err) || 0
+  const errSev = e >= 1.5 ? 2 : e >= 0.5 ? 1 : 0
+  const dur = parseFloat(s.lat) || 0
+  const durSev = critMs > 0 && dur >= critMs ? 2 : warnMs > 0 && dur >= warnMs ? 1 : 0
+  const sev = Math.max(errSev, durSev)
+  return sev === 2 ? 'critical' : sev === 1 ? 'warn' : 'healthy'
+}
+
+// Magnitude numérique d'une métrique, pour la barre "sized by metric".
+const rpsNum = (s: string) => (parseFloat(s) || 0) * (/k/i.test(s) ? 1000 : 1)
+const metricNum = (s: ServiceNode, m: SvcMetric) =>
+  m === 'requests' ? rpsNum(s.rps) : m === 'errors' ? parseFloat(s.err) || 0 : parseFloat(s.lat) || 0
+
+const METRIC_META: Record<SvcMetric, { label: string; get: (s: ServiceNode) => string }> = {
+  requests: { label: 'req/s', get: (s) => s.rps },
+  errors: { label: 'errors', get: (s) => s.err },
+  duration: { label: 'avg', get: (s) => s.lat },
+}
+
+// Positions : Force = layout organique fourni (x/y en %), Flow = colonnes par
+// profondeur (plus long chemin depuis les racines), lecture gauche → droite.
+const SVC_CANVAS_W = 1040
+const SVC_CANVAS_H = 600
+const ORGANIC_POS: Record<string, { x: number; y: number }> = Object.fromEntries(
+  SERVICES.map((s) => [s.id, { x: (s.x / 100) * SVC_CANVAS_W, y: (s.y / 100) * SVC_CANVAS_H }]),
+)
+const CIRCULAR_POS: Record<string, { x: number; y: number }> = (() => {
+  const n = SERVICES.length
+  // Rayon dimensionné pour que la corde entre 2 nœuds voisins dépasse la
+  // largeur d'une carte (~190px) + marge, sinon les cartes se chevauchent.
+  const r = Math.max(320, (240 * n) / (2 * Math.PI))
+  const cx = r + 120
+  const cy = r + 120
+  const pos: Record<string, { x: number; y: number }> = {}
+  SERVICES.forEach((s, i) => {
+    const a = (i / n) * 2 * Math.PI - Math.PI / 2
+    pos[s.id] = { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) }
+  })
+  return pos
+})()
+
+type SvcNodeData = {
+  label: string
+  svcColor: string
+  health: SvcHealth
+  metricVal: string
+  metricLabel: string
+  secondary: { k: string; v: string }[]
+  io: { out: number; in: number }
+  barPct: number
+  selected: boolean
+  dim: boolean
+}
+
+function ServiceFlowNode({ data }: NodeProps) {
+  const d = data as unknown as SvcNodeData
+  const hc = HEALTH_COLOR[d.health]
+  return (
+    <div
+      className={styles.rfNode}
+      data-selected={d.selected ? 'true' : undefined}
+      data-dim={d.dim ? 'true' : undefined}
+    >
+      <Handle type="target" position={Position.Left} className={styles.rfHandle} isConnectable={false} />
+      <div className={styles.rfNodeHead}>
+        <span className={styles.rfDot} style={{ background: hc }} title={HEALTH_LABEL[d.health]} />
+        <span className={styles.rfNodeName}>{d.label}</span>
+      </div>
+      <div className={styles.rfMetricRow}>
+        <span className={styles.rfMetricVal}>{d.metricVal}</span>
+        <span className={styles.rfMetricLbl}>{d.metricLabel}</span>
+      </div>
+      <div className={styles.rfBar}>
+        <span style={{ width: `${d.barPct}%`, background: hc }} />
+      </div>
+      <div className={styles.rfSecondary}>
+        {d.secondary.map((x) => (
+          <span key={x.k}>
+            <span className={styles.mono}>{x.v}</span> {x.k}
+          </span>
+        ))}
+      </div>
+      <div className={styles.rfConn}>
+        {d.io.out > 0 && <span>↑{d.io.out} out</span>}
+        {d.io.in > 0 && <span>↓{d.io.in} in</span>}
+      </div>
+      <Handle type="source" position={Position.Right} className={styles.rfHandle} isConnectable={false} />
+    </div>
+  )
+}
+
+// ─ Floating edge : relie les bords des deux cartes (intersection centre→centre),
+//   pour que le tracé reste propre dans les deux layouts. Basé sur l'exemple xyflow.
+function nodeCenterIntersection(
+  intersectionNode: ReturnType<typeof useInternalNode>,
+  targetNode: ReturnType<typeof useInternalNode>,
+) {
+  const iw = intersectionNode!.measured?.width ?? 200
+  const ih = intersectionNode!.measured?.height ?? 120
+  const ip = intersectionNode!.internals.positionAbsolute
+  const tp = targetNode!.internals.positionAbsolute
+  const tw = targetNode!.measured?.width ?? 200
+  const th = targetNode!.measured?.height ?? 120
+  const w = iw / 2
+  const h = ih / 2
+  const x2 = ip.x + w
+  const y2 = ip.y + h
+  const x1 = tp.x + tw / 2
+  const y1 = tp.y + th / 2
+  const xx1 = (x1 - x2) / (2 * w) - (y1 - y2) / (2 * h)
+  const yy1 = (x1 - x2) / (2 * w) + (y1 - y2) / (2 * h)
+  const a = 1 / (Math.abs(xx1) + Math.abs(yy1) || 1)
+  const xf = a * xx1
+  const yf = a * yy1
+  return { x: w * (xf + yf) + x2, y: h * (-xf + yf) + y2 }
+}
+function edgeSide(node: ReturnType<typeof useInternalNode>, px: number, py: number): Position {
+  const nx = node!.internals.positionAbsolute.x
+  const ny = node!.internals.positionAbsolute.y
+  const w = node!.measured?.width ?? 200
+  const h = node!.measured?.height ?? 120
+  const x = Math.round(px)
+  const y = Math.round(py)
+  if (x <= Math.round(nx) + 1) return Position.Left
+  if (x >= Math.round(nx + w) - 1) return Position.Right
+  if (y <= Math.round(ny) + 1) return Position.Top
+  return Position.Bottom
+}
+
+type SvcEdgeData = {
+  label: string
+  dim: boolean
+  danger: boolean
+  onOpen: () => void
+}
+
+function FloatingEdge({ id, source, target, markerEnd, data }: EdgeProps) {
+  const sourceNode = useInternalNode(source)
+  const targetNode = useInternalNode(target)
+  if (!sourceNode || !targetNode) return null
+  const d = data as unknown as SvcEdgeData
+  const sInt = nodeCenterIntersection(sourceNode, targetNode)
+  const tInt = nodeCenterIntersection(targetNode, sourceNode)
+  const [path, labelX, labelY] = getBezierPath({
+    sourceX: sInt.x,
+    sourceY: sInt.y,
+    targetX: tInt.x,
+    targetY: tInt.y,
+    sourcePosition: edgeSide(sourceNode, sInt.x, sInt.y),
+    targetPosition: edgeSide(targetNode, tInt.x, tInt.y),
+  })
+  return (
+    <>
+      <BaseEdge
+        id={id}
+        path={path}
+        markerEnd={markerEnd}
+        style={{
+          stroke: d.dim ? '#e4e7ec' : d.danger ? 'var(--color-error, #e0372e)' : '#c4cbd4',
+          strokeWidth: d.danger ? 2.25 : 1.75,
+        }}
+      />
+      <EdgeLabelRenderer>
+        <div
+          data-svcedge
+          className={styles.rfEdgeLabel}
+          style={{
+            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+            opacity: d.dim ? 0.35 : 1,
+          }}
+          onClick={(ev) => {
+            ev.stopPropagation()
+            d.onOpen()
+          }}
+          title="View calls & logs for this dependency"
+        >
+          {d.label}
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  )
+}
+
+const svcNodeTypes = { service: ServiceFlowNode }
+const svcEdgeTypes = { floating: FloatingEdge }
+
+// Ligne du popover Display (label + Select), calquée sur le composant
+// LabelWithSelect de la Realtime status (produit).
+function DisplayRow({
+  icon: Icon,
+  label,
+  value,
+  options,
+  onChange,
 }: {
+  icon: ComponentType<{ size?: number; color?: string }>
+  label: string
+  value: string | number
+  options: { label: string | number; value: string | number }[]
+  onChange: (v: string | number) => void
+}) {
+  return (
+    <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+      <Flex align="center" gap={2}>
+        <Icon size={13} color="var(--color-text-secondary)" />
+        <Text size="sm" weight="medium" color="primary">
+          {label}
+        </Text>
+      </Flex>
+      <Select size="s" value={value} options={options} onChange={onChange} minWidth="130px" width="130px" />
+    </Flex>
+  )
+}
+
+type ServiceMapProps = {
   onGoToLogs: (svc: string) => void
   onGoToTraces: (svc: string) => void
-}) => {
+}
+
+const ServiceMapInner = ({ onGoToLogs, onGoToTraces }: ServiceMapProps) => {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string | null>(SERVICES[0]?.id ?? null)
   const [drawerSvc, setDrawerSvc] = useState<ServiceNode | null>(null)
@@ -1005,39 +1271,110 @@ const ServiceMapView = ({
   // Filtre local des logs affichés dans le drawer service (level + recherche).
   const [drawerLevel, setDrawerLevel] = useState('all')
   const [drawerLogQ, setDrawerLogQ] = useState('')
-  const q = search.trim().toLowerCase()
-  const matches = (label: string) => q === '' || label.toLowerCase().includes(q)
-  const byId = (id: string) => SERVICES.find((s) => s.id === id)!
-  const outCount = (id: string) => EDGES.filter((e) => e.from === id).length
-  const inCount = (id: string) => EDGES.filter((e) => e.to === id).length
-
-  // pan + zoom + fullscreen
-  const [view, setView] = useState({ x: 0, y: 0, scale: 1 })
+  const [metric, setMetric] = useState<SvcMetric>('duration')
+  const [layout, setLayout] = useState<'force' | 'circular'>('force')
+  const [edgeLabel, setEdgeLabel] = useState<'calls' | 'latency'>('calls')
+  const [warnMs, setWarnMs] = useState(300)
+  const [critMs, setCritMs] = useState(1000)
+  const [highlightErrors, setHighlightErrors] = useState(true)
+  const [displayOpen, setDisplayOpen] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
-  const drag = useRef<{ x: number; y: number } | null>(null)
-  const clamp = (n: number) => Math.min(1.8, Math.max(0.5, +n.toFixed(2)))
-  const startPan = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('[data-svcnode], [data-svcedge]')) return
-    drag.current = { x: e.clientX, y: e.clientY }
+
+  const byId = (id: string) => SERVICES.find((s) => s.id === id)!
+  const rf = useReactFlow()
+
+  // Données d'un nœud pour la métrique / recherche / sélection courantes.
+  const buildNodeData = (s: ServiceNode): SvcNodeData => {
+    const maxMetric = Math.max(...SERVICES.map((x) => metricNum(x, metric))) || 1
+    const others = (['requests', 'errors', 'duration'] as SvcMetric[]).filter((m) => m !== metric)
+    return {
+      label: s.label,
+      svcColor: s.color,
+      health: healthOf(s, warnMs, critMs),
+      metricVal: METRIC_META[metric].get(s),
+      metricLabel: METRIC_META[metric].label,
+      secondary: others.map((m) => ({ k: METRIC_META[m].label, v: METRIC_META[m].get(s) })),
+      io: {
+        out: EDGES.filter((e) => e.from === s.id).length,
+        in: EDGES.filter((e) => e.to === s.id).length,
+      },
+      barPct: Math.round((metricNum(s, metric) / maxMetric) * 100),
+      selected: selected === s.id,
+      dim: false,
+    }
   }
-  const onPan = (e: React.MouseEvent) => {
-    if (!drag.current) return
-    const dx = e.clientX - drag.current.x
-    const dy = e.clientY - drag.current.y
-    drag.current = { x: e.clientX, y: e.clientY }
-    setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }))
+
+  const buildNodes = (lay: 'force' | 'circular'): FlowNode[] => {
+    const pos = lay === 'circular' ? CIRCULAR_POS : ORGANIC_POS
+    return SERVICES.map((s) => ({
+      id: s.id,
+      type: 'service',
+      position: { ...pos[s.id] },
+      data: buildNodeData(s) as unknown as Record<string, unknown>,
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+    }))
   }
-  const endPan = () => {
-    drag.current = null
+
+  const buildEdges = (): FlowEdge[] =>
+    EDGES.map((e, i) => {
+      const danger = highlightErrors && (parseFloat(byId(e.to).err) || 0) >= 1
+      return {
+        id: `e${i}`,
+        source: e.from,
+        target: e.to,
+        type: 'floating',
+        animated: true,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: danger ? 'var(--color-error, #e0372e)' : '#98a2b3',
+          width: 16,
+          height: 16,
+        },
+        data: {
+          label: edgeLabel === 'latency' ? e.lat : `${e.calls} calls`,
+          dim: false,
+          danger,
+          onOpen: () => {
+            setDrawerEdge(e)
+            setEdgeTab('calls')
+          },
+        } as unknown as Record<string, unknown>,
+      }
+    })
+
+  const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(buildNodes('force'))
+  const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>(buildEdges())
+
+  // Changement de layout → repositionne et recadre.
+  useEffect(() => {
+    setNodes(buildNodes(layout))
+    const t = setTimeout(() => rf.fitView({ padding: 0.2, duration: 350 }), 60)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layout])
+
+  // Métrique / recherche / sélection → rafraîchit les data, garde les positions.
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((n) => ({ ...n, data: buildNodeData(byId(n.id)) as unknown as Record<string, unknown> })),
+    )
+    setEdges(buildEdges())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [metric, selected, warnMs, critMs, edgeLabel, highlightErrors])
+
+  const openService = (id: string) => {
+    setSelected(id)
+    setDrawerSvc(byId(id))
+    setSvcTab('overview')
+    setDrawerLevel('all')
+    setDrawerLogQ('')
   }
 
   return (
     <>
       <div className={styles.searchRow}>
-        <div className={styles.searchFlex}>
-          <SearchInput value={search} onChange={setSearch} placeholder="Filter services..." fullwidth />
-        </div>
-        <div className={styles.filterGroup}>
+        <div className={styles.filterGroup} style={{ marginLeft: 0 }}>
           <Select
             options={[
               { label: 'Last 5 min', value: '5m' },
@@ -1048,112 +1385,164 @@ const ServiceMapView = ({
             icon={IconTimer}
             minWidth="140px"
           />
+          <Dropdown
+            open={displayOpen}
+            onOpenChange={setDisplayOpen}
+            rootClassName={styles.displayDropdown}
+            placement="bottomLeft"
+            menu={{
+              items: [
+                {
+                  key: 'display',
+                  disabled: true,
+                  label: (
+                    <div className={styles.displayPop}>
+                      <div className={styles.displayModes}>
+                        <div
+                          className={layout === 'force' ? `${styles.modeBtn} ${styles.modeActive}` : styles.modeBtn}
+                          onClick={() => setLayout('force')}
+                        >
+                          <Share2 size={16} color={layout === 'force' ? 'var(--color-primary)' : 'var(--color-text-primary)'} />
+                          <span className={styles.modeLabel}>Force</span>
+                        </div>
+                        <div
+                          className={layout === 'circular' ? `${styles.modeBtn} ${styles.modeActive}` : styles.modeBtn}
+                          onClick={() => setLayout('circular')}
+                        >
+                          <Orbit size={16} color={layout === 'circular' ? 'var(--color-primary)' : 'var(--color-text-primary)'} />
+                          <span className={styles.modeLabel}>Circular</span>
+                        </div>
+                      </div>
+                      <div className={styles.displayDivider} />
+                      <DisplayRow
+                        icon={IconActivity}
+                        label="Node metric"
+                        value={metric}
+                        options={[
+                          { label: 'Duration', value: 'duration' },
+                          { label: 'Requests', value: 'requests' },
+                          { label: 'Errors', value: 'errors' },
+                        ]}
+                        onChange={(v) => setMetric(v as SvcMetric)}
+                      />
+                      <div className={styles.displayField}>
+                        <DisplayRow
+                          icon={IconListFilter}
+                          label="Edge label"
+                          value={edgeLabel}
+                          options={[
+                            { label: 'Calls', value: 'calls' },
+                            { label: 'Latency', value: 'latency' },
+                          ]}
+                          onChange={(v) => setEdgeLabel(v as 'calls' | 'latency')}
+                        />
+                        <p className={styles.displayHint}>Show call volume or average latency on each edge.</p>
+                      </div>
+                      <div className={styles.displayDivider} />
+                      <div className={styles.displayField}>
+                        <span className={styles.displayGroupLabel}>Status thresholds</span>
+                        <p className={styles.displayHint}>Degraded past the first threshold, unhealthy past the second (avg duration).</p>
+                        <div className={styles.threshRow}>
+                          <Flex align="center" gap={2}>
+                            <IconGauge size={13} color="var(--color-text-secondary)" />
+                            <Text size="sm" weight="medium" color="primary">
+                              Degraded (ms)
+                            </Text>
+                          </Flex>
+                          <Input
+                            type="number"
+                            size="s"
+                            width="120px"
+                            value={String(warnMs)}
+                            onChange={(e) => setWarnMs(Number(e.target.value) || 0)}
+                          />
+                        </div>
+                        <div className={styles.threshRow}>
+                          <Flex align="center" gap={2}>
+                            <IconAlertTriangle size={13} color="var(--color-text-secondary)" />
+                            <Text size="sm" weight="medium" color="primary">
+                              Unhealthy (ms)
+                            </Text>
+                          </Flex>
+                          <Input
+                            type="number"
+                            size="s"
+                            width="120px"
+                            value={String(critMs)}
+                            onChange={(e) => setCritMs(Number(e.target.value) || 0)}
+                          />
+                        </div>
+                      </div>
+                      <div className={styles.displayDivider} />
+                      <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+                        <Text size="sm" weight="medium" color="primary">
+                          Highlight error paths
+                        </Text>
+                        <Toggle value={highlightErrors} onChange={setHighlightErrors} />
+                      </Flex>
+                    </div>
+                  ),
+                },
+              ],
+            }}
+          >
+            <Button icon={IconSlidersHorizontal} color="secondary" onClick={() => setDisplayOpen(true)}>
+              Display
+            </Button>
+          </Dropdown>
         </div>
       </div>
 
       <div
         data-anchor="svcmap:canvas"
-        className={fullscreen ? `${styles.svcMapCanvas} ${styles.svcMapFullscreen}` : styles.svcMapCanvas}
-        onMouseDown={startPan}
-        onMouseMove={onPan}
-        onMouseUp={endPan}
-        onMouseLeave={endPan}
-        style={{ cursor: drag.current ? 'grabbing' : 'grab' }}
+        className={fullscreen ? `${styles.svcFlowWrap} ${styles.svcFlowFull}` : styles.svcFlowWrap}
       >
-        <div className={styles.svcCanvasBar}>
-          <button className={styles.zoomBtn} onClick={() => setView((v) => ({ ...v, scale: clamp(v.scale - 0.2) }))} title="Zoom out">−</button>
-          <button className={styles.zoomBtn} onClick={() => setView((v) => ({ ...v, scale: clamp(v.scale + 0.2) }))} title="Zoom in">+</button>
-          <button className={styles.zoomBtn} onClick={() => setView({ x: 0, y: 0, scale: 1 })} title="Reset view">⟲</button>
-          <button className={styles.zoomBtn} onClick={() => { setFullscreen((f) => !f); setView({ x: 0, y: 0, scale: 1 }) }} title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}>{fullscreen ? '✕' : '⤢'}</button>
-        </div>
-
-        <div
-          className={styles.svcViewport}
-          style={{
-            transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
-            transition: drag.current ? 'none' : 'transform 0.2s ease',
-          }}
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          nodeTypes={svcNodeTypes}
+          edgeTypes={svcEdgeTypes}
+          onNodeClick={(_e, n) => openService(n.id)}
+          fitView
+          fitViewOptions={{ padding: 0.2 }}
+          minZoom={0.4}
+          maxZoom={1.8}
+          proOptions={{ hideAttribution: true }}
+          nodesConnectable={false}
+          elementsSelectable
         >
-          {/* connectors */}
-          <svg className={styles.svcEdgeLayer} viewBox="0 0 100 100" preserveAspectRatio="none">
-            {EDGES.map((e, i) => {
-              const f = byId(e.from)
-              const t = byId(e.to)
-              const mx = (f.x + t.x) / 2
-              return (
-                <path
-                  key={i}
-                  d={`M ${f.x} ${f.y} C ${mx} ${f.y}, ${mx} ${t.y}, ${t.x} ${t.y}`}
-                  className={styles.svcEdge}
-                  vectorEffect="non-scaling-stroke"
-                />
-              )
-            })}
-          </svg>
-
-          {/* edge labels */}
-          {EDGES.map((e, i) => {
-            const f = byId(e.from)
-            const t = byId(e.to)
-            return (
-              <div
-                key={i}
-                data-svcedge
-                className={styles.svcEdgeLabel}
-                style={{ left: `${(f.x + t.x) / 2}%`, top: `${(f.y + t.y) / 2}%` }}
-                onClick={(ev) => {
-                  ev.stopPropagation()
-                  setDrawerEdge(e)
-                  setEdgeTab('calls')
-                }}
-                title={`${f.label} → ${t.label} — voir les calls & logs`}
-              >
-                {e.calls} calls · {e.lat}
-              </div>
-            )
-          })}
-
-          {/* nodes */}
-          {SERVICES.map((s) => {
-            const out = outCount(s.id)
-            const inb = inCount(s.id)
-            return (
-              <div
-                key={s.id}
-                data-svcnode
-                className={styles.svcCard}
-                style={{
-                  left: `${s.x}%`,
-                  top: `${s.y}%`,
-                  borderColor: s.color,
-                  opacity: matches(s.label) ? 1 : 0.3,
-                  boxShadow: selected === s.id ? `0 0 0 3px ${s.color}33` : undefined,
-                }}
-                onClick={() => {
-                  setSelected(s.id)
-                  setDrawerSvc(s)
-                  setSvcTab('overview')
-                  setDrawerLevel('all')
-                  setDrawerLogQ('')
-                }}
-              >
-                <div className={styles.svcCardName}>{s.label}</div>
-                <div className={styles.svcCardMeta}>{s.spans.toLocaleString()} spans · {s.lat} avg</div>
-                <div className={styles.svcCardConn}>
-                  {out > 0 && <span style={{ color: s.color }}>↑{out} out</span>}
-                  {inb > 0 && <span style={{ color: s.color }}>↓{inb} in</span>}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* minimap */}
-        <div className={styles.svcMiniMap}>
-          {SERVICES.map((s) => (
-            <span key={s.id} className={styles.svcMiniNode} style={{ left: `${s.x}%`, top: `${s.y}%`, background: s.color }} />
-          ))}
-        </div>
+          <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="#dfe3e8" />
+          <Controls showInteractive={false} />
+          <MiniMap
+            pannable
+            zoomable
+            style={{ width: 132, height: 84 }}
+            nodeColor={(n) => HEALTH_COLOR[(n.data as unknown as SvcNodeData).health] ?? '#c4cbd4'}
+            nodeStrokeWidth={2}
+            maskColor="rgba(16,24,40,0.06)"
+          />
+          <Panel position="top-right">
+            <button
+              className={styles.rfIconBtn}
+              onClick={() => setFullscreen((f) => !f)}
+              title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            >
+              {fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+            </button>
+          </Panel>
+          <Panel position="top-left">
+            <div className={styles.rfLegend}>
+              {(['healthy', 'warn', 'critical'] as SvcHealth[]).map((h) => (
+                <span key={h}>
+                  <span className={styles.rfLegendDot} style={{ background: HEALTH_COLOR[h] }} />
+                  {HEALTH_LABEL[h]}
+                </span>
+              ))}
+            </div>
+          </Panel>
+        </ReactFlow>
       </div>
 
       {/* Service detail drawer */}
@@ -1276,7 +1665,7 @@ const ServiceMapView = ({
                         </div>
                         {telemetryMetrics(s.label).map((m) => (
                           <div key={m.name} className={styles.metricsRow}>
-                            <span><Tag color="orange">{m.type}</Tag></span>
+                            <span><Tag color="orange" size="sm" smallPadding>{m.type}</Tag></span>
                             <span className={styles.mono}>{m.name}</span>
                             <span className={styles.mono}>{m.unit}</span>
                           </div>
@@ -1369,6 +1758,13 @@ const ServiceMapView = ({
     </>
   )
 }
+
+// useReactFlow() a besoin du provider : on enveloppe l'inner.
+const ServiceMapView = (props: ServiceMapProps) => (
+  <ReactFlowProvider>
+    <ServiceMapInner {...props} />
+  </ReactFlowProvider>
+)
 
 /* ─── Kubernetes mock data (deployments / services / events) ─── */
 const K8S_DEPLOYMENTS = [
@@ -1894,14 +2290,8 @@ const ExploreTabsProto = () => {
   // flows
   const [alertOpen, setAlertOpen] = useState(false)
   const [connectOpen, setConnectOpen] = useState(false)
-  const [configureOpen, setConfigureOpen] = useState(false)
   const [connectMethod, setConnectMethod] = useState<'helm' | 'kubectl'>('helm')
   const [clusterName, setClusterName] = useState('')
-
-  // service map settings (Configure drawer)
-  const [cfgInterval, setCfgInterval] = useState('15m')
-  const [cfgLatencies, setCfgLatencies] = useState(true)
-  const [cfgErrors, setCfgErrors] = useState(true)
 
   const emptyAlert: AlertDraft = { name: '', signal: 'logs', query: '', operator: 'gt', threshold: '', checkEvery: '5', lookBack: '15', cooldown: '15', severity: 'warning', destinationKey: DESTINATIONS[0].key, createsIncident: false }
   const [alertDraft, setAlertDraft] = useState<AlertDraft>(emptyAlert)
@@ -1926,17 +2316,15 @@ const ExploreTabsProto = () => {
         ? 'obs:modal:connect-cluster'
         : destOpen
           ? 'obs:modal:add-destination'
-          : configureOpen
-            ? 'obs:drawer:configure'
-            : alertDetail
-              ? `obs:drawer:alert:${alertDetail.key}`
-              : incidentDetail
-                ? `obs:drawer:incident:${incidentDetail.key}`
-                : logDetail
-                  ? `obs:log:${logDetail.key}`
-                  : traceDetail
-                    ? `obs:trace:${traceDetail.key}`
-                    : `${mode}:${tab}`
+          : alertDetail
+            ? `obs:drawer:alert:${alertDetail.key}`
+            : incidentDetail
+              ? `obs:drawer:incident:${incidentDetail.key}`
+              : logDetail
+                ? `obs:log:${logDetail.key}`
+                : traceDetail
+                  ? `obs:trace:${traceDetail.key}`
+                  : `${mode}:${tab}`
   useReportScreen(reportedScreen)
 
   // Clic sur un commentaire (historique) → rétablit l'écran où il a été posé
@@ -1950,7 +2338,6 @@ const ExploreTabsProto = () => {
     setQuotaOpen(false)
     setConnectOpen(false)
     setDestOpen(false)
-    setConfigureOpen(false)
     setLogDetail(null)
     setTraceDetail(null)
     setAlertDetail(null)
@@ -1970,10 +2357,6 @@ const ExploreTabsProto = () => {
       setMode('obs')
       setTab('destinations')
       setDestOpen(true)
-    } else if (p === 'obs:drawer:configure') {
-      setMode('obs')
-      setTab('svcmap')
-      setConfigureOpen(true)
     } else if (p.startsWith('obs:drawer:alert:')) {
       const a = alerts.find((x) => x.key === p.slice('obs:drawer:alert:'.length))
       setMode('obs')
@@ -2084,9 +2467,6 @@ const ExploreTabsProto = () => {
         break
       case 'Connect cluster':
         setConnectOpen(true)
-        break
-      case 'Configure':
-        setConfigureOpen(true)
         break
       case 'Refresh':
         toast.info('Refreshing service map…')
@@ -2238,7 +2618,7 @@ const ExploreTabsProto = () => {
 
       {/* Content */}
       <div className={styles.content}>
-        <div className={styles.contentBody}>
+        <div className={tab === 'svcmap' ? `${styles.contentBody} ${styles.contentBodyFill}` : styles.contentBody}>
           <div className={styles.pageHead}>
             <h1 className={styles.pageTitle}>{meta.title}</h1>
             {tab === 'perses' ? (
@@ -2250,7 +2630,7 @@ const ExploreTabsProto = () => {
                   <Button
                     key={a.label}
                     color={a.primary ? 'primary' : 'secondary'}
-                    icon={a.label === 'Export' ? IconDownload : a.label === 'Create alert' ? Plus : a.label === 'Pin as panel' ? Pin : undefined}
+                    icon={a.label === 'Export' ? IconDownload : a.label === 'Create alert' ? Plus : a.label === 'Pin as panel' ? Pin : a.label === 'Refresh' ? RefreshCw : undefined}
                     onClick={() => runAction(a.label)}
                   >
                     {a.label}
@@ -2708,57 +3088,6 @@ helm install kapp-agent kapptivate/agent \\
               </>
             )
           })()}
-      </Drawer>
-
-
-      {/* Service map settings drawer */}
-      <Drawer
-        open={configureOpen}
-        onClose={() => setConfigureOpen(false)}
-        title="Service map settings"
-        extra={
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button color="invisible" onClick={() => setConfigureOpen(false)}>Cancel</Button>
-            <Button
-              color="primary"
-              onClick={() => {
-                setConfigureOpen(false)
-                toast.success('Service map settings saved successfully')
-              }}
-            >
-              Save changes
-            </Button>
-          </div>
-        }
-      >
-        <div className={styles.field}>
-          <label>Auto-refresh interval</label>
-          <Select
-            fullWidth
-            value={cfgInterval}
-            onChange={(_e, v) => setCfgInterval(v)}
-            options={[
-              { label: 'Off', value: 'off' },
-              { label: 'Every 15 seconds', value: '15s' },
-              { label: 'Every 1 minute', value: '1m' },
-              { label: 'Every 15 minutes', value: '15m' },
-            ]}
-          />
-        </div>
-        <div className={styles.drawerToggles}>
-          <Toggle
-            title="Show latencies on edges"
-            description="Display p95 latency labels on the connections between services."
-            value={cfgLatencies}
-            onChange={setCfgLatencies}
-          />
-          <Toggle
-            title="Highlight error paths"
-            description="Emphasize service paths with an error rate above 1%."
-            value={cfgErrors}
-            onChange={setCfgErrors}
-          />
-        </div>
       </Drawer>
     </div>
   )
