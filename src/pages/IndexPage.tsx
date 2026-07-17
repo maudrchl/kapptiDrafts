@@ -6,6 +6,7 @@ import {
   Tag,
   Button,
   Table,
+  Tabs,
   Dropdown,
   SortIcon,
   FilterIcon,
@@ -15,9 +16,6 @@ import {
   IconCode,
   IconFileType,
   IconPin,
-  IconArchive,
-  IconRocket,
-  IconChevronRight,
 } from '@kapptivate/ui-kit'
 import logo from '../assets/kapptidrafts-logo.svg'
 import {
@@ -113,8 +111,7 @@ const IndexPage = () => {
   const { pinned, togglePin } = useProtoPins()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | ProtoStatus>('all')
-  const [archiveOpen, setArchiveOpen] = useState(false)
-  const [deployedOpen, setDeployedOpen] = useState(false)
+  const [tab, setTab] = useState<'active' | 'deployed' | 'archived'>('active')
 
   useEffect(() => {
     document.title = 'kapptiDrafts'
@@ -150,9 +147,8 @@ const IndexPage = () => {
       })
   }, [search, statusFilter, pinned])
 
-  // La liste principale ne garde que les protos actifs : les déployés et les
-  // archivés sont sortis dans leurs propres sections repliables en bas.
-  const mainItems = useMemo(
+  // Trois familles, réparties en onglets : actifs (WIP/QA), déployés, archivés.
+  const activeItems = useMemo(
     () => items.filter((p) => p.collection !== 'Archive' && p.status !== 'deployed'),
     [items],
   )
@@ -164,9 +160,8 @@ const IndexPage = () => {
     () => items.filter((p) => p.collection === 'Archive'),
     [items],
   )
-  // Ouvert au clic, ou d'office si une recherche/filtre remonte ces protos.
-  const showDeployed = deployedOpen || search.trim() !== '' || statusFilter === 'deployed'
-  const showArchived = archiveOpen || search.trim() !== ''
+  const currentItems =
+    tab === 'deployed' ? deployedItems : tab === 'archived' ? archivedItems : activeItems
 
   // Menu contextuel (clic droit) d'une ligne : épingler / désépingler.
   const pinMenu = (p: Row) => ({
@@ -319,8 +314,8 @@ const IndexPage = () => {
         <div>
           <img src={logo} alt="kapptiDrafts" style={styles.logo} />
           <Text size="s" color="secondary">
-            {catalog.length} prototype{catalog.length > 1 ? 's' : ''} · live
-            mockups built with the design system
+            {catalog.length} prototype{catalog.length > 1 ? 's' : ''} · a lab to
+            explore and track product work
           </Text>
         </div>
         <Button
@@ -344,109 +339,43 @@ const IndexPage = () => {
         </div>
       </div>
 
-      <div style={{ marginTop: 20 }}>
-        {items.length === 0 ? (
-          <div style={{ padding: '3rem 0' }}>
-            <EmptyState
-              icon={<IconSearchX color="var(--color-text-secondary)" />}
-              text="No prototype"
-              description="No result for this search or filter."
-            />
-          </div>
-        ) : (
-          <>
-            {mainItems.length > 0 && (
-              <div className={css.tableWrap}>
-                <Table
-                  rowKey="slug"
-                  outerBorders
-                  data={mainItems}
-                  columns={columns}
-                  onClickRow={open}
-                  persistSortKey="kapptidrafts:sort-protos-v2"
-                />
-              </div>
-            )}
+      <div style={{ marginTop: 16 }}>
+        <Tabs
+          tabs={[
+            { key: 'active', label: `Active · ${activeItems.length}` },
+            { key: 'deployed', label: `Deployed · ${deployedItems.length}` },
+            { key: 'archived', label: `Archived · ${archivedItems.length}` },
+          ]}
+          activeKey={tab}
+          onChange={(k: string) => setTab(k as 'active' | 'deployed' | 'archived')}
+        />
 
-            {deployedItems.length > 0 && (
-              <div style={styles.archiveSection}>
-                <button
-                  type="button"
-                  style={styles.archiveHead}
-                  onClick={() => setDeployedOpen((v) => !v)}
-                  aria-expanded={showDeployed}
-                >
-                  <span
-                    style={{
-                      ...styles.archiveChevron,
-                      transform: showDeployed ? 'rotate(90deg)' : 'none',
-                    }}
-                  >
-                    <IconChevronRight size={16} />
-                  </span>
-                  <IconRocket size={16} color={STATUS_ACCENT.deployed} />
-                  <Text size="s" weight="medium" color="secondary">
-                    Deployed
-                  </Text>
-                  <Text size="s" color="secondary">
-                    · {deployedItems.length}
-                  </Text>
-                </button>
-
-                {showDeployed && (
-                  <div className={css.tableWrap} style={{ marginTop: 12 }}>
-                    <Table
-                      rowKey="slug"
-                      outerBorders
-                      data={deployedItems}
-                      columns={columns}
-                      onClickRow={open}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {archivedItems.length > 0 && (
-              <div style={styles.archiveSection}>
-                <button
-                  type="button"
-                  style={styles.archiveHead}
-                  onClick={() => setArchiveOpen((v) => !v)}
-                  aria-expanded={showArchived}
-                >
-                  <span
-                    style={{
-                      ...styles.archiveChevron,
-                      transform: showArchived ? 'rotate(90deg)' : 'none',
-                    }}
-                  >
-                    <IconChevronRight size={16} />
-                  </span>
-                  <IconArchive size={16} color="var(--color-text-secondary)" />
-                  <Text size="s" weight="medium" color="secondary">
-                    Archive
-                  </Text>
-                  <Text size="s" color="secondary">
-                    · {archivedItems.length}
-                  </Text>
-                </button>
-
-                {showArchived && (
-                  <div className={css.tableWrap} style={{ marginTop: 12 }}>
-                    <Table
-                      rowKey="slug"
-                      outerBorders
-                      data={archivedItems}
-                      columns={columns}
-                      onClickRow={open}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        )}
+        <div style={{ marginTop: 16 }}>
+          {currentItems.length === 0 ? (
+            <div style={{ padding: '3rem 0' }}>
+              <EmptyState
+                icon={<IconSearchX color="var(--color-text-secondary)" />}
+                text="No prototype"
+                description={
+                  search.trim() || statusFilter !== 'all'
+                    ? 'No result in this tab for the current search or filter.'
+                    : 'Nothing here yet.'
+                }
+              />
+            </div>
+          ) : (
+            <div className={css.tableWrap}>
+              <Table
+                rowKey="slug"
+                outerBorders
+                data={currentItems}
+                columns={columns}
+                onClickRow={open}
+                persistSortKey="kapptidrafts:sort-protos-v2"
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -499,26 +428,6 @@ const styles: Record<string, CSSProperties> = {
     height: 8,
     borderRadius: '50%',
     flexShrink: 0,
-  },
-  archiveSection: {
-    marginTop: 28,
-  },
-  archiveHead: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '6px 8px',
-    marginLeft: -8,
-    background: 'transparent',
-    border: 'none',
-    borderRadius: 8,
-    cursor: 'pointer',
-  },
-  archiveChevron: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    color: 'var(--color-text-secondary)',
-    transition: 'transform 0.15s ease',
   },
 }
 
