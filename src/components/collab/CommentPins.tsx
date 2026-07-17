@@ -557,25 +557,30 @@ const ThreadCard = ({
       />
 
       <div style={styles.actions}>
-        {isAdmin && (
-          <Button size="s" color="secondary" icon={IconCheck} onClick={onToggleResolved}>
-            {comment.resolved ? 'Reopen' : 'Resolve'}
-          </Button>
-        )}
-        <div style={{ flex: 1 }} />
-        {(comment.author_email === me.email || isAdmin) && (
-          <Button size="s" color="danger-s" icon={IconTrash} onClick={onDelete}>
-            Delete
-          </Button>
-        )}
-        <Button size="s" color="secondary" onClick={submit} disabled={!text.trim()}>
+        <Button size="s" color="primary" onClick={submit} disabled={!text.trim()}>
           Reply
         </Button>
       </div>
 
-      <button type="button" onClick={onClose} style={styles.close} title="Close">
-        ×
-      </button>
+      {/* Actions secondaires en icônes discrètes, en haut à droite de la carte */}
+      <div style={styles.cardTools}>
+        <button
+          type="button"
+          onClick={onToggleResolved}
+          title={comment.resolved ? 'Reopen' : 'Resolve'}
+          style={{ ...styles.toolBtn, ...(comment.resolved ? styles.toolBtnActive : null) }}
+        >
+          <IconCheck size={14} />
+        </button>
+        {(comment.author_email === me.email || isAdmin) && (
+          <button type="button" onClick={onDelete} title="Delete" style={styles.toolBtn}>
+            <IconTrash size={14} />
+          </button>
+        )}
+        <button type="button" onClick={onClose} title="Close" style={styles.toolClose}>
+          ×
+        </button>
+      </div>
     </div>
   )
 }
@@ -616,8 +621,15 @@ const Message = ({
         </div>
         <div style={styles.body}>{renderBody(body, mentionNames)}</div>
       </div>
-      {onDelete && hover && (
-        <button type="button" onClick={onDelete} title="Delete message" style={styles.msgDelete}>
+      {onDelete && (
+        // Toujours monté (réserve la place) mais masqué hors survol, pour ne pas
+        // décaler le texte quand la poubelle apparaît.
+        <button
+          type="button"
+          onClick={onDelete}
+          title="Delete message"
+          style={{ ...styles.msgDelete, visibility: hover ? 'visible' : 'hidden' }}
+        >
           <IconTrash size={13} />
         </button>
       )}
@@ -807,18 +819,42 @@ const styles: Record<string, CSSProperties> = {
     boxSizing: 'border-box',
   },
   actions: { display: 'flex', alignItems: 'center', gap: 8 },
-  close: {
+  cardTools: {
     position: 'absolute',
     top: 6,
-    right: 8,
-    width: 22,
-    height: 22,
+    right: 6,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 2,
+  },
+  toolBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 24,
+    height: 24,
     padding: 0,
-    fontSize: 18,
-    lineHeight: '20px',
     color: '#98a2b3',
     background: 'transparent',
     border: 'none',
+    borderRadius: 6,
+    cursor: 'pointer',
+  },
+  // Resolu = coche verte discrète.
+  toolBtnActive: { color: '#12b76a' },
+  toolClose: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 24,
+    height: 24,
+    padding: 0,
+    fontSize: 18,
+    lineHeight: '18px',
+    color: '#98a2b3',
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 6,
     cursor: 'pointer',
   },
   draftDot: {
