@@ -136,28 +136,39 @@ export default async function handler(req: Request): Promise<Response> {
     const d = await r.json()
     return d.ok ? d.user.id : null
   }
-  const slackDM = async (channel: string) => {
+  const slackDM = async (channel: string, text: string) => {
     await fetch('https://slack.com/api/chat.postMessage', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${slackToken}`,
         'Content-Type': 'application/json; charset=utf-8',
       },
-      body: JSON.stringify({ channel, text: message }),
+      body: JSON.stringify({ channel, text }),
     })
   }
 
-  const sent: string[] = []
+  // On résout d'abord tout le monde. Les personnes sans compte Slack joignable
+  // (lookup email KO) ne sont pas perdues : elles sont listées dans le DM
+  // catch-all (Maud) sous forme « @Nom » + le lien, pour relais manuel.
+  const resolved: { email: string; uid: string | null }[] = []
   for (const email of recipients) {
-    if (!email) continue
-    const uid = await slackLookup(email)
-    if (uid) {
-      await slackDM(uid)
-      sent.push(email)
-    }
+    if (email) resolved.push({ email, uid: await slackLookup(email) })
+  }
+  const unreachable = resolved.filter((r) => !r.uid).map((r) => r.email)
+  const fallbackNote = unreachable.length
+    ? `\n\n⚠️ Pas joignable en DM : ${unreachable.map((e) => `@${displayName(e)}`).join(', ')}\n${link}`
+    : ''
+
+  const sent: string[] = []
+  for (const { email, uid } of resolved) {
+    if (!uid) continue
+    // Le catch-all reçoit en plus la liste des non-joignables.
+    const text = ALWAYS_NOTIFY.includes(email) ? message + fallbackNote : message
+    await slackDM(uid, text)
+    sent.push(email)
   }
 
-  return new Response(JSON.stringify({ table, recipients: sent }), {
+  return new Response(JSON.stringify({ table, recipients: sent, unreachable }), {
     headers: { 'Content-Type': 'application/json' },
   })
 }
