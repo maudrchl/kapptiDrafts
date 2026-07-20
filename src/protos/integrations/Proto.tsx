@@ -124,11 +124,13 @@ const IntegrationsPage = () => {
             ))}
 
             {sections.length === 0 && (
-              <EmptyState
-                icon={<IconSearchX color="var(--color-text-secondary)" />}
-                text="No integration found"
-                description={`No integration matches “${query}”.`}
-              />
+              <div className={styles.emptyWrap}>
+                <EmptyState
+                  icon={<IconSearchX color="var(--color-text-secondary)" />}
+                  text="No integration found"
+                  description={`No integration matches “${query}”.`}
+                />
+              </div>
             )}
           </div>
         </div>
