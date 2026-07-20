@@ -84,7 +84,7 @@ export const SECTIONS: Section[] = [
         name: 'Jira',
         brand: 'jira',
         description:
-          'Create and sync issues between Kapptivate incidents and your Jira projects.',
+          'Create bug reports from execution results and sync Kapptivate incidents with your Jira projects.',
         connected: true,
         manage: {
           accountLabel: 'Connected account',
@@ -126,7 +126,8 @@ export const SECTIONS: Section[] = [
         id: 'linear',
         name: 'Linear',
         brand: 'linear',
-        description: 'Sync Kapptivate incidents with your Linear issues and project roadmap.',
+        description:
+          'Create bug reports from execution results and sync Kapptivate incidents with your Linear issues.',
         connected: false,
       },
     ],
