@@ -20,6 +20,7 @@ import { useCurrentUser, isAdmin } from '../../context/CurrentUser'
 import { useActiveScreen, useGoToScreen } from '../../context/ScreenContext'
 import { FONT } from './types'
 import { useProtoComments } from './useProtoComments'
+import { useThreadReads } from './useThreadReads'
 import { usePresence } from './usePresence'
 import CommentPins, { type PlacementMode } from './CommentPins'
 import CommentsDrawer from './CommentsDrawer'
@@ -59,6 +60,7 @@ const CollabLayer = ({
     deleteComment,
     deleteReply,
   } = useProtoComments(slug)
+  const { unreadByComment, markRead } = useThreadReads(user, comments, replies)
 
   const [mode, setMode] = useState<PlacementMode>('off')
   const [activeEmoji, setActiveEmoji] = useState(EMOJIS[0])
@@ -94,6 +96,11 @@ const CollabLayer = ({
     if (mode !== 'emoji') setPickerOpen(false)
   }, [mode])
 
+  // Ouvrir un thread = l'avoir lu → efface son badge de réponses non lues.
+  useEffect(() => {
+    if (selectedId) markRead(selectedId)
+  }, [selectedId, markRead])
+
   if (!collabEnabled) return null
 
   const openCount = comments.filter((c) => c.kind !== 'emoji' && !c.resolved).length
@@ -105,6 +112,8 @@ const CollabLayer = ({
       <CommentPins
         activeScreen={activeScreen}
         me={user}
+        present={present}
+        unreadByComment={unreadByComment}
         comments={comments}
         replies={replies}
         // Suspend le placement tant que le drawer historique est ouvert.
@@ -208,6 +217,7 @@ const CollabLayer = ({
         <CommentsDrawer
           comments={comments}
           replies={replies}
+          unreadByComment={unreadByComment}
           onSelect={(id) => {
             const c = comments.find((x) => x.id === id)
             if (!c) return

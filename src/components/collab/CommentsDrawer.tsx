@@ -17,10 +17,13 @@ import UserAvatar from './UserAvatar'
 const CommentsDrawer = ({
   comments,
   replies,
+  unreadByComment,
   onSelect,
 }: {
   comments: Comment[]
   replies: Reply[]
+  /** comment_id → nombre de réponses non lues pour l'utilisateur courant. */
+  unreadByComment: Record<string, number>
   onSelect: (id: string) => void
 }) => {
   const [filter, setFilter] = useState<'open' | 'resolved'>('open')
@@ -64,6 +67,7 @@ const CommentsDrawer = ({
           {list.map((c) => {
             const who = deriveIdentity(c.author_email)
             const count = replies.filter((r) => r.comment_id === c.id).length
+            const unread = unreadByComment[c.id] ?? 0
             return (
               <button
                 key={c.id}
@@ -71,7 +75,12 @@ const CommentsDrawer = ({
                 style={styles.item}
                 onClick={() => onSelect(c.id)}
               >
-                <UserAvatar email={c.author_email} size="small" />
+                <span style={styles.avatarWrap}>
+                  <UserAvatar email={c.author_email} size="small" />
+                  {unread > 0 && (
+                    <span style={styles.unreadBadge}>{unread > 9 ? '9+' : unread}</span>
+                  )}
+                </span>
                 <div style={styles.itemBody}>
                   <div style={styles.itemHead}>
                     <Text size="s" weight="bold">
@@ -115,6 +124,25 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 8,
     cursor: 'pointer',
     width: '100%',
+  },
+  avatarWrap: { position: 'relative', flexShrink: 0, lineHeight: 0 },
+  unreadBadge: {
+    position: 'absolute',
+    right: -5,
+    top: -5,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 16,
+    height: 16,
+    padding: '0 4px',
+    borderRadius: 999,
+    background: '#d26334',
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 700,
+    lineHeight: 1,
+    boxShadow: '0 0 0 2px #fff',
   },
   itemBody: { flex: 1, minWidth: 0 },
   itemHead: { display: 'flex', alignItems: 'baseline', gap: 6 },
