@@ -5,6 +5,8 @@ import browserstackLogo from './logos/browserstack.png'
 import copilotGithubLogo from './logos/copilot-github.png'
 import copilotMsLogo from './logos/copilot-ms.jpeg'
 import xrayLogo from './logos/xray.png'
+import jenkinsLogo from './logos/jenkins.png'
+import azureDevopsLogo from './logos/azuredevops.webp'
 
 const imgStyle = {
   width: 28,
@@ -105,42 +107,8 @@ export const brands: Record<string, ReactNode> = {
       />
     </svg>
   ),
-  jenkins: (
-    // placeholder Jenkins — à remplacer par le vrai logo (butler)
-    <svg width="26" height="26" viewBox="0 0 32 32">
-      <rect width="32" height="32" rx="7" fill="#D24939" />
-      <text
-        x="16"
-        y="17"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontFamily="Inter, sans-serif"
-        fontSize="16"
-        fontWeight="700"
-        fill="#fff"
-      >
-        J
-      </text>
-    </svg>
-  ),
-  azuredevops: (
-    // placeholder Azure DevOps — à remplacer par le vrai logo (boucle infinie)
-    <svg width="26" height="26" viewBox="0 0 32 32">
-      <rect width="32" height="32" rx="7" fill="#0078D7" />
-      <text
-        x="16"
-        y="17"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontFamily="Inter, sans-serif"
-        fontSize="15"
-        fontWeight="700"
-        fill="#fff"
-      >
-        Az
-      </text>
-    </svg>
-  ),
+  jenkins: <img src={jenkinsLogo} alt="Jenkins" style={imgStyle} />,
+  azuredevops: <img src={azureDevopsLogo} alt="Azure DevOps" style={imgStyle} />,
   xray: <img src={xrayLogo} alt="Xray" style={imgStyle} />,
   claude: <img src={claudeLogo} alt="Claude" style={imgStyle} />,
   copilot: <img src={copilotGithubLogo} alt="GitHub Copilot" style={imgStyle} />,
