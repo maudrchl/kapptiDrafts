@@ -54,6 +54,7 @@ type Props = {
   }) => Promise<Comment | null>
   addReply: (commentId: string, body: string, authorEmail: string) => void
   setResolved: (id: string, resolved: boolean) => void
+  moveComment: (id: string, pos: { anchor: string | null; x: number; y: number }) => void
   deleteComment: (id: string) => void
   deleteReply: (id: string) => void
 }
@@ -144,6 +145,7 @@ const CommentPins = ({
   addStamp,
   addReply,
   setResolved,
+  moveComment,
   deleteComment,
   deleteReply,
 }: Props) => {
@@ -325,6 +327,12 @@ const CommentPins = ({
             pt={pt}
             selected={c.id === selectedId}
             unread={unreadByComment[c.id] ?? 0}
+            // L'auteur (ou un admin) peut repositionner son pin façon Figma.
+            canDrag={c.author_email === me?.email || isAdmin}
+            onDrop={(cx, cy) => {
+              const hit = captureAnchor(cx, cy, layerRef.current)
+              moveComment(c.id, { anchor: hit.anchor, x: hit.x, y: hit.y })
+            }}
             onClick={(e) => {
               e.stopPropagation()
               setDraft(null)
@@ -410,11 +418,15 @@ const AuthorHover = ({
 
 /* ------------------------------- Pin marker ------------------------------- */
 
+const DRAG_THRESHOLD = 4
+
 const Pin = ({
   comment,
   pt,
   selected,
   unread,
+  canDrag,
+  onDrop,
   onClick,
 }: {
   comment: Comment
@@ -422,21 +434,75 @@ const Pin = ({
   selected: boolean
   /** Réponses non lues dans ce thread pour l'utilisateur courant. */
   unread: number
+  /** L'utilisateur courant peut-il déplacer ce pin ? (auteur ou admin) */
+  canDrag: boolean
+  /** Déposé à (clientX, clientY) après un vrai déplacement. */
+  onDrop: (clientX: number, clientY: number) => void
   onClick: (e: MouseEvent) => void
 }) => {
   const [hover, setHover] = useState(false)
+  // Position live pendant le drag (le pin suit le curseur) ; null = pas de drag.
+  const [dragPt, setDragPt] = useState<{ left: number; top: number } | null>(null)
+  // Vrai juste après un drag → empêche le click de suivre (ouvrirait le thread).
+  const justDragged = useRef(false)
+  const btnRef = useRef<HTMLButtonElement>(null)
+
+  const onMouseDown = (e: MouseEvent) => {
+    if (!canDrag || e.button !== 0) return
+    e.stopPropagation()
+    const startX = e.clientX
+    const startY = e.clientY
+    let moved = false
+    const onMove = (ev: globalThis.MouseEvent) => {
+      if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD) return
+      moved = true
+      setDragPt({ left: ev.clientX, top: ev.clientY })
+    }
+    const onUp = (ev: globalThis.MouseEvent) => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp, true)
+      setDragPt(null)
+      if (moved) {
+        justDragged.current = true
+        // Le pin suit le curseur (centré dessus) : il faut l'exclure du
+        // hit-test, sinon captureAnchor s'ancre sur le pin lui-même (0.5/0.5).
+        const el = btnRef.current
+        const prev = el?.style.pointerEvents
+        if (el) el.style.pointerEvents = 'none'
+        onDrop(ev.clientX, ev.clientY)
+        if (el) el.style.pointerEvents = prev ?? ''
+      }
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp, true)
+  }
+
+  const handleClick = (e: MouseEvent) => {
+    if (justDragged.current) {
+      justDragged.current = false
+      e.stopPropagation()
+      return
+    }
+    onClick(e)
+  }
+
+  const pos = dragPt ?? pt
   return (
     <button
+      ref={btnRef}
       type="button"
       data-comment-pin
-      onClick={onClick}
+      onMouseDown={onMouseDown}
+      onClick={handleClick}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
         ...styles.pin,
-        left: pt.left,
-        top: pt.top,
+        left: pos.left,
+        top: pos.top,
+        cursor: canDrag ? (dragPt ? 'grabbing' : 'grab') : 'pointer',
         opacity: comment.resolved ? 0.55 : 1,
+        zIndex: dragPt ? 1 : undefined,
         boxShadow: selected
           ? '0 0 0 3px rgba(210,99,52,0.9), 0 4px 12px rgba(16,24,40,0.25)'
           : '0 2px 8px rgba(16,24,40,0.25)',
@@ -451,7 +517,7 @@ const Pin = ({
       {unread > 0 && !selected && (
         <span style={styles.unreadBadge}>{unread > 9 ? '9+' : unread}</span>
       )}
-      {hover && !selected && (
+      {hover && !selected && !dragPt && (
         <AuthorHover
           email={comment.author_email}
           createdAt={comment.created_at}

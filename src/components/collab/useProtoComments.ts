@@ -171,6 +171,17 @@ export function useProtoComments(slug: string) {
     await supabase.from('proto_comments').update({ resolved }).eq('id', id)
   }, [])
 
+  // Déplacement d'un pin (drag façon Figma) : nouvelle ancre + position
+  // relative recapturées au drop. Optimiste puis persisté.
+  const moveComment = useCallback(
+    async (id: string, pos: { anchor: string | null; x: number; y: number }) => {
+      if (!supabase) return
+      setComments((cur) => cur.map((c) => (c.id === id ? { ...c, ...pos } : c)))
+      await supabase.from('proto_comments').update(pos).eq('id', id)
+    },
+    [],
+  )
+
   const deleteComment = useCallback(async (id: string) => {
     if (!supabase) return
     setComments((cur) => cur.filter((c) => c.id !== id))
@@ -192,6 +203,7 @@ export function useProtoComments(slug: string) {
     addStamp,
     addReply,
     setResolved,
+    moveComment,
     deleteComment,
     deleteReply,
   }
