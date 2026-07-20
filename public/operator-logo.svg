@@ -1,0 +1,5 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- placeholder: logo opérateur (Rocket Corp) — à remplacer par le vrai operator-logo.svg -->
+  <rect width="40" height="40" rx="9" fill="#ED7846"/>
+  <path d="M14 28V12h7.2c3.1 0 5.1 1.9 5.1 4.9 0 2.2-1.1 3.8-3 4.5l3.5 6.6h-3.9l-3.1-6.1H17.4V28H14Zm3.4-8.8h3.4c1.5 0 2.4-.8 2.4-2.2s-.9-2.2-2.4-2.2h-3.4v4.4Z" fill="#fff"/>
+</svg>
