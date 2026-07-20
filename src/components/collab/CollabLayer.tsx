@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
   type ComponentType,
@@ -100,6 +101,31 @@ const CollabLayer = ({
   useEffect(() => {
     if (selectedId) markRead(selectedId)
   }, [selectedId, markRead])
+
+  // Deep-link `?comment=<id>` (lien des notifs Slack) : à l'ouverture, on
+  // retrouve le commentaire, on rétablit son écran et on l'ouvre. On attend que
+  // les commentaires soient chargés (l'effet se rejoue quand `comments` arrive)
+  // puis on nettoie l'URL pour ne pas rouvrir au prochain rendu.
+  const deepLinkDone = useRef(false)
+  useEffect(() => {
+    if (deepLinkDone.current) return
+    const params = new URLSearchParams(window.location.search)
+    const cid = params.get('comment')
+    if (!cid) {
+      deepLinkDone.current = true
+      return
+    }
+    const c = comments.find((x) => x.id === cid)
+    if (!c) return // pas encore chargé, ou commentaire d'un autre proto
+    deepLinkDone.current = true
+    if (c.resolved) setShowResolved(true)
+    goToScreen(c.screen_id)
+    setSelectedId(cid)
+    setHistoryOpen(false)
+    params.delete('comment')
+    const qs = params.toString()
+    window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''))
+  }, [comments, goToScreen])
 
   if (!collabEnabled) return null
 
