@@ -20,10 +20,24 @@ export type AnchorHit = { anchor: string | null; x: number; y: number }
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
 
 /**
+ * Racines d'overlay stables : les drawers/modales antd sont rendus dans des
+ * portails au niveau `<body>`, dont l'ordre (donc le `:nth-child`) change dès
+ * qu'un autre portail monte/démonte (typiquement les Tooltips de la toolbar
+ * collab au survol). On enracine donc le sélecteur sur le conteneur de l'overlay
+ * plutôt que sur `body`, pour que l'ancre reste valide à la réouverture.
+ */
+const PORTAL_ROOTS = [
+  '.ant-drawer-body',
+  '.ant-modal-body',
+  '.ant-drawer-content',
+  '.ant-modal-content',
+]
+
+/**
  * Construit un sélecteur CSS structurel stable vers `el`, ancré au plus proche
- * ancêtre porteur d'un `id` (raccourcit et fiabilise le chemin). À défaut, on
- * remonte en `:nth-child` jusqu'au body. Retourne null si l'élément n'est pas
- * localisable de façon fiable.
+ * ancêtre porteur d'un `id` ou d'une racine d'overlay (raccourcit et fiabilise
+ * le chemin). À défaut, on remonte en `:nth-child` jusqu'au body. Retourne null
+ * si l'élément n'est pas localisable de façon fiable.
  */
 const selectorFor = (el: HTMLElement): string | null => {
   const parts: string[] = []
@@ -31,6 +45,13 @@ const selectorFor = (el: HTMLElement): string | null => {
   while (node && node.nodeType === 1 && node !== document.body) {
     if (node.id) {
       parts.unshift(`#${CSS.escape(node.id)}`)
+      return parts.join(' > ')
+    }
+    // Ancre sur un conteneur d'overlay stable (drawer/modale) : indépendant de
+    // l'ordre des portails au niveau body.
+    const root = PORTAL_ROOTS.find((sel) => node!.matches(sel))
+    if (root) {
+      parts.unshift(root)
       return parts.join(' > ')
     }
     const parent: HTMLElement | null = node.parentElement
