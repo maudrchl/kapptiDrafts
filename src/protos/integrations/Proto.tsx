@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { EmptyState, IconSearchX, SearchInput, Title, useNotification } from '@kapptivate/ui-kit'
-import { useReportScreen } from '../../context/ScreenContext'
+import { useReportScreen, useScreenNavigation } from '../../context/ScreenContext'
 import styles from './integrations.module.scss'
 import SettingsSidebar from './SettingsSidebar'
 import IntegrationCard from './IntegrationCard'
@@ -19,7 +19,9 @@ const initialConnected = () =>
 const CATEGORY: Record<string, IntegrationCategory> = {
   Communication: 'communication',
   'Project management': 'pm',
+  'CI/CD': 'cicd',
   Device: 'device',
+  'Test management': 'test',
   'AI assistants': 'ai',
 }
 
@@ -29,10 +31,38 @@ const IntegrationsPage = () => {
   const [connectedIds, setConnectedIds] = useState<Set<string>>(initialConnected)
   const [active, setActive] = useState<Integration | null>(null)
   const [activeCategory, setActiveCategory] = useState<IntegrationCategory>('communication')
-  const [mode, setMode] = useState<'manage' | 'connect'>('manage')
+  const [mode, setMode] = useState<'manage' | 'connect' | 'docs'>('manage')
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   useReportScreen(drawerOpen && active ? `${mode}:${active.id}` : 'main')
+
+  // Clic sur un commentaire de l'historique → rétablit la vue ciblée (drawer
+  // manage/connect d'une intégration, ou retour au listing) pour que le pin
+  // réapparaisse. Cf. ScreenContext / même pattern que le proto observability.
+  const { pendingScreen, clearPendingScreen } = useScreenNavigation()
+  useEffect(() => {
+    if (!pendingScreen) return
+    const p = pendingScreen
+    if (p === 'main') {
+      setDrawerOpen(false)
+    } else {
+      const sep = p.indexOf(':')
+      const m = p.slice(0, sep)
+      const id = p.slice(sep + 1)
+      for (const section of SECTIONS) {
+        const item = section.items.find((i) => i.id === id)
+        if (item) {
+          setActive(item)
+          setActiveCategory(CATEGORY[section.title] ?? 'communication')
+          if (m === 'manage' || m === 'connect' || m === 'docs') setMode(m)
+          setDrawerOpen(true)
+          break
+        }
+      }
+    }
+    clearPendingScreen()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingScreen, clearPendingScreen])
 
   const sections = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -46,7 +76,13 @@ const IntegrationsPage = () => {
   const openCard = (integration: Integration, category: IntegrationCategory) => {
     setActive(integration)
     setActiveCategory(category)
-    setMode(connectedIds.has(integration.id) ? 'manage' : 'connect')
+    setMode(
+      integration.setup === 'docs'
+        ? 'docs'
+        : connectedIds.has(integration.id)
+          ? 'manage'
+          : 'connect',
+    )
     setDrawerOpen(true)
   }
 

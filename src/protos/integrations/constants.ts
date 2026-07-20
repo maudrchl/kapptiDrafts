@@ -18,7 +18,13 @@ export type ManageConfig = {
   }
 }
 
-export type IntegrationCategory = 'communication' | 'pm' | 'device' | 'ai'
+export type IntegrationCategory =
+  | 'communication'
+  | 'pm'
+  | 'cicd'
+  | 'device'
+  | 'test'
+  | 'ai'
 
 export type Integration = {
   id: string
@@ -27,6 +33,13 @@ export type Integration = {
   brand: string
   description: string
   connected: boolean
+  /**
+   * 'app' (défaut) : vraie intégration connectable (OAuth / API key).
+   * 'docs' : pas d'app dispo pour l'instant → setup manuel via snippet + doc.
+   */
+  setup?: 'app' | 'docs'
+  /** Snippet de configuration affiché en mode 'docs'. */
+  setupSnippet?: string
   manage?: ManageConfig
 }
 
@@ -119,6 +132,69 @@ export const SECTIONS: Section[] = [
     ],
   },
   {
+    title: 'CI/CD',
+    items: [
+      {
+        id: 'github',
+        name: 'GitHub',
+        brand: 'github',
+        description:
+          'Trigger Kapptivate tests from your GitHub Actions and report results on commits and PRs.',
+        connected: false,
+        setup: 'docs',
+        setupSnippet: `# .github/workflows/kapptivate.yml
+- name: Run Kapptivate tests
+  uses: kapptivate/run-tests@v1
+  with:
+    api-key: \${{ secrets.KAPPTIVATE_API_KEY }}
+    campaign: rocket-web-smoke`,
+      },
+      {
+        id: 'gitlab',
+        name: 'GitLab',
+        brand: 'gitlab',
+        description:
+          'Run Kapptivate tests in your GitLab CI pipelines and surface results on merge requests.',
+        connected: false,
+        setup: 'docs',
+        setupSnippet: `# .gitlab-ci.yml
+kapptivate:
+  image: kapptivate/cli:latest
+  script:
+    - kapptivate run --campaign rocket-web-smoke`,
+      },
+      {
+        id: 'jenkins',
+        name: 'Jenkins',
+        brand: 'jenkins',
+        description:
+          'Run Kapptivate campaigns from your Jenkins pipelines and publish results.',
+        connected: false,
+        setup: 'docs',
+        setupSnippet: `// Jenkinsfile
+stage('Kapptivate') {
+  steps {
+    sh 'kapptivate run --campaign rocket-web-smoke'
+  }
+}`,
+      },
+      {
+        id: 'azure-devops',
+        name: 'Azure DevOps',
+        brand: 'azuredevops',
+        description:
+          'Add Kapptivate tests to your Azure Pipelines and gate releases on the results.',
+        connected: false,
+        setup: 'docs',
+        setupSnippet: `# azure-pipelines.yml
+- task: Kapptivate@1
+  inputs:
+    apiKey: $(KAPPTIVATE_API_KEY)
+    campaign: rocket-web-smoke`,
+      },
+    ],
+  },
+  {
     title: 'Device',
     items: [
       {
@@ -126,6 +202,18 @@ export const SECTIONS: Section[] = [
         name: 'BrowserStack',
         brand: 'browserstack',
         description: 'Run your Kapptivate tests across real browsers and devices in the cloud.',
+        connected: false,
+      },
+    ],
+  },
+  {
+    title: 'Test management',
+    items: [
+      {
+        id: 'xray',
+        name: 'Xray',
+        brand: 'xray',
+        description: 'Link your Xray test cases to their implementation in Kapptivate.',
         connected: false,
       },
     ],
