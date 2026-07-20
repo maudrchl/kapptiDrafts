@@ -240,6 +240,13 @@
   padding: 24px 0;
 }
 
+.emptyWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 320px);
+}
+
 /* ===== DRAWER ===== */
 .drawerTitle {
   display: inline-flex;
