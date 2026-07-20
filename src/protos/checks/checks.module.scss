@@ -1,5 +1,5 @@
 /* ============================================================
- *  Checks proto — reproduction de l'écran d'édition d'un test
+ *  Checks proto: reproduction de l'écran d'édition d'un test
  *  On retravaille le panneau « Checks » (à droite) en contexte.
  * ============================================================ */
 
@@ -49,24 +49,54 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 0;
-  gap: 4px;
+  padding: 10px 0 12px;
+  gap: 0;
 }
-.railMark {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: $primary;
-  color: #fff;
+
+/* logo + toggle collapse */
+.railLogo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 8px;
+}
+.railLogoImg {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+.railCollapse {
+  width: 26px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
   display: grid;
   place-items: center;
-  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover {
+    color: $rail-icon-active;
+    background: rgba(255, 255, 255, 0.07);
+  }
 }
-.railBtn {
-  width: 38px;
-  height: 38px;
-  border-radius: 9px;
+
+/* workspace : mode + logo opérateur */
+.railWorkspace {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0 4px;
+}
+.railWsMode {
+  width: 28px;
+  height: 28px;
   border: 0;
+  border-radius: 7px;
   background: transparent;
   color: $rail-icon;
   display: grid;
@@ -79,19 +109,84 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
     background: rgba(255, 255, 255, 0.07);
   }
 }
-.railBtnActive {
-  @extend .railBtn;
+.railWsLogo img {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: block;
+  object-fit: cover;
+}
+
+/* sections */
+.railSections {
+  flex: 1 1 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding-top: 10px;
+  overflow-y: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+.railSection {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+
+  & + &::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+.railItem {
+  width: 38px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: $rail-icon;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover {
+    color: $rail-icon-active;
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+.railItemActive {
+  @extend .railItem;
   color: $rail-icon-active;
   background: $rail-active;
 }
-.railSpacer {
-  flex: 1;
+
+/* aide */
+.railHelp {
+  padding-top: 10px;
 }
-.railSep {
-  width: 22px;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.12);
-  margin: 6px 0;
+.railHelpBtn {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  line-height: 0;
 }
 
 /* ===================== WORKSPACE ===================== */
@@ -853,7 +948,21 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 }
 .omHint {
   font-size: 12px;
+  line-height: 1.5;
   color: $faint;
+}
+// petite « touche » {} inline dans le hint (mappe le bouton {})
+.omHintKey {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin: 0 1px;
+  padding: 1px 4px;
+  border: 1px solid $border;
+  border-radius: 5px;
+  background: $surface-2;
+  color: $ink-2;
 }
 /* Source + Property collés dans une boîte bordée (même UX que le tableau) */
 .omExpr {
@@ -1869,7 +1978,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 }
 .checkIf {
   flex: none;
-  width: 64px;
+  width: 72px;
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
@@ -2188,7 +2297,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 }
 
 /* ============================================================
- *  AFFICHAGE DU RÉCAP DANS LE FORMULAIRE (canvas) — variantes
+ *  AFFICHAGE DU RÉCAP DANS LE FORMULAIRE (canvas), variantes
  * ============================================================ */
 .fmLabel {
   font-size: 12px;
@@ -2196,7 +2305,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   color: $ink-2;
 }
 
-/* Ligne compacte — clic ouvre l'onglet Checks */
+/* Ligne compacte: clic ouvre l'onglet Checks */
 .fmBar {
   align-self: flex-start;
   display: inline-flex;
@@ -2233,7 +2342,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   transition: color 0.15s ease, transform 0.15s ease;
 }
 
-/* B — groupé par sévérité */
+/* B: groupé par sévérité */
 .fmGrouped {
   display: flex;
   flex-direction: column;
@@ -2268,7 +2377,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   line-height: 1.5;
 }
 
-/* C — checklist */
+/* C: checklist */
 .fmList {
   display: flex;
   flex-direction: column;

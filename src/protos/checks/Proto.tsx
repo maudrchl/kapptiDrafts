@@ -18,19 +18,18 @@ import {
   IconChevronDown,
   IconColouredLogo,
   IconSquareArrowOutUpRight,
-  IconLayoutGrid,
+  IconMonitorCheck,
   IconEye,
   IconBell,
   IconGauge,
   IconCommand,
   IconMonitor,
-  IconBolt,
-  IconCheckCircle2,
+  IconMonitorSmartphone,
   IconHistory,
   IconBraces,
   IconSmartphone,
-  IconShield,
-  IconHelpCircle,
+  IconChromium,
+  IconBot,
   IconInfo,
   IconChevronRight,
   IconGripVertical,
@@ -77,14 +76,14 @@ import {
 let uid = 100
 const nextId = () => `c${++uid}`
 
-// Historique d'exécutions (panneau test → Preview) — statique pour le proto.
+// Historique d'exécutions (panneau test → Preview), statique pour le proto.
 const EXECUTIONS = [
   { id: '#290', status: 'warn', date: '13/07/2026 - 05:37:53 PM', dur: '29s' },
   { id: '#289', status: 'ok', date: '13/07/2026 - 05:32:57 PM', dur: '29s' },
   { id: '#288', status: 'ok', date: '13/07/2026 - 05:19:38 PM', dur: '28s' },
 ]
 
-// Variables tab — output variables (produites) + variables consommées.
+// Variables tab: output variables (produites) + variables consommées.
 // Source = méthode d'extraction depuis la réponse (cf. proto Figma « output variable »).
 const OUT_SOURCES = [
   { label: 'JSON attribute', value: 'json' },
@@ -95,7 +94,7 @@ const OUT_SOURCES = [
 // Variables globales réellement définies dans le test (cf. table Global variables).
 const GLOBAL_VARS = ['URL']
 
-// Dernière réponse du step (exemple) — sert à générer le JSONPath au clic,
+// Dernière réponse du step (exemple), sert à générer le JSONPath au clic,
 // pour éviter d'écrire le langage à la main (retour client).
 const SAMPLE_RESPONSE = {
   access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MiIsIm5hbWUiOiJBZGEgTG92ZWxhY2UifQ.s3cr3tS1gn4tur3',
@@ -666,7 +665,7 @@ const ChecksProto = () => {
       size="s"
       className={styles.conn}
       popupClassName={styles.selPopup}
-      width="64px"
+      width="72px"
       minWidth="0"
       disabled={disabled}
       options={toOptions(['and', 'or'])}
@@ -714,7 +713,7 @@ const ChecksProto = () => {
       }}
     >
       {i === 0 ? (
-        <span className={styles.checkIf}>Check if</span>
+        <span className={styles.checkIf}>Passes if</span>
       ) : (
         connSelect(gLogic, setG, i > 1)
       )}
@@ -748,7 +747,9 @@ const ChecksProto = () => {
             {sev === 'fail' ? 'Failed' : 'Warning'}
           </span>
           <span className={styles.grpNote}>
-            {sev === 'fail' ? 'conditions that fail the step' : 'conditions that only warn'}
+            {sev === 'fail'
+              ? 'the step fails if these are not met'
+              : 'only warns if these are not met'}
           </span>
         </div>
         <div className={styles.condList}>
@@ -810,7 +811,7 @@ const ChecksProto = () => {
 
   /* ---------- General / Variables / Advanced (reste de l'XP du panneau) ---------- */
 
-  // Table clé/valeur (Headers / Query parameters) — une ligne vide reste
+  // Table clé/valeur (Headers / Query parameters), une ligne vide reste
   // toujours en fin pour saisir la suivante.
   const editKv = (setRows: Dispatch<SetStateAction<KV[]>>, id: string, patch: Partial<KV>) =>
     setRows((cur) => {
@@ -960,7 +961,7 @@ const ChecksProto = () => {
 
   const variablesTab = () => (
     <div className={styles.varsPane}>
-      {/* Global variables — même structure div que Output pour aligner la
+      {/* Global variables: même structure div que Output pour aligner la
           colonne nom (220px) et garder la même compacité. */}
       <div className={styles.outTable}>
         <div className={styles.gvHeadRow}>Global variables</div>
@@ -982,7 +983,7 @@ const ChecksProto = () => {
         </div>
       </div>
 
-      {/* Output variables (produites par le step) — cf. Figma 10249:37165 */}
+      {/* Output variables (produites par le step), cf. Figma 10249:37165 */}
       <div className={styles.varsSection}>
         <div className={styles.outTable}>
           <div className={styles.outHeadRow}>
@@ -1174,38 +1175,66 @@ const ChecksProto = () => {
     <div className={styles.tabPlaceholder}>{label}</div>
   )
 
-  const RAIL_TOP = [IconLayoutGrid, IconEye, IconBell, IconGauge]
-  const RAIL_MID = [IconCommand, IconMonitor, IconBolt, IconCheckCircle2, IconHistory, IconBraces]
-  const RAIL_BOT = [IconSmartphone, IconShield]
+  // Sections du rail replié (produit Tests), icône active = zap (test / API)
+  const RAIL_SECTIONS = [
+    [IconMonitorCheck, IconEye, IconBell, IconGauge],
+    [IconSmartphone, IconMonitorSmartphone, IconZap, IconCheck, IconHistory, IconBraces],
+    [IconSmartphone, IconChromium, IconBot],
+  ]
 
   return (
     <div className={styles.app}>
       {/* ---------- rail ---------- */}
       <nav className={styles.rail}>
-        <span className={styles.railMark}>
-          <IconColouredLogo size={22} />
-        </span>
-        {RAIL_TOP.map((Icon, i) => (
-          <button key={`t${i}`} className={styles.railBtn}>
-            <Icon size={20} />
+        {/* logo + collapse */}
+        <div className={styles.railLogo}>
+          <img src="/logo-yellow.svg" alt="Kapptivate" className={styles.railLogoImg} />
+          <button className={styles.railCollapse} aria-label="Collapse sidebar">
+            <svg width="17" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13.5807 2H4.2474C3.51102 2 2.91406 2.59695 2.91406 3.33333V12.6667C2.91406 13.403 3.51102 14 4.2474 14H13.5807C14.3171 14 14.9141 13.403 14.9141 12.6667V3.33333C14.9141 2.59695 14.3171 2 13.5807 2Z" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M6.91406 2V14" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M10.2461 6L12.2461 8L10.2461 10" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
-        ))}
-        <span className={styles.railSep} />
-        {RAIL_MID.map((Icon, i) => (
-          <button key={`m${i}`} className={Icon === IconBolt ? styles.railBtnActive : styles.railBtn}>
-            <Icon size={20} />
+        </div>
+
+        {/* workspace : mode + logo opérateur */}
+        <div className={styles.railWorkspace}>
+          <button className={styles.railWsMode} aria-label="Workspace mode">
+            <IconEye size={16} />
           </button>
-        ))}
-        <span className={styles.railSpacer} />
-        {RAIL_BOT.map((Icon, i) => (
-          <button key={`b${i}`} className={styles.railBtn}>
-            <Icon size={20} />
+          <span className={styles.railWsLogo}>
+            <img src="/operator-logo.svg" alt="" />
+          </span>
+        </div>
+
+        {/* sections */}
+        <div className={styles.railSections}>
+          {RAIL_SECTIONS.map((section, s) => (
+            <div key={`s${s}`} className={styles.railSection}>
+              {section.map((Icon, i) => (
+                <button
+                  key={`s${s}i${i}`}
+                  className={Icon === IconZap ? styles.railItemActive : styles.railItem}
+                >
+                  <Icon size={16} />
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* aide */}
+        <div className={styles.railHelp}>
+          <button className={styles.railHelpBtn} aria-label="Help">
+            <svg width="32" height="34" viewBox="2 2 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect y="2" width="32" height="32" rx="16" fill="#1C4A47" />
+              <rect x="0.5" y="2.5" width="31" height="31" rx="15.5" stroke="white" strokeOpacity="0.5" />
+              <path d="M13.0898 14.9996C13.3249 14.3313 13.789 13.7677 14.3998 13.4087C15.0106 13.0498 15.7287 12.9185 16.427 13.0383C17.1253 13.1581 17.7587 13.5211 18.2149 14.0631C18.6712 14.6051 18.9209 15.2911 18.9198 15.9996C18.9198 17.9996 15.9198 18.9996 15.9198 18.9996" stroke="white" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M16 23H16.01" stroke="white" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
-        ))}
-        <span className={styles.railSep} />
-        <button className={styles.railBtn}>
-          <IconHelpCircle size={20} />
-        </button>
+        </div>
       </nav>
 
       {/* ---------- workspace ---------- */}
@@ -1227,7 +1256,7 @@ const ChecksProto = () => {
         </header>
 
         <div className={styles.body}>
-          {/* canvas — clic hors step = désélection (referme le panneau) */}
+          {/* canvas: clic hors step = désélection (referme le panneau) */}
           <div className={styles.canvas} onClick={() => setSelStep(null)}>
             <div className={styles.canvasInner}>
               <div className={styles.startRow}>
@@ -1254,7 +1283,7 @@ const ChecksProto = () => {
                   </button>
                 </div>
 
-                {/* step 1 — API Call */}
+                {/* step 1: API Call */}
                 <div
                   className={selStep === 1 ? styles.stepBodySelected : styles.stepBody}
                   onClick={(e) => {
@@ -1289,7 +1318,7 @@ const ChecksProto = () => {
 
                 <div className={styles.stepSep} />
 
-                {/* step 2 — Get mail */}
+                {/* step 2: Get mail */}
                 <div
                   className={selStep === 2 ? styles.stepBodySelected : styles.stepBody}
                   onClick={(e) => {
@@ -1505,8 +1534,11 @@ const ChecksProto = () => {
 
                 {outDraft.source === 'json' && (
                   <span className={styles.omHint}>
-                    Click <IconBraces size={12} /> to pick a value from the last response - the path
-                    is generated for you.
+                    Click{' '}
+                    <span className={styles.omHintKey}>
+                      <IconBraces size={11} />
+                    </span>{' '}
+                    to pick a value from the last response, and the path is generated for you.
                   </span>
                 )}
                 {outDraft.source === 'body' && (
