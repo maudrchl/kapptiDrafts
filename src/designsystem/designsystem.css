@@ -80,11 +80,20 @@
 
 /* ---- Content ---- */
 .dsContent {
+  position: relative;
   flex: 1;
   min-width: 0;
   padding: 80px 56px 96px;
   max-width: 1040px;
   margin: 0 auto;
+}
+
+/* ---- Copy-as-Markdown button (positioning only; visuals from ui-kit Button) ---- */
+.dsMdCopy {
+  position: absolute;
+  top: 28px;
+  right: 56px;
+  z-index: 1;
 }
 .dsPageHead {
   margin-bottom: 8px;
