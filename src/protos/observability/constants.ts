@@ -48,10 +48,10 @@ export const PAGE_META: Record<
   },
   k8s: {
     title: 'Kubernetes',
-    sub: 'Cluster health, workloads and resource usage at a glance',
+    sub: 'Monitor pods, resource usage and cluster health',
     actions: [
       { label: 'Export', primary: false },
-      { label: 'Connect cluster', primary: true },
+      { label: 'Refresh', primary: false },
     ],
   },
   usage: {
@@ -463,23 +463,93 @@ export const EDGES: { from: string; to: string; calls: number; lat: string }[] =
   { from: 'pay', to: 'notif', calls: 88, lat: '44ms' },
 ]
 
+/* ─────────────────────────────────────────────
+ *  Kubernetes - données alignées sur le vrai cluster (data fournie
+ *  par le dev : 17 pods sur 7 namespaces, Rocket Corp).
+ * ───────────────────────────────────────────── */
+export type PodPhase = 'Running' | 'Succeeded' | 'Pending' | 'CrashLoopBackOff' | 'Failed'
+
 export type PodEntry = {
   key: string
   name: string
   ns: string
-  status: 'Running' | 'CrashLoopBackOff' | 'Pending'
-  cpu: string
-  mem: string
+  status: PodPhase
   restarts: number
-  age: string
 }
 
-export const PODS: PodEntry[] = [
-  { key: 'p1', name: 'demo-site-7f8d9c-x4k2p', ns: 'rocket-corp', status: 'Running', cpu: '210m / 500m', mem: '312Mi / 512Mi', restarts: 0, age: '4d' },
-  { key: 'p2', name: 'demo-site-7f8d9c-q9v2m', ns: 'rocket-corp', status: 'Running', cpu: '184m / 500m', mem: '298Mi / 512Mi', restarts: 0, age: '4d' },
-  { key: 'p3', name: 'payment-service-9e2f1a-j6h3r', ns: 'rocket-corp', status: 'Running', cpu: '90m / 500m', mem: '220Mi / 1Gi', restarts: 3, age: '2d' },
-  { key: 'p4', name: 'payment-service-9e2f1a-t2w5k', ns: 'rocket-corp', status: 'CrashLoopBackOff', cpu: '0m / 500m', mem: '0Mi / 1Gi', restarts: 12, age: '5h' },
-  { key: 'p5', name: 'postgres-0', ns: 'rocket-corp', status: 'Running', cpu: '340m / 1000m', mem: '1.2Gi / 2Gi', restarts: 0, age: '9d' },
-  { key: 'p6', name: 'redis-0', ns: 'rocket-corp', status: 'Running', cpu: '45m / 250m', mem: '128Mi / 512Mi', restarts: 0, age: '9d' },
-  { key: 'p7', name: 'notification-6f1d4e-q3r8w', ns: 'rocket-corp', status: 'Running', cpu: '60m / 250m', mem: '96Mi / 256Mi', restarts: 0, age: '7d' },
+/** Ordre d'affichage des namespaces (chips de filtre + groupes du pod map). */
+export const K8S_NAMESPACES: string[] = [
+  'cert-manager',
+  'demo',
+  'envoy-gateway-system',
+  'external-secrets',
+  'opentelemetry-operator-system',
+  'pipeline',
+  'rabbitmq-system',
 ]
+
+export const PODS: PodEntry[] = [
+  // cert-manager
+  { key: 'p1', name: 'cert-manager-5c4d47fbcb-x8k2p', ns: 'cert-manager', status: 'Running', restarts: 14 },
+  { key: 'p2', name: 'cert-manager-cainjector-f5c8d99b7-q4m1z', ns: 'cert-manager', status: 'Running', restarts: 12 },
+  { key: 'p3', name: 'cert-manager-webhook-7c9b5d6f4-t7w3n', ns: 'cert-manager', status: 'Running', restarts: 0 },
+  // demo
+  { key: 'p4', name: 'demo-site-5c4587f7d6-9ltw9', ns: 'demo', status: 'Running', restarts: 0 },
+  { key: 'p5', name: 'payment-service-64b78785d9-h2k4m', ns: 'demo', status: 'Running', restarts: 0 },
+  // envoy-gateway-system
+  { key: 'p6', name: 'envoy-gateway-d4c4448491-v6p8q', ns: 'envoy-gateway-system', status: 'Running', restarts: 7 },
+  { key: 'p7', name: 'envoy-gateways-main-gateway-7b9c4d5f6-k8s2m', ns: 'envoy-gateway-system', status: 'Running', restarts: 0 },
+  { key: 'p8', name: 'envoy-gateways-main-gateway-7b9c4d5f6-p3l9x', ns: 'envoy-gateway-system', status: 'Running', restarts: 0 },
+  // external-secrets
+  { key: 'p9', name: 'bitwarden-sdk-server-6996d5c8b7-m4t2k', ns: 'external-secrets', status: 'Running', restarts: 0 },
+  { key: 'p10', name: 'external-secrets-86dcd58c9f-w7q1n', ns: 'external-secrets', status: 'Running', restarts: 0 },
+  { key: 'p11', name: 'external-secrets-cert-controller-5f8d7c6b9-z2x4m', ns: 'external-secrets', status: 'Running', restarts: 0 },
+  { key: 'p12', name: 'external-secrets-webhook-6c9b8d7f5-h3k1p', ns: 'external-secrets', status: 'Running', restarts: 0 },
+  // opentelemetry-operator-system
+  { key: 'p13', name: 'opentelemetry-operator-6497d8f9c-n5m2q', ns: 'opentelemetry-operator-system', status: 'Running', restarts: 10 },
+  // pipeline
+  { key: 'p14', name: 'obs-agent-event-probe', ns: 'pipeline', status: 'Succeeded', restarts: 0 },
+  { key: 'p15', name: 'obs-agent-kapptivate-obs-collector-7d8f9c6b5-l4m2n', ns: 'pipeline', status: 'Running', restarts: 0 },
+  // rabbitmq-system
+  { key: 'p16', name: 'messaging-topology-operator-6b7d8f9c5-k2m4t', ns: 'rabbitmq-system', status: 'Running', restarts: 1 },
+  { key: 'p17', name: 'rabbitmq-cluster-operator-7f8d9c6b5-w3n1q', ns: 'rabbitmq-system', status: 'Running', restarts: 9 },
+]
+
+/** Requêtes de ressources par déploiement (cpu en millicores, mémoire en Mi).
+ *  Alimente les deux bar charts "Request by deployment", chacun trié par sa
+ *  propre métrique côté vue. */
+export type DeployResource = { name: string; cpuReq: number; memReq: number }
+
+export const K8S_DEPLOYMENTS: DeployResource[] = [
+  { name: 'messaging-topology-operator', cpuReq: 300, memReq: 128 },
+  { name: 'envoy-gateways-main-gateway', cpuReq: 220, memReq: 1126 },
+  { name: 'rabbitmq-cluster-operator', cpuReq: 200, memReq: 500 },
+  { name: 'envoy-gateway', cpuReq: 100, memReq: 256 },
+  { name: 'obs-agent-kapptivate', cpuReq: 50, memReq: 128 },
+  { name: 'payment-service', cpuReq: 50, memReq: 64 },
+  { name: 'demo-site', cpuReq: 50, memReq: 64 },
+  { name: 'obs-agent', cpuReq: 0, memReq: 0 },
+  { name: 'opentelemetry-operator', cpuReq: 0, memReq: 0 },
+  { name: 'external-secrets-webhook', cpuReq: 0, memReq: 0 },
+  { name: 'external-secrets-cert-controller', cpuReq: 0, memReq: 0 },
+  { name: 'external-secrets', cpuReq: 0, memReq: 0 },
+  { name: 'bitwarden-sdk-server', cpuReq: 0, memReq: 0 },
+  { name: 'cert-manager-webhook', cpuReq: 0, memReq: 0 },
+  { name: 'cert-manager-cainjector', cpuReq: 0, memReq: 0 },
+  { name: 'cert-manager', cpuReq: 0, memReq: 0 },
+]
+
+/** Santé cluster (jauges CPU / mémoire). Millicores et Mi. */
+export const K8S_CLUSTER = {
+  cpuUsedMilli: 5,
+  cpuPct: 1,
+  cpuRequestMilli: 970,
+  cpuMaxMilli: 1000,
+  memUsedMi: 80,
+  memPct: 4,
+  memRequestMi: 2252, // 2.2Gi
+  memMaxMi: 2355, // 2.3Gi
+}
+
+/** Étiquettes de temps communes aux séries k8s (fenêtre ~3h). */
+export const K8S_XLABELS = ['10:00', '11:00', '12:00', '13:00']

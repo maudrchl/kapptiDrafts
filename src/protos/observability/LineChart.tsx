@@ -2,14 +2,14 @@ import { useState } from 'react'
 import styles from './perses.module.scss'
 import type { Panel } from './perses'
 
-/* Line chart (SVG) — rendu Perses, axes en Geist Mono. Réutilisé par
+/* Line chart (SVG): rendu Perses, axes en Geist Mono. Réutilisé par
    l'éditeur, l'aperçu de l'assistant IA et le panel étendu.
    Survol : ligne guide + marqueurs + tooltip valeur au point (tout en SVG,
    pas de dépendance scss pour rester robuste). */
 const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) => {
   const W = panel.span === 3 ? 1040 : 360
   const H = height
-  const padL = 34
+  const padL = panel.yFmt ? 56 : 34
   const padR = 6
   const padT = 8
   const padB = 28
@@ -46,10 +46,10 @@ const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) =
           .map((s) => ({ name: s.name, color: s.color, value: s.points[hover] }))
           .filter((r): r is { name: string; color: string; value: number } => r.value !== null && r.value !== undefined)
 
-  const fmtVal = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1))
+  const fmtVal = (v: number) => (panel.yFmt ? panel.yFmt(v) : Number.isInteger(v) ? String(v) : v.toFixed(1))
 
   // Tooltip : dimensions + position clampée dans la zone de tracé.
-  const ttLines = hover === null ? [] : [xLabels[hover], ...hoverRows.map((r) => `${r.name}: ${fmtVal(r.value)}${unit ? ` ${unit}` : ''}`)]
+  const ttLines = hover === null ? [] : [xLabels[hover], ...hoverRows.map((r) => `${r.name}: ${fmtVal(r.value)}${unit && !panel.yFmt ? ` ${unit}` : ''}`)]
   const ttW = Math.max(72, ...ttLines.map((l) => l.length * 5.6 + 16))
   const ttH = ttLines.length * 14 + 10
   const ttX = hover === null ? 0 : Math.min(Math.max(xFor(hover) + 10, padL), W - padR - ttW)
@@ -63,7 +63,7 @@ const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) =
           return (
             <g key={i}>
               <line className={styles.gridLine} x1={padL} y1={y} x2={W - padR} y2={y} />
-              <text className={styles.axisText} x={padL - 8} y={y + 3.5} textAnchor="end">{t.toFixed(0)}</text>
+              <text className={styles.axisText} x={padL - 8} y={y + 3.5} textAnchor="end">{panel.yFmt ? panel.yFmt(t) : t.toFixed(0)}</text>
             </g>
           )
         })}

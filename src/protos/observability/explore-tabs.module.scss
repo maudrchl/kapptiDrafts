@@ -502,7 +502,7 @@
   opacity: 0.7;
 }
 
-/* Trace list — répartition du temps par service : segments bout à bout, une
+/* Trace list: répartition du temps par service : segments bout à bout, une
    couleur par service. La légende (une fois, au-dessus de la liste) porte le
    sens des couleurs. */
 .traceBreakdown {
@@ -792,7 +792,7 @@
   word-break: break-word;
 }
 
-/* Tableau clé/valeur (attributs / span context / resource) — style Headers API. */
+/* Tableau clé/valeur (attributs / span context / resource), style Headers API. */
 .kvTable {
   border: 1px solid var(--color-border-grey, #e4e4e7);
   border-radius: var(--radius-md, 6px);
@@ -850,7 +850,7 @@
   border-top: 1px solid var(--color-border-grey, #e4e4e7);
 }
 
-/* Log detail — onglets Body / Headers / Performance */
+/* Log detail: onglets Body / Headers / Performance */
 .logJson {
   font-family: 'Geist Mono', ui-monospace, monospace;
   font-size: 12px;
@@ -1085,7 +1085,7 @@
   }
 }
 
-/* ===== SERVICE MAP — React Flow (dash0-style) ===== */
+/* ===== SERVICE MAP: React Flow (dash0-style) ===== */
 .svcFlowWrap {
   position: relative;
   flex: 1;
@@ -1444,7 +1444,7 @@
   border-radius: 50%;
 }
 
-/* ===== SERVICE DRAWER — metric grid + telemetry ===== */
+/* ===== SERVICE DRAWER: metric grid + telemetry ===== */
 .metricGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1823,6 +1823,127 @@
 
 .k8sPodLabel {
   font-size: 11px;
+  color: var(--color-text-secondary, #667085);
+}
+
+/* ===== KUBERNETES (dashboard - réutilise Card / CounterCard / StatusTag / Table / .sig* du reste du proto) ===== */
+.kRow2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* Namespace filter chips (pas d'équivalent DS : chips avec point de santé) */
+.nsChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.nsChip,
+.nsChipActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  background: var(--color-surface-white, #fff);
+  color: var(--color-text-secondary, #667085);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  &:hover {
+    border-color: var(--color-primary, #ed7846);
+  }
+}
+
+.nsChipActive {
+  background: var(--color-primary, #ed7846);
+  border-color: var(--color-primary, #ed7846);
+  color: #fff;
+
+  &:hover {
+    border-color: var(--color-primary, #ed7846);
+  }
+}
+
+.nsDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex: none;
+}
+
+.nsGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.nsGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary, #101828);
+  margin-bottom: 10px;
+}
+
+.nsGroupCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-grey-100, #f0f0f3);
+  color: var(--color-text-secondary, #667085);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.podGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.podCard {
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-left: 3px solid var(--pod-accent, #1fae7e);
+  border-radius: var(--radius-md, 6px);
+  padding: 10px 12px;
+  background: var(--color-surface-white, #fff);
+  min-width: 0;
+}
+
+.podName {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--color-text-primary, #101828);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 8px;
+}
+
+.podMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.podSummary {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-grey, #e4e4e7);
+  font-size: 12px;
   color: var(--color-text-secondary, #667085);
 }
 
@@ -2218,7 +2339,7 @@
   gap: 12px;
 }
 
-/* modal footer — right-aligned actions per DS */
+/* modal footer: right-aligned actions per DS */
 .modalFoot {
   display: flex;
   justify-content: flex-end;

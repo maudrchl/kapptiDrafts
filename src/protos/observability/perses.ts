@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
- *  Traces (Perses) — mock data & types
+ *  Traces (Perses): mock data & types
  * ─────────────────────────────────────────────────────────────
  *  Reproduit, en mode proto, l'expérience de dashboards Perses
  *  branchés sur ClickHouse (cf. kapptigalaxy · routes/Observability).
@@ -34,7 +34,7 @@ export type Panel = {
   /** Étiquette de l'axe Y (unité). */
   unit: string
   showLegend: boolean
-  /** Bornes de l'axe Y — fixées pour coller aux maquettes. */
+  /** Bornes de l'axe Y: fixées pour coller aux maquettes. */
   yMin: number
   yMax: number
   /** Nombre de graduations sur l'axe Y (min + max inclus). */
@@ -44,6 +44,9 @@ export type Panel = {
   series: Series[]
   /** Largeur dans la grille : 1 (tiers) ou 3 (pleine largeur). */
   span: 1 | 3
+  /** Formate les graduations Y + les valeurs de tooltip (ex. millicores -> "800m" / "1.00 cores").
+      Optionnel : sans ça l'axe reste en entiers bruts + `unit`. */
+  yFmt?: (v: number) => string
 }
 
 export type PanelGroup = {
@@ -59,7 +62,7 @@ export type Dashboard = {
   groups: PanelGroup[]
 }
 
-/** Palette des séries — surchargeable ici (source unique) ou par panel via l'éditeur. */
+/** Palette des séries: surchargeable ici (source unique) ou par panel via l'éditeur. */
 export const PALETTE = [
   '#c2477e', // rose (défaut)
   '#2e7d74', // teal
@@ -242,6 +245,38 @@ export const TRACE_COMPARE_PANEL: Panel = {
   series: [
     { name: 'Previous period', color: '#98a2b3', dash: true, opacity: 0.55, points: [400, 420, 415, 430, 410, 425, 418] },
     { name: 'Current period', color: '#8b5cf6', points: [430, 470, 450, 500, 460, 480, 445] },
+  ],
+}
+
+/* ─────────────────────────────────────────────
+ *  Panels Kubernetes (usage vs request + restarts).
+ *  yFmt rend les axes en unités k8s (m / cores, Mi / Gi).
+ * ───────────────────────────────────────────── */
+const K8S_X = ['10:00', '11:00', '12:00', '13:00']
+const fmtCpu = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(2)} cores` : `${Math.round(v)}m`)
+const fmtMem = (v: number) => (v >= 1024 ? `${(v / 1024).toFixed(1)}Gi` : `${Math.round(v)}Mi`)
+
+/** CPU usage vs request - usage à plat très bas, request en pointillés hauts. */
+export const K8S_CPU_PANEL: Panel = {
+  id: 'k8s_cpu', name: 'CPU usage vs request', description: '', type: 'timeseries',
+  queryType: 'clickhouse-timeseries', sql: '', unit: '', showLegend: true,
+  yMin: 0, yMax: 1000, yTicks: 6, xLabels: K8S_X, span: 1, yFmt: fmtCpu,
+  series: [
+    { name: 'Request', color: '#f2b338', dash: true, points: [970, 970, 970, 970] },
+    { name: 'CPU usage (max)', color: '#e0372e', points: [7, 8, 6, 7] },
+    { name: 'CPU usage', color: '#6366f1', points: [5, 5, 4, 5] },
+  ],
+}
+
+/** Memory usage vs request. */
+export const K8S_MEM_PANEL: Panel = {
+  id: 'k8s_mem', name: 'Memory usage vs request', description: '', type: 'timeseries',
+  queryType: 'clickhouse-timeseries', sql: '', unit: '', showLegend: true,
+  yMin: 0, yMax: 2355, yTicks: 6, xLabels: K8S_X, span: 1, yFmt: fmtMem,
+  series: [
+    { name: 'Request', color: '#f2b338', dash: true, points: [2252, 2252, 2252, 2252] },
+    { name: 'Memory usage (max)', color: '#e0372e', points: [96, 102, 90, 98] },
+    { name: 'Memory usage', color: '#6366f1', points: [80, 82, 78, 80] },
   ],
 }
 
