@@ -20,6 +20,10 @@ export type PlacementMode = 'off' | 'comment' | 'emoji'
 type Props = {
   activeScreen: string
   me: CurrentUser | null
+  /** Personnes présentes en live (présence) — mentionnables même sans commentaire. */
+  present: Person[]
+  /** comment_id → nombre de réponses non lues pour l'utilisateur courant. */
+  unreadByComment: Record<string, number>
   comments: Comment[]
   replies: Reply[]
   mode: PlacementMode
@@ -125,6 +129,8 @@ const renderBody = (body: string, names: string[]): ReactNode[] => {
 const CommentPins = ({
   activeScreen,
   me,
+  present,
+  unreadByComment,
   comments,
   replies,
   mode,
@@ -144,21 +150,26 @@ const CommentPins = ({
   const [draft, setDraft] = useState<{ anchor: string | null; x: number; y: number } | null>(null)
   const layerRef = useRef<HTMLDivElement>(null)
 
-  // Annuaire des @mentions : tous les gens ayant déjà commenté (n'importe quel
-  // proto) + l'utilisateur courant. Chargé une fois, indépendant du proto.
+  // Annuaire des @mentions : le roster (toute personne ayant déjà chargé l'app)
+  // + tous les gens ayant déjà commenté + l'utilisateur courant. Chargé une
+  // fois, indépendant du proto.
   const [known, setKnown] = useState<string[]>([])
   useEffect(() => {
     if (!supabase) return
     let cancelled = false
     ;(async () => {
-      const [c, r] = await Promise.all([
+      const [u, c, r] = await Promise.all([
+        supabase.from('proto_users').select('email'),
         supabase.from('proto_comments').select('author_email'),
         supabase.from('proto_comment_replies').select('author_email'),
       ])
       if (cancelled) return
-      const emails = [...(c.data ?? []), ...(r.data ?? [])]
-        .map((x: { author_email?: string }) => x.author_email ?? '')
-        .filter(Boolean)
+      const emails = [
+        ...(u.data ?? []).map((x: { email?: string }) => x.email ?? ''),
+        ...[...(c.data ?? []), ...(r.data ?? [])].map(
+          (x: { author_email?: string }) => x.author_email ?? '',
+        ),
+      ].filter(Boolean)
       setKnown(emails)
     })()
     return () => {
@@ -175,13 +186,16 @@ const CommentPins = ({
     known.forEach(add)
     comments.forEach((c) => add(c.author_email))
     replies.forEach((r) => add(r.author_email))
+    // Gens présents en live (présence) : mentionnables même s'ils n'ont jamais
+    // commenté — sinon quelqu'un qui vient de se connecter reste introuvable.
+    present.forEach((p) => add(p.email))
     if (me) add(me.email)
     return [...map.values()]
   })()
 
   // Suivi live des positions : les pins sont ancrés à des éléments dont la
   // position change (scroll, resize, ouverture de drawer). Un tick par frame
-  // relit les rects — coût négligeable pour une poignée de pins.
+  // relit les rects: coût négligeable pour une poignée de pins.
   const [, setTick] = useState(0)
   useEffect(() => {
     let raf = 0
@@ -310,6 +324,7 @@ const CommentPins = ({
             comment={c}
             pt={pt}
             selected={c.id === selectedId}
+            unread={unreadByComment[c.id] ?? 0}
             onClick={(e) => {
               e.stopPropagation()
               setDraft(null)
@@ -399,11 +414,14 @@ const Pin = ({
   comment,
   pt,
   selected,
+  unread,
   onClick,
 }: {
   comment: Comment
   pt: { left: number; top: number }
   selected: boolean
+  /** Réponses non lues dans ce thread pour l'utilisateur courant. */
+  unread: number
   onClick: (e: MouseEvent) => void
 }) => {
   const [hover, setHover] = useState(false)
@@ -429,6 +447,9 @@ const Pin = ({
         <span style={styles.resolvedBadge}>
           <IconCheck size={10} />
         </span>
+      )}
+      {unread > 0 && !selected && (
+        <span style={styles.unreadBadge}>{unread > 9 ? '9+' : unread}</span>
       )}
       {hover && !selected && (
         <AuthorHover
@@ -536,6 +557,12 @@ const ThreadCard = ({
   }
   return (
     <div data-comment-card style={{ ...styles.card, ...anchorStyle(pt) }} onClick={(e) => e.stopPropagation()}>
+      {comment.resolved && (
+        <span style={styles.resolvedTag}>
+          <IconCheck size={12} />
+          Resolved
+        </span>
+      )}
       <Message
         authorEmail={comment.author_email}
         body={comment.body}
@@ -731,6 +758,37 @@ const styles: Record<string, CSSProperties> = {
     background: '#2e8b57',
     color: '#fff',
     boxShadow: '0 0 0 2px #fff',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    right: -5,
+    top: -5,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 16,
+    height: 16,
+    padding: '0 4px',
+    borderRadius: 999,
+    background: '#d26334',
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 700,
+    lineHeight: 1,
+    boxShadow: '0 0 0 2px #fff',
+  },
+  resolvedTag: {
+    alignSelf: 'flex-start',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '2px 8px 2px 6px',
+    borderRadius: 999,
+    background: 'rgba(46,139,87,0.12)',
+    color: '#2e8b57',
+    fontSize: 11,
+    fontWeight: 600,
+    lineHeight: 1.4,
   },
   stamp: {
     position: 'absolute',

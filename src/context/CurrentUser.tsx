@@ -6,12 +6,13 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { supabase } from '../lib/supabase'
 
 const GUEST_KEY = 'ktm_guest_name'
 
 /**
  * Identité de l'utilisateur courant, dérivée de l'email renvoyé par /api/me.
- * V1 : pas de nom/avatar Google — on fabrique un nom lisible et des initiales
+ * V1 : pas de nom/avatar Google, on fabrique un nom lisible et des initiales
  * à partir de l'adresse, plus une couleur stable pour l'avatar.
  */
 export type CurrentUser = {
@@ -94,7 +95,7 @@ export const guestIdentity = (name: string): CurrentUser => {
 type CurrentUserState = {
   user: CurrentUser | null
   loading: boolean
-  /** Définit une identité invité (persistée localement) — utilisé par les liens de partage. */
+  /** Définit une identité invité (persistée localement), utilisé par les liens de partage. */
   setGuest: (name: string) => void
 }
 
@@ -146,6 +147,21 @@ export const CurrentUserProvider = ({ children }: { children: ReactNode }) => {
       cancelled = true
     }
   }, [])
+
+  // Roster « capture passive » : dès qu'un vrai utilisateur (déjà passé par le
+  // login Google) charge l'app, on l'enregistre dans proto_users. La table se
+  // remplit toute seule au fil des visites — l'annuaire des @mentions peut donc
+  // proposer n'importe qui de l'équipe, sans qu'il ait eu à commenter. Les
+  // invités (email « guest:… ») sont exclus.
+  useEffect(() => {
+    if (!supabase || !user || !user.email.includes('@')) return
+    supabase
+      .from('proto_users')
+      .upsert({ email: user.email, name: user.name, last_seen: new Date().toISOString() })
+      .then(({ error }) => {
+        if (error) console.warn('[roster] upsert échoué', error.message)
+      })
+  }, [user])
 
   return (
     <CurrentUserContext.Provider value={{ user, loading, setGuest }}>
