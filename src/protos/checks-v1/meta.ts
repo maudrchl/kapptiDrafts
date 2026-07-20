@@ -1,7 +1,7 @@
 import type { ProtoMeta } from '../registry'
 
 const meta: ProtoMeta = {
-  title: 'Checks (v1 — explo)',
+  title: 'Checks (v1 · explo)',
   status: 'wip design',
   collection: 'Archive',
   updatedAt: '2026-07-13',

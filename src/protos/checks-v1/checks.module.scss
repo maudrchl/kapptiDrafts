@@ -1,5 +1,5 @@
 /* ============================================================
- *  Checks proto — reproduction de l'écran d'édition d'un test
+ *  Checks proto: reproduction de l'écran d'édition d'un test
  *  On retravaille le panneau « Checks » (à droite) en contexte.
  * ============================================================ */
 
@@ -1235,7 +1235,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 }
 
 /* ============================================================
- *  AFFICHAGE DU RÉCAP DANS LE FORMULAIRE (canvas) — variantes
+ *  AFFICHAGE DU RÉCAP DANS LE FORMULAIRE (canvas), variantes
  * ============================================================ */
 .fmLabel {
   font-size: 12px;
@@ -1243,7 +1243,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   color: $ink-2;
 }
 
-/* B — groupé par sévérité */
+/* B: groupé par sévérité */
 .fmGrouped {
   display: flex;
   flex-direction: column;
@@ -1277,7 +1277,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   line-height: 1.5;
 }
 
-/* C — checklist */
+/* C: checklist */
 .fmList {
   display: flex;
   flex-direction: column;

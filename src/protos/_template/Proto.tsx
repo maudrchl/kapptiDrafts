@@ -10,7 +10,7 @@ import { Title, Text, Button, Banner, IconSparkle } from '@kapptivate/ui-kit'
  *
  * Collaboration (commentaires épinglés + présence) : AUTOMATIQUE. Chaque proto
  * hérite de la toolbar commentaire, des pins/threads et de la présence via
- * ProtoFrame — rien à câbler ici.
+ * ProtoFrame: rien à câbler ici.
  *
  * Ancrage par écran (optionnel) : par défaut tous les pins sont sur l'écran
  * `'default'`. Si ton proto a plusieurs vues plein écran (ex. liste → détail),
@@ -33,7 +33,7 @@ const Proto = () => {
 
       <Banner
         variant="primary"
-        description="Tout ui-kit est dispo — voir /gallery pour la liste."
+        description="Tout ui-kit est dispo, voir /gallery pour la liste."
       />
 
       <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>

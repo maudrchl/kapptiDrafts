@@ -79,7 +79,7 @@ const AIUsagePage = () => {
             {budgetState === 'over' && policyMode === 'post' && (
               <Banner
                 variant="warning"
-                description="Monthly allowance used up — overage billing active"
+                description="Monthly allowance used up: overage billing active"
                 subDescription={
                   <>
                     All <b>60M</b> included tokens are used. Extra usage keeps running and is
@@ -95,7 +95,7 @@ const AIUsagePage = () => {
             {budgetState === 'over' && policyMode === 'ant' && (
               <Banner
                 variant="error"
-                description="Monthly allowance used up — new AI actions blocked"
+                description="Monthly allowance used up: new AI actions blocked"
                 subDescription={
                   <>
                     All <b>60M</b> included tokens are used and the hard limit blocks further

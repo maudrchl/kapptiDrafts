@@ -57,7 +57,7 @@ import {
 let uid = 100
 const nextId = () => `c${++uid}`
 
-// Présentation dans le panneau d'édition (droite) — 2 options, figées.
+// Présentation dans le panneau d'édition (droite), 2 options, figées.
 type SevLayout = 'inline' | 'groups'
 const SEV_LAYOUTS: { value: SevLayout; label: string }[] = [
   { value: 'inline', label: 'Pastille par ligne' },

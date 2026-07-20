@@ -16,7 +16,7 @@ import { useReportScreen } from '../../context/ScreenContext'
 import styles from './styles.module.scss'
 
 /**
- * Proto — « Send results by email »
+ * Proto: « Send results by email »
  *
  * Sur la page execution details, le bouton Export devient un ButtonDropdown
  * (secondary) : l'action principale exporte l'Excel comme aujourd'hui, et une
@@ -102,7 +102,7 @@ const Proto = () => {
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Title size="h3">Nightly regression — Run #4821</Title>
+            <Title size="h3">Nightly regression · Run #4821</Title>
             <StatusTag variant="filled" color="success">
               Passed
             </StatusTag>
@@ -145,7 +145,7 @@ const Proto = () => {
         }}
       >
         <Text color="secondary">
-          Le reste de la page execution details (récap, steps, logs…) — hors
+          Le reste de la page execution details (récap, steps, logs…), hors
           scope de ce proto. Ouvre le menu <b>Export</b> ci-dessus →{' '}
           <b>Send results by email</b>.
         </Text>
