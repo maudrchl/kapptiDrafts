@@ -19,10 +19,14 @@ const IntegrationCard = ({ integration, connected, onOpen }: Props) => {
           <div className={styles.brandBox}>{brands[brand]}</div>
           <div className={styles.cardHeadText}>
             <div className={styles.cardName}>{name}</div>
-            <div className={connected ? styles.statusOn : styles.statusOff}>
-              {connected && <span className={styles.statusDot} />}
-              {connected ? 'Connected' : 'Not connected'}
-            </div>
+            {integration.setup === 'docs' ? (
+              <div className={styles.statusOff}>Setup guide</div>
+            ) : (
+              <div className={connected ? styles.statusOn : styles.statusOff}>
+                {connected && <span className={styles.statusDot} />}
+                {connected ? 'Connected' : 'Not connected'}
+              </div>
+            )}
           </div>
         </div>
         <div className={styles.cardDesc}>{description}</div>

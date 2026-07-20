@@ -4,6 +4,7 @@ import whatsappLogo from './logos/whatsapp.webp'
 import browserstackLogo from './logos/browserstack.png'
 import copilotGithubLogo from './logos/copilot-github.png'
 import copilotMsLogo from './logos/copilot-ms.jpeg'
+import xrayLogo from './logos/xray.png'
 
 const imgStyle = {
   width: 28,
@@ -88,6 +89,59 @@ export const brands: Record<string, ReactNode> = {
       </g>
     </svg>
   ),
+  github: (
+    <svg width="26" height="26" viewBox="0 0 32 32">
+      <path
+        d="M16 4C9.4 4 4 9.4 4 16c0 5.3 3.4 9.8 8.2 11.4.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.4 11.4 0 0 1 6 0C20.6 8.6 21.6 9 21.6 9c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.3v3.4c0 .3.2.7.8.6C24.6 25.8 28 21.3 28 16c0-6.6-5.4-12-12-12z"
+        fill="#1c2622"
+      />
+    </svg>
+  ),
+  gitlab: (
+    <svg width="26" height="26" viewBox="0 0 24 24">
+      <path
+        fill="#e24329"
+        d="M23.6004 9.5927l-.0337-.0862L20.3.9814a.851.851 0 00-.3362-.405.8748.8748 0 00-.9997.0539.8748.8748 0 00-.29.4399l-2.2055 6.748H7.5375l-2.2057-6.748a.8573.8573 0 00-.29-.4412.8748.8748 0 00-.9997-.0537.8585.8585 0 00-.3362.4049L1.4332 9.5015l-.0325.0862a6.0657 6.0657 0 002.0119 7.0105l.0113.0087.03.0213 4.976 3.7264 2.462 1.8633 1.4995 1.1321a1.0085 1.0085 0 001.2197 0l1.4995-1.1321 2.462-1.8633 5.006-3.7489.0125-.01a6.0682 6.0682 0 002.0094-7.003z"
+      />
+    </svg>
+  ),
+  jenkins: (
+    // placeholder Jenkins — à remplacer par le vrai logo (butler)
+    <svg width="26" height="26" viewBox="0 0 32 32">
+      <rect width="32" height="32" rx="7" fill="#D24939" />
+      <text
+        x="16"
+        y="17"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontFamily="Inter, sans-serif"
+        fontSize="16"
+        fontWeight="700"
+        fill="#fff"
+      >
+        J
+      </text>
+    </svg>
+  ),
+  azuredevops: (
+    // placeholder Azure DevOps — à remplacer par le vrai logo (boucle infinie)
+    <svg width="26" height="26" viewBox="0 0 32 32">
+      <rect width="32" height="32" rx="7" fill="#0078D7" />
+      <text
+        x="16"
+        y="17"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontFamily="Inter, sans-serif"
+        fontSize="15"
+        fontWeight="700"
+        fill="#fff"
+      >
+        Az
+      </text>
+    </svg>
+  ),
+  xray: <img src={xrayLogo} alt="Xray" style={imgStyle} />,
   claude: <img src={claudeLogo} alt="Claude" style={imgStyle} />,
   copilot: <img src={copilotGithubLogo} alt="GitHub Copilot" style={imgStyle} />,
   mscopilot: <img src={copilotMsLogo} alt="Microsoft Copilot" style={imgStyle} />,

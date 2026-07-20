@@ -109,7 +109,7 @@ const websiteFor = (name: string) =>
 type Props = {
   integration: Integration | null
   category: IntegrationCategory
-  mode: 'manage' | 'connect'
+  mode: 'manage' | 'connect' | 'docs'
   open: boolean
   onClose: () => void
   onConnect: (integration: Integration) => void
@@ -167,7 +167,52 @@ const ManageIntegrationDrawer = ({
             </div>
           </div>
 
-          {mode === 'connect' ? (
+          {mode === 'docs' ? (
+            <>
+              <div className={styles.metaCard}>
+                <div className={styles.metaRow}>
+                  <div className={styles.metaItem}>
+                    <div className={styles.metaLabel}>Built by</div>
+                    <div className={styles.metaValue}>{integration.name}</div>
+                  </div>
+                  <div className={styles.metaItem}>
+                    <div className={styles.metaLabel}>Website</div>
+                    <a className={styles.metaLink}>
+                      <IconGlobe size={14} />
+                      <span className={styles.metaEllipsis}>
+                        {websiteFor(integration.name)}
+                      </span>
+                    </a>
+                  </div>
+                  <div className={styles.metaItem}>
+                    <div className={styles.metaLabel}>Docs</div>
+                    <a className={styles.metaLink}>
+                      <IconExternalLink size={14} />
+                      Docs
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.docSection}>
+                <div className={styles.docHead}>Setup</div>
+                <p className={styles.docText}>
+                  There's no {integration.name} app yet. Add this snippet to your
+                  pipeline to run Kapptivate campaigns, then follow the guide for the
+                  full setup.
+                </p>
+                {integration.setupSnippet && (
+                  <pre className={styles.codeBlock}>{integration.setupSnippet}</pre>
+                )}
+              </div>
+
+              <div className={styles.drawerAction}>
+                <Button color="primary" icon={IconExternalLink} iconRight>
+                  View documentation
+                </Button>
+              </div>
+            </>
+          ) : mode === 'connect' ? (
             <>
               <div className={styles.metaCard}>
                 <div className={styles.metaRow}>
