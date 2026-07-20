@@ -330,9 +330,9 @@ export const TimelinePage = () => (
     <Demo title="Default" column>
       <Timeline
         items={[
-          { color: 'green', children: <Text>Deployment succeeded — 2:02 PM</Text> },
-          { color: 'blue', children: <Text>Build started — 1:58 PM</Text> },
-          { color: 'gray', children: <Text>Commit pushed — 1:55 PM</Text> },
+          { color: 'green', children: <Text>Deployment succeeded at 2:02 PM</Text> },
+          { color: 'blue', children: <Text>Build started at 1:58 PM</Text> },
+          { color: 'gray', children: <Text>Commit pushed at 1:55 PM</Text> },
         ]}
       />
     </Demo>

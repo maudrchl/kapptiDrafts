@@ -60,13 +60,13 @@ export const ToneOfVoice = () => (
         <Title size="h5">Voice principles</Title>
         <div style={{ marginTop: 6, maxWidth: 640 }}>
           <Text color="secondary">
-            Kapptivate speaks to QA engineers, DevOps teams, and product managers. The voice is a knowledgeable colleague — direct, helpful, and confident without being cold.
+            Kapptivate speaks to QA engineers, DevOps teams, and product managers. The voice is a knowledgeable colleague: direct, helpful, and confident without being cold.
           </Text>
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {([
-          ['Clear over clever', 'Say exactly what happens. Technical users scan — reward them with precision.'],
+          ['Clear over clever', 'Say exactly what happens. Technical users scan, so reward them with precision.'],
           ['Friendly, not casual', 'Use contractions (don\'t, can\'t). Second person (your tests). No emoji in UI text.'],
           ['Guide, don\'t gatekeep', 'Empty states and errors are opportunities. Tell the user what to do next.'],
           ['English is the UI language', 'All system-facing text is English. User-generated content can be any language.'],
@@ -101,13 +101,48 @@ export const ToneOfVoice = () => (
       </div>
     </Demo>
 
+    {/* Punctuation */}
+    <Demo title="Punctuation" column>
+      <Text color="secondary" size="sm">
+        Never use em dashes (<Text mono size="sm">—</Text>) or double hyphens (<Text mono size="sm">--</Text>). Rewrite with a comma, a colon, parentheses, or a period. A colon introduces an explanation, a comma joins a related clause.
+      </Text>
+      <DoDont>
+        <Do>
+          <Mono>Detach from a list, entity still exists</Mono>
+          <Mono>Danger: take immediate action</Mono>
+          <Mono>Deployment succeeded at 2:02 PM</Mono>
+        </Do>
+        <Dont>
+          <Mono>Detach from a list — entity still exists</Mono>
+          <Mono>Danger — take immediate action</Mono>
+          <Mono>Deployment succeeded — 2:02 PM</Mono>
+        </Dont>
+      </DoDont>
+      <Text color="secondary" size="sm">
+        Same rule in French. Use <Text mono size="sm">:</Text> (with a space before, per French typography), a comma, or parentheses.
+      </Text>
+      <DoDont>
+        <Do>
+          <Mono>Conseil de sécurité : ne partagez jamais votre clé</Mono>
+          <Mono>Test archivé (restaurable à tout moment)</Mono>
+        </Do>
+        <Dont>
+          <Mono>Conseil de sécurité — ne partagez jamais votre clé</Mono>
+          <Mono>Test archivé — restaurable à tout moment</Mono>
+        </Dont>
+      </DoDont>
+      <div className="dsBannerBottom">
+        <Banner variant="primary" description="No em dashes anywhere: product UI, docs, English and French. The em dash reads as an unfinished thought and has no place in the Kapptivate voice." />
+      </div>
+    </Demo>
+
     {/* Buttons */}
     <Demo title="Buttons & CTAs" column>
       <Formula>
         <Text mono size="sm">"Verb"</Text>
         <Text color="secondary" size="sm"> or </Text>
         <Text mono size="sm">"Verb entity"</Text>
-        <Text color="secondary" size="sm"> — sentence case, no trailing punctuation.</Text>
+        <Text color="secondary" size="sm">, sentence case, no trailing punctuation.</Text>
       </Formula>
       <DoDont>
         <Do>
@@ -129,7 +164,7 @@ export const ToneOfVoice = () => (
         rows={[
           ['Create', 'New entity from scratch'],
           ['Delete', 'Permanent removal'],
-          ['Remove', 'Detach from a list — entity still exists'],
+          ['Remove', 'Detach from a list, entity still exists'],
           ['Archive', 'Soft-delete, can be restored'],
           ['Pause / Unpause', 'Toggle monitor activity (not Stop/Start)'],
           ['Revoke', 'Invalidate credentials (API keys, tokens)'],
@@ -246,7 +281,7 @@ export const ToneOfVoice = () => (
       <Text color="secondary" size="sm">Free text: example values ("My website monitor", "e.g. user_email"). Search: "Search...". Selects: "Select a [entity]...".</Text>
 
       <div style={{ marginTop: 12 }}><Title size="h6">Validation</Title></div>
-      <Text color="secondary" size="sm">Imperative — tell the user what to do, not what's wrong.</Text>
+      <Text color="secondary" size="sm">Imperative: tell the user what to do, not what's wrong.</Text>
       <DoDont>
         <Do><Mono>Enter a name for your monitor</Mono></Do>
         <Dont><Mono>Monitor name is required.</Mono></Dont>
@@ -272,7 +307,7 @@ export const ToneOfVoice = () => (
     {/* Tooltips */}
     <Demo title="Tooltips" column>
       <Text color="secondary" size="sm">
-        1 sentence max, ends with period. Exception: label tooltips ("Pause monitors") skip period. Explain why or what happens — don't just relabel.
+        1 sentence max, ends with period. Exception: label tooltips ("Pause monitors") skip period. Explain why or what happens, don't just relabel.
       </Text>
       <DoDont>
         <Do>
@@ -371,7 +406,7 @@ export const ToneOfVoice = () => (
 
       <div style={{ marginTop: 12 }}><Title size="h6">Empty states: imperative (vous)</Title></div>
       <Text color="secondary" size="sm">
-        Empty state titles are the one place that uses <strong>imperative</strong> (not infinitive) — because they're calls to action in a sentence, not button labels.
+        Empty state titles are the one place that uses <strong>imperative</strong> (not infinitive), because they're calls to action in a sentence, not button labels.
       </Text>
       <DoDont>
         <Do>

@@ -99,7 +99,7 @@ export const BannerPage = () => (
       <Stack>
         <GuidelineBlock
           variant="danger"
-          heading="🔴 Danger — the user must take immediate action to avoid being blocked"
+          heading="🔴 Danger: the user must take immediate action to avoid being blocked"
           when={[
             'License expiration or renewal required',
             'Payment issues',
@@ -110,7 +110,7 @@ export const BannerPage = () => (
         />
         <GuidelineBlock
           variant="warning"
-          heading="🟠 Warning — a problem that affects the user but needs no action from them"
+          heading="🟠 Warning: a problem that affects the user but needs no action from them"
           when={[
             'Service degradation / production incident on our side',
             'Agent or monitor update required',
@@ -120,7 +120,7 @@ export const BannerPage = () => (
         />
         <GuidelineBlock
           variant="secondary"
-          heading="⚪️ Info — neutral or general information, no action required"
+          heading="⚪️ Info: neutral or general information, no action required"
           when={[
             'Scheduled maintenance',
             'Release announcements',
@@ -130,7 +130,7 @@ export const BannerPage = () => (
         />
         <GuidelineBlock
           variant="success"
-          heading="🟢 Success — a positive outcome at the environment or account level"
+          heading="🟢 Success: a positive outcome at the environment or account level"
           when={[
             'Major setup or configuration completed',
             'Milestones reached (first monitor created, X tests executed…)',
@@ -144,10 +144,10 @@ export const BannerPage = () => (
     <Demo title="Tone & style" column>
       <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
         {[
-          'Keep messages short and direct — one sentence if possible.',
+          'Keep messages short and direct, one sentence if possible.',
           'Start with the key information.',
           'Add a clear call-to-action if needed (e.g. “Update your agent →”).',
-          'Avoid technical jargon — use simple, user-friendly language.',
+          'Avoid technical jargon. Use simple, user-friendly language.',
           'Don’t mix multiple message types in one banner.',
         ].map((r) => (
           <li key={r}>
@@ -547,7 +547,7 @@ export const NotificationsPage = () => {
   return (
     <Page
       title="Notifications"
-      description="Transient, non-blocking feedback shown in the bottom-right corner. Trigger it from anywhere with the useNotification hook — to confirm an action or surface a background result. Never use it for something the user must act on (reach for a Banner or Alert instead)."
+      description="Transient, non-blocking feedback shown in the bottom-right corner. Trigger it from anywhere with the useNotification hook, to confirm an action or surface a background result. Never use it for something the user must act on (reach for a Banner or Alert instead)."
       importCode={"import { useNotification } from '@kapptivate/ui-kit'"}
     >
       <Demo title="Types">
@@ -591,14 +591,14 @@ export const NotificationsPage = () => {
       <Demo title="Usage" column>
         <Text size="s" color="secondary">
           The hook reads its context from AntdTheme, which is already mounted at the app root in
-          main.tsx — so useNotification() works from any component, no extra provider needed.
+          main.tsx, so useNotification() works from any component, no extra provider needed.
         </Text>
       </Demo>
 
       <PropsTable
         title="useNotification().notification"
         rows={[
-          { name: 'success / info / warning / error', type: '(message: ReactNode, config?) => void', description: 'Show a toast of that type — each ships its own icon and color' },
+          { name: 'success / info / warning / error', type: '(message: ReactNode, config?) => void', description: 'Show a toast of that type, each ships its own icon and color' },
           { name: 'loading', type: '(message: ReactNode, config?) => void', description: 'Spinner toast that stays until you destroy it' },
           { name: 'destroy', type: '(key?: Key) => void', description: 'Close a specific toast by key, or all of them if no key is passed' },
         ]}

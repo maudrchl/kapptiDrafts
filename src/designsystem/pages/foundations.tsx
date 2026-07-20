@@ -171,24 +171,24 @@ export const Typography = () => (
       <Title size="h6">Heading 6</Title>
     </Demo>
 
-    <Demo title="Text — sizes" column>
-      <Text size="lg">Large — ~15px</Text>
-      <Text size="base">Base — 14px</Text>
-      <Text size="sm">Small (sm) — ~13px</Text>
-      <Text size="s">Small (s) — ~12px</Text>
-      <Text size="xs">Extra small — ~11px</Text>
-      <Text size="xxs">Tiny — ~9px</Text>
+    <Demo title="Text sizes" column>
+      <Text size="lg">Large: ~15px</Text>
+      <Text size="base">Base: 14px</Text>
+      <Text size="sm">Small (sm): ~13px</Text>
+      <Text size="s">Small (s): ~12px</Text>
+      <Text size="xs">Extra small: ~11px</Text>
+      <Text size="xxs">Tiny: ~9px</Text>
     </Demo>
 
-    <Demo title="Text — weights" column>
-      <Text weight="light">Light — 300</Text>
-      <Text weight="normal">Normal — 400</Text>
-      <Text weight="medium">Medium — 500</Text>
-      <Text weight="semibold">Semibold — 600</Text>
-      <Text weight="bold">Bold — 700</Text>
+    <Demo title="Text weights" column>
+      <Text weight="light">Light: 300</Text>
+      <Text weight="normal">Normal: 400</Text>
+      <Text weight="medium">Medium: 500</Text>
+      <Text weight="semibold">Semibold: 600</Text>
+      <Text weight="bold">Bold: 700</Text>
     </Demo>
 
-    <Demo title="Text — colors">
+    <Demo title="Text colors">
       <Text color="primary">primary</Text>
       <Text color="secondary">secondary</Text>
       <Text color="third">third</Text>

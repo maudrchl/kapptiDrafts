@@ -159,7 +159,7 @@ export const DropdownPage = () => (
 export const ButtonDropdownPage = () => (
   <Page
     title="ButtonDropdown"
-    description="A primary button that unfolds a menu — handy for a default action paired with variants."
+    description="A primary button that unfolds a menu, handy for a default action paired with variants."
     importCode={"import { ButtonDropdown } from '@kapptivate/ui-kit'"}
   >
     <Demo title="Button + menu">
