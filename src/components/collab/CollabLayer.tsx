@@ -58,6 +58,7 @@ const CollabLayer = ({
     addStamp,
     addReply,
     setResolved,
+    moveComment,
     deleteComment,
     deleteReply,
   } = useProtoComments(slug)
@@ -154,6 +155,7 @@ const CollabLayer = ({
         addStamp={addStamp}
         addReply={addReply}
         setResolved={setResolved}
+        moveComment={moveComment}
         deleteComment={deleteComment}
         deleteReply={deleteReply}
       />
