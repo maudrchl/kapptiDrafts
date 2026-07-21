@@ -435,7 +435,7 @@ const ChecksProto = () => {
             value={c.op ?? '='}
             onChange={(_e: unknown, v: string) => patch(c.id, { op: optVal(v) })}
           />
-          {exprBuilder(c)}
+          {valInput(c)}
           {c.kind === 'time' && (
             <Select
               size="s"
@@ -446,6 +446,7 @@ const ChecksProto = () => {
               onChange={(_e: unknown, v: string) => patch(c.id, { unit: optVal(v) })}
             />
           )}
+          {varsBtn}
         </>
       )
     }
