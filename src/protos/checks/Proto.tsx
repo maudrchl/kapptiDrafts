@@ -57,6 +57,7 @@ import {
   IconPencil,
 } from '@kapptivate/ui-kit'
 import { useReportScreen } from '../../context/ScreenContext'
+import SlateInputTag, { type TagInputValue, type Suggestions } from './slate/SlateInputTag'
 import styles from './checks.module.scss'
 import {
   INITIAL_CONDITIONS,
@@ -170,8 +171,8 @@ type OutDraft = OutVar & { target: 'new' | 'global'; defaultOn: boolean; default
 
 const ChecksProto = () => {
   const [tab, setTab] = useState('checks')
-  const [failLogic, setFailLogic] = useState<'and' | 'or'>('or')
-  const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('or')
+  const [failLogic, setFailLogic] = useState<'and' | 'or'>('and')
+  const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('and')
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropSev, setDropSev] = useState<Severity | null>(null)
   // Sélection de la step (1 = API Call, 2 = Get mail ; null = panneau test).
@@ -266,6 +267,28 @@ const ChecksProto = () => {
       ...cur,
       { id: nextId(), sev, ...resetForKind('Status code') } as Condition,
     ])
+  // Construit une condition « JSON attribute » à partir d'un path (+ autofill
+  // de la valeur depuis le dernier run).
+  const condFromPath = (path: string, sev: Severity): Condition => {
+    const base = resetForKind(path)
+    const raw = RESPONSE_ROWS.find((r) => r.leaf && r.path === path)?.raw
+    return { id: nextId(), sev, ...base, ...(raw != null ? { val: raw } : {}) } as Condition
+  }
+  // Multi-sélection depuis la full view : le 1er attribut remplit la condition
+  // courante, chaque attribut suivant crée une nouvelle condition (même
+  // sévérité), insérée juste après.
+  const addChecksFromPaths = (c: Condition, paths: string[]) => {
+    if (!paths.length) return
+    chooseSubject(c.id, paths[0])
+    if (paths.length === 1) return
+    const extra = paths.slice(1).map((p) => condFromPath(p, c.sev))
+    setConds((cur) => {
+      const i = cur.findIndex((x) => x.id === c.id)
+      const next = [...cur]
+      next.splice(i + 1, 0, ...extra)
+      return next
+    })
+  }
   const duplicate = (c: Condition) =>
     setConds((cur) => {
       const i = cur.findIndex((x) => x.id === c.id)
@@ -294,15 +317,89 @@ const ChecksProto = () => {
   // Sélecteur JSON attribute en grand (modale, recherche + arbre), PARTAGÉ par
   // les conditions ET la création d'output variable : on stocke le callback de
   // sélection (onPick) plutôt qu'un id de condition.
-  const [treePick, setTreePick] = useState<{ onPick: (path: string) => void } | null>(null)
+  const [treePick, setTreePick] = useState<{
+    onPick: (path: string) => void
+    onPickMany?: (paths: string[]) => void
+  } | null>(null)
   const [treeQuery, setTreeQuery] = useState('')
+  // Multi-sélection (full view uniquement) : paths cochés.
+  const [treeSel, setTreeSel] = useState<string[]>([])
   const openTree = (onPick: (path: string) => void) => {
     setTreeQuery('')
+    setTreeSel([])
     setTreePick({ onPick })
+  }
+  // Ouvre la full view en mode multi : cocher plusieurs attributs → autant de conditions.
+  const openTreeMulti = (onPickMany: (paths: string[]) => void) => {
+    setTreeQuery('')
+    setTreeSel([])
+    setTreePick({ onPick: () => {}, onPickMany })
   }
 
   /* ---------- checks renderers (functions, NOT components → keep input focus) ---------- */
-  const varsBtn = <span className={styles.exprVars}>{'{}'}</span>
+  // Valeur d'une condition <-> segments du SlateInputTag (string `{{name}}texte`).
+  const toSegments = (v: string): TagInputValue[] => {
+    const segs: TagInputValue[] = []
+    const re = /\{\{([^}]+)\}\}/g
+    let last = 0
+    let m: RegExpExecArray | null
+    let i = 0
+    while ((m = re.exec(v))) {
+      if (m.index > last) segs.push({ type: 'text', value: v.slice(last, m.index) })
+      const name = m[1]
+      segs.push({
+        type: 'tag',
+        value: name,
+        color: GLOBAL_VARS.includes(name) ? 'blue' : 'primary',
+        id: `seg${i++}`,
+        technicalName: name,
+      })
+      last = m.index + m[0].length
+    }
+    if (last < v.length) segs.push({ type: 'text', value: v.slice(last) })
+    return segs
+  }
+  const fromSegments = (segs: TagInputValue[]): string =>
+    segs.map((s) => (s.type === 'tag' ? `{{${s.value}}}` : s.value)).join('')
+  // Label d'une variable dans le picker : pastille {} + nom (façon GlobalVarLabel
+  // du produit). Icône orange pour les variables in-test, lavande pour les globales.
+  const varOptLabel = (n: string, global: boolean) => (
+    <span className={styles.suggVar}>
+      <span className={global ? styles.suggVarIcon : styles.suggVarIconOrange}>
+        <IconBraces size={12} />
+      </span>
+      {n}
+    </span>
+  )
+  // Suggestions du picker {} : Previous steps (output = orange) + Variables (globales = bleu).
+  const checkSuggestions: Suggestions[] = [
+    ...(varNames.length
+      ? [
+          {
+            name: 'Previous steps',
+            key: 'previous_steps' as const,
+            suggestions: varNames.map((n, i) => ({
+              id: `ps${i}`,
+              label: varOptLabel(n, false),
+              color: 'primary' as const,
+              value: n,
+              technicalName: n,
+            })),
+          },
+        ]
+      : []),
+    {
+      name: 'Variables',
+      key: 'variables' as const,
+      suggestions: GLOBAL_VARS.map((n, i) => ({
+        id: `gv${i}`,
+        label: varOptLabel(n, true),
+        color: 'blue' as const,
+        value: n,
+        technicalName: n,
+      })),
+    },
+  ]
   const sevLabel = (warn: boolean, text: string) => (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
       <span
@@ -317,16 +414,23 @@ const ChecksProto = () => {
       {text}
     </span>
   )
+  // Champ de valeur = SlateInputTag (le vrai composant du produit, porté),
+  // contraint dans une cellule flexible (sinon il déborde la ligne).
   const valInput = (c: Condition) => (
-    <Input
-      size="s"
-      borderless
-      fullWidth
-      className={styles.grow}
-      placeholder="Value"
-      value={c.val ?? ''}
-      onChange={(e) => patch(c.id, { val: e.target.value })}
-    />
+    <div className={styles.valCell}>
+      <SlateInputTag
+        borderless
+        fullWidth
+        value={toSegments(c.val ?? '')}
+        onChange={(segs) =>
+          patch(c.id, {
+            val: fromSegments(typeof segs === 'function' ? segs(toSegments(c.val ?? '')) : segs),
+          })
+        }
+        suggestions={checkSuggestions}
+        placeholder="Value"
+      />
+    </div>
   )
 
   // Membre droit = expression : littéraux + variables (tags) reliés par opérateurs.
@@ -446,7 +550,6 @@ const ChecksProto = () => {
               onChange={(_e: unknown, v: string) => patch(c.id, { unit: optVal(v) })}
             />
           )}
-          {varsBtn}
         </>
       )
     }
@@ -479,7 +582,6 @@ const ChecksProto = () => {
           />
         )}
         {withValue && valInput(c)}
-        {varsBtn}
       </>
     )
   }
@@ -568,7 +670,7 @@ const ChecksProto = () => {
                           icon={IconSquareArrowOutUpRight}
                           onClick={() => {
                             setSubjOpen(null)
-                            openTree((path) => chooseSubject(c.id, path))
+                            openTreeMulti((paths) => addChecksFromPaths(c, paths))
                           }}
                         >
                           Open in full view
@@ -602,12 +704,24 @@ const ChecksProto = () => {
         }}
         content={content}
       >
-        <button type="button" className={styles.subjTrigger}>
+        <button
+          type="button"
+          className={isVar ? `${styles.subjTrigger} ${styles.subjTriggerTag}` : styles.subjTrigger}
+        >
           {isVar ? (
-            <span className={styles.subjTriggerVar}>
-              <span className={styles.subjVarIcon}>{'{}'}</span>
-              {c.subj.replace(/^\{\{|\}\}$/g, '')}
-            </span>
+            // Même tag pilule que dans les inputs (orange in-test / bleu global).
+            (() => {
+              const name = c.subj.replace(/^\{\{|\}\}$/g, '')
+              return (
+                <span
+                  className={`${styles.viTag} ${
+                    GLOBAL_VARS.includes(name) ? styles.viTagBlue : styles.viTagPrimary
+                  }`}
+                >
+                  {name}
+                </span>
+              )
+            })()
           ) : (
             <span className={styles.subjTriggerLabel}>{c.subj}</span>
           )}
@@ -666,7 +780,7 @@ const ChecksProto = () => {
       size="s"
       className={styles.conn}
       popupClassName={styles.selPopup}
-      width="72px"
+      width="56px"
       minWidth="0"
       disabled={disabled}
       options={toOptions(['and', 'or'])}
@@ -717,7 +831,7 @@ const ChecksProto = () => {
       {i === 0 ? (
         // Deux logiques distinctes : « Passes if » = condition de succès
         // (bloquante), « Warn if » = situation surveillée qui déclenche une alerte.
-        <span className={styles.checkIf}>{sev === 'fail' ? 'Passes if' : 'Warn if'}</span>
+        <span className={styles.checkIf}>{sev === 'fail' ? 'Passes if' : 'Warns if'}</span>
       ) : (
         connSelect(gLogic, setG, i > 1)
       )}
@@ -786,23 +900,24 @@ const ChecksProto = () => {
     const f = cs.filter((c) => c.sev === 'fail')
     const w = cs.filter((c) => c.sev === 'warn')
     return (
-      <button
-        type="button"
-        className={styles.fmBar}
-        onClick={(e) => {
-          e.stopPropagation()
-          setSelStep(step)
-          setTab('checks')
-        }}
-        title="Edit checks"
-      >
+      <div className={styles.fmBar}>
         {[...f, ...w].map((c) => (
-          <span key={c.id} className={styles.chip} style={{ pointerEvents: 'none' }}>
+          <button
+            key={c.id}
+            type="button"
+            className={styles.chip}
+            onClick={(e) => {
+              e.stopPropagation()
+              setSelStep(step)
+              setTab('checks')
+            }}
+            title="Edit checks"
+          >
             <span className={c.sev === 'warn' ? styles.dotWarn : styles.dotFail} />
             {conditionText(c)}
-          </span>
+          </button>
         ))}
-      </button>
+      </div>
     )
   }
 
@@ -1092,35 +1207,38 @@ const ChecksProto = () => {
   }
 
   // Champ avec le tag variable {{URL}} + une saisie texte éditable + braces.
+  // Champ URL du canvas : SlateInputTag bordé, avec {{URL}} en tag de tête + le
+  // reste éditable. Le stopPropagation évite de toggler la sélection de la step.
   const urlField = (value: string, setValue: (v: string) => void) => (
-    <div className={styles.varField} onClick={(e) => e.stopPropagation()}>
-      <Tag color="dark-blue" size="sm" weight="medium" smallPadding>
-        URL
-      </Tag>
-      <input
-        className={styles.varFieldInput}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
+    <span className={styles.canvasField} onClick={(e) => e.stopPropagation()}>
+      <SlateInputTag
+        fullWidth
+        value={toSegments(`{{URL}}${value}`)}
+        onChange={(segs) => {
+          const full = fromSegments(
+            typeof segs === 'function' ? segs(toSegments(`{{URL}}${value}`)) : segs,
+          )
+          setValue(full.replace(/^\{\{URL\}\}/, ''))
+        }}
+        suggestions={checkSuggestions}
+        placeholder="URL"
       />
-      <span className={styles.varFieldBraces}>
-        <IconBraces size={12} />
-      </span>
-    </div>
+    </span>
   )
 
-  // Champ « Mailbox » du step Get mail (input simple + braces).
+  // Champ « Mailbox » du step Get mail : même SlateInputTag bordé.
   const mailboxField = () => (
-    <div className={styles.varField} onClick={(e) => e.stopPropagation()}>
-      <input
-        className={styles.varFieldInput}
+    <span className={styles.canvasField} onClick={(e) => e.stopPropagation()}>
+      <SlateInputTag
+        fullWidth
+        value={toSegments(mailbox)}
+        onChange={(segs) =>
+          setMailbox(fromSegments(typeof segs === 'function' ? segs(toSegments(mailbox)) : segs))
+        }
+        suggestions={checkSuggestions}
         placeholder="Mailbox"
-        value={mailbox}
-        onChange={(e) => setMailbox(e.target.value)}
       />
-      <span className={styles.varFieldBraces}>
-        <IconBraces size={12} />
-      </span>
-    </div>
+    </span>
   )
 
   // Panneau test (aucune step sélectionnée) → onglet Preview.
@@ -1591,33 +1709,39 @@ const ChecksProto = () => {
         </Modal>
       )}
 
-      {treePick && (
-        <Modal
-          open
-          width={680}
-          title="Select a JSON attribute"
-          onCancel={() => setTreePick(null)}
-        >
-          <Modal.Content maxHeight="70vh">
-            <div className={styles.treeModalBody}>
-              <SearchInput
-                value={treeQuery}
-                onChange={setTreeQuery}
-                placeholder="Filter attributes by key, path or value..."
-                fullwidth
-              />
-              {(() => {
-                const q = treeQuery.trim().toLowerCase()
-                const rows = q
-                  ? RESPONSE_ROWS.filter(
-                      (r) => r.leaf && `${r.label} ${r.path} ${r.preview}`.toLowerCase().includes(q),
-                    )
-                  : RESPONSE_ROWS
-                const onPick = (path: string) => {
-                  treePick.onPick(path)
-                  setTreePick(null)
-                }
-                return (
+      {treePick &&
+        (() => {
+          const multi = !!treePick.onPickMany
+          const q = treeQuery.trim().toLowerCase()
+          const rows = q
+            ? RESPONSE_ROWS.filter(
+                (r) => r.leaf && `${r.label} ${r.path} ${r.preview}`.toLowerCase().includes(q),
+              )
+            : RESPONSE_ROWS
+          const onPick = (path: string) => {
+            treePick.onPick(path)
+            setTreePick(null)
+          }
+          const toggle = (path: string) =>
+            setTreeSel((s) => (s.includes(path) ? s.filter((p) => p !== path) : [...s, path]))
+          return (
+            <Modal
+              open
+              width={680}
+              title={multi ? 'Select JSON attributes' : 'Select a JSON attribute'}
+              onCancel={() => setTreePick(null)}
+            >
+              <Modal.Content maxHeight="70vh">
+                <div className={styles.treeModalBody}>
+                  {multi && !q && (
+                    <div className={styles.rpHead}>Pick one or more attributes to add as checks.</div>
+                  )}
+                  <SearchInput
+                    value={treeQuery}
+                    onChange={setTreeQuery}
+                    placeholder="Filter attributes by key, path or value..."
+                    fullwidth
+                  />
                   <div className={styles.treeModalTree}>
                     {q && (
                       <div className={styles.rpHead}>
@@ -1632,10 +1756,21 @@ const ChecksProto = () => {
                           row.leaf ? (
                             <button
                               key={row.path}
-                              className={styles.rpRow}
+                              className={`${styles.rpRow} ${
+                                multi && treeSel.includes(row.path) ? styles.rpRowSel : ''
+                              }`}
                               style={{ paddingLeft: q ? 12 : 10 + row.depth * 14 }}
-                              onClick={() => onPick(row.path)}
+                              onClick={() => (multi ? toggle(row.path) : onPick(row.path))}
                             >
+                              {multi && (
+                                <span
+                                  className={`${styles.rpCheck} ${
+                                    treeSel.includes(row.path) ? styles.rpCheckOn : ''
+                                  }`}
+                                >
+                                  {treeSel.includes(row.path) && <IconCheck size={11} />}
+                                </span>
+                              )}
                               <span className={styles.rpKey}>{q ? row.path : row.label}</span>
                               <span className={styles.rpVal}>{row.preview}</span>
                             </button>
@@ -1653,12 +1788,32 @@ const ChecksProto = () => {
                       )}
                     </div>
                   </div>
-                )
-              })()}
-            </div>
-          </Modal.Content>
-        </Modal>
-      )}
+                </div>
+              </Modal.Content>
+              {multi && (
+                <Modal.Footer>
+                  <div className={styles.treeModalFoot}>
+                    <Button color="invisible" onClick={() => setTreePick(null)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      color="primary"
+                      disabled={!treeSel.length}
+                      onClick={() => {
+                        treePick.onPickMany?.(treeSel)
+                        setTreePick(null)
+                      }}
+                    >
+                      {treeSel.length
+                        ? `Add ${treeSel.length} check${treeSel.length > 1 ? 's' : ''}`
+                        : 'Add checks'}
+                    </Button>
+                  </div>
+                </Modal.Footer>
+              )}
+            </Modal>
+          )
+        })()}
     </div>
   )
 }

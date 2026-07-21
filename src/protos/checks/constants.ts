@@ -7,7 +7,7 @@ export type Frame = 'sentence' | 'title' | 'match'
 export type SevLayout = 'inline' | 'groups'
 
 /** Famille d'un subject → détermine les contrôles affichés. */
-export type SubjectKind = 'num' | 'time' | 'text' | 'body' | 'header'
+export type SubjectKind = 'num' | 'time' | 'text' | 'body' | 'header' | 'presence'
 
 export type Condition = {
   id: string
@@ -39,23 +39,26 @@ export const MAIL_SUBJECTS: { label: string; kind: SubjectKind }[] = [
   { label: 'Recipient', kind: 'text' },
   { label: 'Subject', kind: 'text' },
   { label: 'Content', kind: 'text' },
-  { label: 'Attachments', kind: 'num' },
+  { label: 'Attachment', kind: 'presence' },
 ]
 
 export const NUM_OPS = ['=', '<', '≤', '>', '≥']
 export const TEXT_PREDS = ['is exactly', 'contains', 'starts with', 'ends with']
 export const BODY_PREDS = ['is valid JSON', 'is empty', 'contains', 'is exactly']
+// Sujet « Attachment » : présence + assertion sur le nom du fichier.
+export const PRESENCE_PREDS = ['is present', 'is not present', 'contains', 'is exactly']
 export const UNITS = ['seconds', 'ms', 'minutes']
 
 export const subjectKind = (label: string): SubjectKind =>
   [...SUBJECTS, ...MAIL_SUBJECTS].find((s) => s.label === label)?.kind ?? 'text'
 
 export const predsFor = (kind: SubjectKind) =>
-  kind === 'body' ? BODY_PREDS : TEXT_PREDS
+  kind === 'presence' ? PRESENCE_PREDS : kind === 'body' ? BODY_PREDS : TEXT_PREDS
 
-/** Un prédicat texte qui a besoin d'une valeur (tout sauf « is valid JSON » / « is empty »). */
-export const predNeedsValue = (pred: string | null) =>
-  pred !== null && pred !== 'is valid JSON' && pred !== 'is empty'
+/** Prédicats sans valeur à saisir (présence / validité / vide). */
+const NO_VALUE_PREDS = new Set(['is valid JSON', 'is empty', 'is present', 'is not present'])
+/** Un prédicat qui a besoin d'une valeur (tout sauf les prédicats sans valeur). */
+export const predNeedsValue = (pred: string | null) => pred !== null && !NO_VALUE_PREDS.has(pred)
 
 /** Réinitialise les champs quand on change de subject. */
 export const resetForKind = (subj: string): Partial<Condition> => {
@@ -70,6 +73,8 @@ export const resetForKind = (subj: string): Partial<Condition> => {
       return { ...base, pred: 'is exactly', val: '' }
     case 'header':
       return { ...base, pred: 'is exactly', headerName: '', val: '' }
+    case 'presence':
+      return { ...base, pred: 'is present' }
     case 'body':
     default:
       return { ...base, pred: 'is valid JSON' }
@@ -90,9 +95,10 @@ export const INITIAL_CONDITIONS: Condition[] = [
   { id: 'c2', subj: 'Response time', kind: 'time', op: '>', pred: null, val: '10', unit: 'seconds', headerName: null, sev: 'warn' },
 ]
 
-// Condition par défaut du step « Get mail ».
+// Conditions par défaut du step « Get mail » : contenu attendu + présence d'une pièce jointe.
 export const MAIL_INITIAL_CONDITIONS: Condition[] = [
   { id: 'm1', subj: 'Content', kind: 'text', op: null, pred: 'contains', val: 'password', unit: null, headerName: null, sev: 'fail' },
+  { id: 'm2', subj: 'Attachment', kind: 'presence', op: null, pred: 'is present', val: null, unit: null, headerName: null, sev: 'fail' },
 ]
 
 /* ---------- Négation, pour la chip du canvas (condition qui déclenche) ---------- */
@@ -111,6 +117,8 @@ export const NEG_PRED: Record<string, string> = {
   contains: 'does not contain',
   'starts with': 'does not start with',
   'ends with': 'does not end with',
+  'is present': 'is not present',
+  'is not present': 'is present',
 }
 
 export const triggerText = (c: Condition): string => {
