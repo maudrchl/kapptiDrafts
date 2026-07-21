@@ -327,13 +327,18 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   min-width: 0;
   overflow-y: auto;
   padding: 34px 40px 60px;
+  // centre verticalement le formulaire (margin:auto sur l'inner) ; scrolle
+  // proprement si le contenu dépasse la hauteur.
+  display: flex;
+  flex-direction: column;
   background:
     radial-gradient(circle at 1px 1px, #e3ded7 1px, transparent 0) 0 0 / 24px 24px,
     $bg;
 }
 .canvasInner {
+  width: 100%;
   max-width: 720px;
-  margin: 0 auto;
+  margin: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -488,12 +493,12 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   min-width: 0;
 }
 .stepNum {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: $primary;
   color: #fff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   display: grid;
   place-items: center;
@@ -543,6 +548,88 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   margin-left: 2px;
 }
 
+// Multi-sélection dans la full view JSON attribute.
+.rpCheck {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin-right: 8px;
+  border: 1.5px solid $border-strong;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.rpCheckOn {
+  background: $primary;
+  border-color: $primary;
+}
+.rpRowSel {
+  background: color-mix(in srgb, #{$primary} 8%, transparent);
+}
+.treeModalFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+// Champ de valeur Slate (VariableInput) : zone éditable + bouton {}.
+.viBox {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.viEditable {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: $ink;
+  outline: none;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  // placeholder Slate
+  [data-slate-placeholder='true'] {
+    color: $faint;
+    opacity: 1 !important;
+  }
+}
+// Tag variable inline — repris tel quel de input-tag.module.scss du produit.
+.viTag {
+  border-radius: 4px;
+  border: 1px solid transparent;
+  text-align: center;
+  padding-inline: 4px;
+  margin: 0 2px;
+  white-space: nowrap;
+  display: inline-block;
+  cursor: default;
+  height: 20px;
+  line-height: 18px;
+  font-size: 13px;
+  user-select: none;
+}
+.viTagPrimary {
+  background-color: rgba(237, 120, 70, 0.06);
+  border-color: rgba(237, 120, 70, 0.06);
+  color: #ed7846;
+}
+.viTagBlue {
+  background-color: var(--color-accent-light-dark-blue, #e7e7fb);
+  border-color: var(--color-accent-light-dark-blue, #e7e7fb);
+  color: #1916d0;
+}
+
 .chipsWrap {
   display: flex;
   flex-direction: column;
@@ -566,9 +653,16 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   border: 1px solid $border;
   border-radius: 999px;
   padding: 2px 10px 2px 8px;
+  font: inherit;
   font-size: 12px;
   color: $ink-2;
-  cursor: default;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+
+  &:hover {
+    background: $surface-2;
+    border-color: $border-strong;
+  }
 }
 .chipActive {
   @extend .chip;
@@ -1286,10 +1380,10 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   align-items: center;
   gap: 8px;
   width: 100%;
-  min-height: 30px;
-  padding: 2px 10px 2px 6px;
-  border: 1px solid $border;
-  border-radius: $radius-sm;
+  min-height: 26px;
+  padding: 1px 10px 1px 6px;
+  border: 1px solid var(--color-border-grey, #e4e7ec);
+  border-radius: 6px;
   background: $surface;
 }
 .varFieldInput {
@@ -1706,6 +1800,48 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   > * + * {
     border-left: 1px solid $border;
   }
+  // Le champ de valeur (SlateInputTag) remplit l'espace restant et scrolle en
+  // interne, au lieu de pousser la ligne au-delà du panneau.
+  > .valCell {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+}
+
+.valCell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+// Champs URL / mailbox du canvas (SlateInputTag bordé qui remplit la ligne).
+.canvasField {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+// Label d'une variable dans le picker {} (pastille lavande + nom, façon produit).
+.suggVar {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+.suggVarIcon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--color-accent-light-dark-blue, #ecedfd);
+  color: var(--color-accent-dark-blue, #4f46e5);
+}
+.suggVarIconOrange {
+  @extend .suggVarIcon;
+  background: $accent-soft;
+  color: $primary;
 }
 
 .exprWrap {
@@ -1735,6 +1871,10 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
     color: $ink-2;
     flex: none;
   }
+}
+// Sujet = tag variable → padding gauche réduit (le tag a sa propre marge).
+.subjTriggerTag {
+  padding-left: 2px;
 }
 .subjTriggerLabel {
   // Attribut affiché en entier (une ligne), sans ellipsis.
@@ -1846,6 +1986,12 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 .grow {
   flex: 1 1 auto !important;
   min-width: 56px;
+
+  // Select de prédicat sans valeur (ex. « is present ») qui prend toute la
+  // largeur : le selector remplit → le chevron (absolute right) part à droite.
+  :global(.ant-select-selector) {
+    width: 100% !important;
+  }
 }
 
 /* membre droit = expression (littéraux + variables + opérateurs) */
@@ -1983,7 +2129,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 }
 .checkIf {
   flex: none;
-  width: 72px;
+  width: 56px;
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
@@ -2319,21 +2465,6 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   gap: 7px;
   padding: 6px 8px;
   margin-left: -8px;
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: left;
-}
-.fmBar .fmLabel {
-  margin-right: 3px;
-}
-.fmBar:hover {
-  background: rgba(0, 0, 0, 0.035);
-}
-.fmBar:hover .fmGo {
-  color: $ink;
-  transform: translateX(1px);
 }
 .fmCount {
   display: inline-flex;
