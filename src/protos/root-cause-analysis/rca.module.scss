@@ -1,0 +1,358 @@
+/* ─────────────────────────────────────────────────────────────
+ *  Root Cause Analysis proto: vue unifiée (exécution + RCA AI).
+ *  S'appuie sur les composants ui-kit (Card, Banner, StatusTag, Table,
+ *  CounterCard, Button, Tag). Ce module ne porte que le layout propre
+ *  au proto (contexte, chaîne de causalité, waterfall).
+ * ───────────────────────────────────────────────────────────── */
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 32px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== Contexte d'exécution ===== */
+.ctxHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ctxCrumb {
+  font-size: 12px;
+  color: var(--color-text-secondary, #667085);
+  margin-bottom: 6px;
+}
+
+.ctxTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ctxTitle {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary, #101828);
+  margin: 0;
+}
+
+.ctxActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ===== Cards (fix des pièges flex du Card ui-kit) ===== */
+.card {
+  flex: none;
+  height: auto;
+}
+
+.cardBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.headAside {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #667085);
+
+  svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ===== Chaîne de causalité ===== */
+.chain {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.node {
+  flex: 1 1 0;
+  min-width: 168px;
+  text-align: left;
+  border: 1px solid var(--color-border-grey, #e4e4e7);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface-white, #fff);
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    border-color: var(--color-primary, #ed7846);
+    box-shadow: 0 1px 4px rgba(16, 24, 40, 0.06);
+  }
+}
+
+/* Le nœud = la cause racine, mis en avant. */
+.nodeCause {
+  border-color: var(--color-error, #e0372e);
+  background: color-mix(in srgb, var(--color-error, #e0372e) 5%, #fff);
+
+  &:hover {
+    border-color: var(--color-error, #e0372e);
+  }
+}
+
+.nodeIcon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-error, #e0372e);
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.nodeLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary, #101828);
+}
+
+.nodeMono {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 12.5px;
+}
+
+.nodeDetail {
+  font-size: 12px;
+  color: var(--color-text-secondary, #667085);
+}
+
+.chainArrow {
+  display: flex;
+  align-items: center;
+  color: var(--color-grey-400, #98a2b3);
+  flex: none;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* ===== Evidence (dans la Table DS) ===== */
+.mono {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary, #667085);
+}
+
+.evSignal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--color-text-primary, #101828);
+}
+
+.evDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex: none;
+  background: var(--color-grey-400, #98a2b3);
+}
+
+.evDotTrace { composes: evDot; background: #6366f1; }
+.evDotLog { composes: evDot; background: var(--color-primary, #ed7846); }
+.evDotError { composes: evDot; background: var(--color-error, #e0372e); }
+
+.evDetail {
+  color: var(--color-text-primary, #101828);
+}
+
+.evChevron {
+  display: inline-flex;
+  justify-content: flex-end;
+  color: var(--color-grey-400, #98a2b3);
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.codeTag {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11.5px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--color-grey-100, #f0f0f3);
+  color: var(--color-text-primary, #101828);
+}
+
+.codeErr {
+  composes: codeTag;
+  background: color-mix(in srgb, var(--color-error, #e0372e) 12%, #fff);
+  color: var(--color-error, #e0372e);
+}
+
+/* ===== Recommendations ===== */
+.recList {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  li {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--color-text-primary, #101828);
+  }
+}
+
+.conclusion {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-grey-100, #f6f6f8);
+  font-size: 13px;
+  color: var(--color-text-primary, #101828);
+}
+
+/* ===== Traces waterfall (langage visuel du drawer obs) ===== */
+.wf {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.wfRuler {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-text-secondary, #667085);
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  padding-left: 108px;
+}
+
+.wfRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wfLabel {
+  width: 96px;
+  flex: none;
+  color: var(--color-text-secondary, #667085);
+  font-weight: 500;
+}
+
+.wfTrack {
+  flex: 1;
+  display: flex;
+  gap: 3px;
+  position: relative;
+  min-height: 22px;
+  align-items: center;
+}
+
+.wfBar {
+  height: 22px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 11px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #6366f1;
+}
+
+.wfBarTest { composes: wfBar; background: #475467; }
+.wfBarGroup { composes: wfBar; background: #6366f1; opacity: 0.9; }
+.wfBarFail {
+  composes: wfBar;
+  background: var(--color-error, #e0372e);
+  gap: 4px;
+
+  svg { width: 9px; height: 9px; flex: none; }
+}
+
+.wfStep {
+  height: 16px;
+  border-radius: 3px;
+  background: color-mix(in srgb, #6366f1 22%, #fff);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--color-text-secondary, #667085);
+  overflow: hidden;
+}
+
+.wfStepFail {
+  composes: wfStep;
+  background: color-mix(in srgb, var(--color-error, #e0372e) 20%, #fff);
+  color: var(--color-error, #e0372e);
+  font-weight: 600;
+}
+
+.wfSpanRow .wfTrack {
+  min-height: 34px;
+}
+
+.wfSpanCol {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.wfSpan {
+  width: 8px;
+  border-radius: 2px;
+  background: #6366f1;
+}
+
+.wfSpanErr {
+  composes: wfSpan;
+  background: var(--color-error, #e0372e);
+}

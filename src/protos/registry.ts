@@ -114,15 +114,6 @@ export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
     href: '/folder/Run queue.html',
   },
   {
-    slug: 'root-cause-analysis',
-    title: 'Root Cause Analysis',
-    status: 'wip dev',
-    collection: 'Observability',
-    description: 'Analyse de cause racine des incidents',
-    icon: IconActivity,
-    href: '/folder/Observability/Root Cause Analysis.html',
-  },
-  {
     slug: 'observability-navigation',
     title: 'Observability Navigation',
     status: 'wip design',
