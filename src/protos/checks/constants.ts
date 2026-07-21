@@ -86,13 +86,13 @@ export const shortUnit = (u: string | null) =>
 
 export const INITIAL_CONDITIONS: Condition[] = [
   { id: 'c1', subj: 'Status code', kind: 'num', op: '=', pred: null, val: '200', unit: null, headerName: null, sev: 'fail' },
+  // Warning par défaut : « Warn if Response time > 10s » (surveillé, non bloquant).
+  { id: 'c2', subj: 'Response time', kind: 'time', op: '>', pred: null, val: '10', unit: 'seconds', headerName: null, sev: 'warn' },
 ]
 
-// Conditions par défaut du step « Get mail ».
+// Condition par défaut du step « Get mail ».
 export const MAIL_INITIAL_CONDITIONS: Condition[] = [
-  { id: 'm1', subj: 'Sender', kind: 'text', op: null, pred: 'is exactly', val: 'noreply@kapptivate.com', unit: null, headerName: null, sev: 'fail' },
-  { id: 'm2', subj: 'Subject', kind: 'text', op: null, pred: 'contains', val: 'Welcome', unit: null, headerName: null, sev: 'fail' },
-  { id: 'm3', subj: 'Content', kind: 'text', op: null, pred: 'contains', val: 'activate your account', unit: null, headerName: null, sev: 'fail' },
+  { id: 'm1', subj: 'Content', kind: 'text', op: null, pred: 'contains', val: 'password', unit: null, headerName: null, sev: 'fail' },
 ]
 
 /* ---------- Négation, pour la chip du canvas (condition qui déclenche) ---------- */
