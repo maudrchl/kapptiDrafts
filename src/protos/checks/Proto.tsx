@@ -796,19 +796,12 @@ const ChecksProto = () => {
         }}
         title="Edit checks"
       >
-        <span className={styles.fmLabel}>Checks</span>
-        {f.length > 0 && (
-          <span className={styles.fmCount}>
-            <span className={styles.dotFail} />
-            {f.length} success condition{f.length > 1 ? 's' : ''}
+        {[...f, ...w].map((c) => (
+          <span key={c.id} className={styles.chip} style={{ pointerEvents: 'none' }}>
+            <span className={c.sev === 'warn' ? styles.dotWarn : styles.dotFail} />
+            {conditionText(c)}
           </span>
-        )}
-        {w.length > 0 && (
-          <span className={styles.fmCount}>
-            <span className={styles.dotWarn} />
-            {w.length} {w.length > 1 ? 'warnings' : 'warning'}
-          </span>
-        )}
+        ))}
       </button>
     )
   }
@@ -1302,6 +1295,7 @@ const ChecksProto = () => {
                       <Select
                         size="s"
                         width="150px"
+                        className={styles.actionSelect}
                         icon={IconNetwork}
                         options={toOptions(ACTION_OPTIONS)}
                         value={action}
@@ -1337,6 +1331,7 @@ const ChecksProto = () => {
                       <Select
                         size="s"
                         width="150px"
+                        className={styles.actionSelect}
                         icon={IconMail}
                         options={toOptions(ACTION_OPTIONS)}
                         value={action2}

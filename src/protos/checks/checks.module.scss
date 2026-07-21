@@ -538,6 +538,11 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   font-size: 13px;
   color: $ink-2;
 }
+// +2px de gap entre l'icône et le texte des selects d'action (API Call / Get mail…)
+.actionSelect :global(.ant-select-selection-item) {
+  margin-left: 2px;
+}
+
 .chipsWrap {
   display: flex;
   flex-direction: column;
@@ -560,7 +565,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   background: $surface;
   border: 1px solid $border;
   border-radius: 999px;
-  padding: 4px 10px 4px 8px;
+  padding: 2px 10px 2px 8px;
   font-size: 12px;
   color: $ink-2;
   cursor: default;
@@ -2307,17 +2312,21 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 
 /* Ligne compacte: clic ouvre l'onglet Checks */
 .fmBar {
-  align-self: flex-start;
-  display: inline-flex;
+  align-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  padding: 5px 8px;
+  gap: 7px;
+  padding: 6px 8px;
   margin-left: -8px;
   background: transparent;
   border: 0;
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
+}
+.fmBar .fmLabel {
+  margin-right: 3px;
 }
 .fmBar:hover {
   background: rgba(0, 0, 0, 0.035);
