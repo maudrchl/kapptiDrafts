@@ -589,7 +589,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   height: 8px;
   border-radius: 50%;
   flex: none;
-  background: $fail;
+  background: $muted;
 }
 .dotWarn {
   width: 8px;
@@ -1566,8 +1566,8 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 }
 .grpBadgeFail {
   @extend .grpBadge;
-  background: $fail-soft;
-  color: $fail;
+  background: #eef0f3;
+  color: $ink-2;
 }
 .grpBadgeWarn {
   @extend .grpBadge;

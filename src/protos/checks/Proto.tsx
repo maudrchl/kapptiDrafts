@@ -311,7 +311,7 @@ const ChecksProto = () => {
           width: 9,
           height: 9,
           borderRadius: '50%',
-          background: warn ? '#d98a00' : '#e0473c',
+          background: warn ? '#d98a00' : '#7c8593',
         }}
       />
       {text}
@@ -638,7 +638,7 @@ const ChecksProto = () => {
             key: 'move',
             label: sevLabel(
               c.sev === 'fail',
-              c.sev === 'fail' ? 'Move to Warning' : 'Move to Failed',
+              c.sev === 'fail' ? 'Move to warnings' : 'Move to success conditions',
             ),
           },
           { type: 'divider' as const },
@@ -682,8 +682,8 @@ const ChecksProto = () => {
         menu={{
           onClick: ({ key }: { key: string }) => add(key as Severity),
           items: [
-            { key: 'fail', label: sevLabel(false, 'Fails the step') },
-            { key: 'warn', label: sevLabel(true, 'Sets a warning') },
+            { key: 'fail', label: sevLabel(false, 'Success condition') },
+            { key: 'warn', label: sevLabel(true, 'Warning') },
           ],
         }}
       >
@@ -701,6 +701,7 @@ const ChecksProto = () => {
     i: number,
     gLogic: 'and' | 'or',
     setG: (v: 'and' | 'or') => void,
+    sev: Severity,
   ) => (
     <div
       key={c.id}
@@ -713,7 +714,9 @@ const ChecksProto = () => {
       }}
     >
       {i === 0 ? (
-        <span className={styles.checkIf}>Passes if</span>
+        // Deux logiques distinctes : « Passes if » = condition de succès
+        // (bloquante), « Warn if » = situation surveillée qui déclenche une alerte.
+        <span className={styles.checkIf}>{sev === 'fail' ? 'Passes if' : 'Warn if'}</span>
       ) : (
         connSelect(gLogic, setG, i > 1)
       )}
@@ -744,20 +747,20 @@ const ChecksProto = () => {
         <div className={styles.grpHead}>
           <span className={sev === 'fail' ? styles.grpBadgeFail : styles.grpBadgeWarn}>
             <span className={sev === 'fail' ? styles.dotFail : styles.dotWarn} />
-            {sev === 'fail' ? 'Failed' : 'Warning'}
+            {sev === 'fail' ? 'Success conditions' : 'Warnings'}
           </span>
           <span className={styles.grpNote}>
             {sev === 'fail'
-              ? 'the step fails if these are not met'
-              : 'only warns if these are not met'}
+              ? 'the step passes when these are met'
+              : 'the step still passes, but flags a warning when these happen'}
           </span>
         </div>
         <div className={styles.condList}>
           {list.length ? (
-            list.map((c, i) => groupExpr(c, i, gLogic, setG))
+            list.map((c, i) => groupExpr(c, i, gLogic, setG, sev))
           ) : (
             <div className={styles.grpEmpty}>
-              {sev === 'fail' ? 'No failing conditions' : 'No warning conditions'}
+              {sev === 'fail' ? 'No success conditions' : 'No warnings'}
             </div>
           )}
         </div>
@@ -796,7 +799,7 @@ const ChecksProto = () => {
         {f.length > 0 && (
           <span className={styles.fmCount}>
             <span className={styles.dotFail} />
-            {f.length} {f.length > 1 ? 'fails' : 'fail'}
+            {f.length} success condition{f.length > 1 ? 's' : ''}
           </span>
         )}
         {w.length > 0 && (
