@@ -7,7 +7,7 @@ export type Frame = 'sentence' | 'title' | 'match'
 export type SevLayout = 'inline' | 'groups'
 
 /** Famille d'un subject → détermine les contrôles affichés. */
-export type SubjectKind = 'num' | 'time' | 'text' | 'body' | 'header' | 'presence'
+export type SubjectKind = 'num' | 'time' | 'text' | 'body' | 'header' | 'presence' | 'visual' | 'ai'
 
 export type Condition = {
   id: string
@@ -40,6 +40,16 @@ export const MAIL_SUBJECTS: { label: string; kind: SubjectKind }[] = [
   { label: 'Subject', kind: 'text' },
   { label: 'Content', kind: 'text' },
   { label: 'Attachment', kind: 'presence' },
+  { label: 'Verify with AI', kind: 'ai' },
+]
+
+// Sujets pour un step « Check PDF » (assertions sur une pièce jointe PDF).
+export const PDF_SUBJECTS: { label: string; kind: SubjectKind }[] = [
+  { label: 'Extracted text', kind: 'text' },
+  { label: 'Page count', kind: 'num' },
+  { label: 'File name', kind: 'text' },
+  { label: 'File size (KB)', kind: 'num' },
+  { label: 'Verify with AI', kind: 'ai' },
 ]
 
 export const NUM_OPS = ['=', '<', '≤', '>', '≥']
@@ -47,13 +57,21 @@ export const TEXT_PREDS = ['is exactly', 'contains', 'starts with', 'ends with']
 export const BODY_PREDS = ['is valid JSON', 'is empty', 'contains', 'is exactly']
 // Sujet « Attachment » : présence + assertion sur le nom du fichier.
 export const PRESENCE_PREDS = ['is present', 'is not present', 'contains', 'is exactly']
+// Sujet « Visual content » : assertion visuelle par IA sur le rendu (image de…).
+export const VISUAL_PREDS = ['contains an image of', 'does not contain an image of']
 export const UNITS = ['seconds', 'ms', 'minutes']
 
 export const subjectKind = (label: string): SubjectKind =>
   [...SUBJECTS, ...MAIL_SUBJECTS].find((s) => s.label === label)?.kind ?? 'text'
 
 export const predsFor = (kind: SubjectKind) =>
-  kind === 'presence' ? PRESENCE_PREDS : kind === 'body' ? BODY_PREDS : TEXT_PREDS
+  kind === 'presence'
+    ? PRESENCE_PREDS
+    : kind === 'visual'
+      ? VISUAL_PREDS
+      : kind === 'body'
+        ? BODY_PREDS
+        : TEXT_PREDS
 
 /** Prédicats sans valeur à saisir (présence / validité / vide). */
 const NO_VALUE_PREDS = new Set(['is valid JSON', 'is empty', 'is present', 'is not present'])
@@ -75,6 +93,10 @@ export const resetForKind = (subj: string): Partial<Condition> => {
       return { ...base, pred: 'is exactly', headerName: '', val: '' }
     case 'presence':
       return { ...base, pred: 'is present' }
+    case 'visual':
+      return { ...base, pred: 'contains an image of', val: '' }
+    case 'ai':
+      return { ...base, val: '' }
     case 'body':
     default:
       return { ...base, pred: 'is valid JSON' }
@@ -101,6 +123,12 @@ export const MAIL_INITIAL_CONDITIONS: Condition[] = [
   { id: 'm2', subj: 'Attachment', kind: 'presence', op: null, pred: 'is present', val: null, unit: null, headerName: null, sev: 'fail' },
 ]
 
+// Conditions par défaut du step « Check PDF » (sur la pièce jointe stockée).
+export const PDF_INITIAL_CONDITIONS: Condition[] = [
+  { id: 'p1', subj: 'Extracted text', kind: 'text', op: null, pred: 'contains', val: 'Invoice', unit: null, headerName: null, sev: 'fail' },
+  { id: 'p2', subj: 'Page count', kind: 'num', op: '≥', pred: null, val: '1', unit: null, headerName: null, sev: 'warn' },
+]
+
 /* ---------- Négation, pour la chip du canvas (condition qui déclenche) ---------- */
 export const NEG_OP: Record<string, string> = {
   '=': '≠',
@@ -119,9 +147,12 @@ export const NEG_PRED: Record<string, string> = {
   'ends with': 'does not end with',
   'is present': 'is not present',
   'is not present': 'is present',
+  'contains an image of': 'does not contain an image of',
+  'does not contain an image of': 'contains an image of',
 }
 
 export const triggerText = (c: Condition): string => {
+  if (c.kind === 'ai') return c.val?.trim() ? `AI: ${c.val}` : 'Verify with AI'
   if (c.kind === 'num' || c.kind === 'time') {
     const op = NEG_OP[c.op ?? '='] ?? '≠'
     return `${c.subj} ${op} ${c.val}${shortUnit(c.unit)}`
@@ -137,6 +168,7 @@ export const triggerText = (c: Condition): string => {
 
 // Version positive (ce que la condition doit satisfaire).
 export const conditionText = (c: Condition): string => {
+  if (c.kind === 'ai') return c.val?.trim() ? `AI: ${c.val}` : 'Verify with AI'
   if (c.kind === 'num' || c.kind === 'time') {
     return `${c.subj} ${c.op ?? '='} ${c.val}${shortUnit(c.unit)}`
   }

@@ -7,6 +7,7 @@ import {
   ButtonGroup,
   Breadcrumb,
   Dropdown,
+  ContextMenu,
   Tabs,
   Checkbox,
   Table,
@@ -19,6 +20,7 @@ import {
   IconColouredLogo,
   IconSquareArrowOutUpRight,
   IconMonitorCheck,
+  IconSparkle,
   IconEye,
   IconBell,
   IconGauge,
@@ -43,6 +45,7 @@ import {
   IconFlag,
   IconGlobe,
   IconMail,
+  IconFile,
   IconNetwork,
   IconPlay,
   IconPlus,
@@ -62,8 +65,10 @@ import styles from './checks.module.scss'
 import {
   INITIAL_CONDITIONS,
   MAIL_INITIAL_CONDITIONS,
+  PDF_INITIAL_CONDITIONS,
   SUBJECTS,
   MAIL_SUBJECTS,
+  PDF_SUBJECTS,
   NUM_OPS,
   UNITS,
   predsFor,
@@ -154,7 +159,7 @@ const RESPONSE_ROWS = buildRespRows(SAMPLE_RESPONSE)
 
 const toOptions = (arr: string[]) => arr.map((v) => ({ label: v, value: v }))
 const optVal = (v: any): string => (v && typeof v === 'object' ? v.value : v)
-const ACTION_OPTIONS = ['API Call', 'Get mail', 'Navigate', 'Click', 'Fill in', 'Assert', 'Wait']
+const ACTION_OPTIONS = ['API Call', 'Get mail', 'Read PDF', 'Navigate', 'Click', 'Fill in', 'Assert', 'Wait']
 const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
 // ---- type des tables clé/valeur (Headers / Query parameters) ----
@@ -175,7 +180,7 @@ const ChecksProto = () => {
   const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('and')
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropSev, setDropSev] = useState<Severity | null>(null)
-  // Sélection de la step (1 = API Call, 2 = Get mail ; null = panneau test).
+  // Sélection de la step (1 = API Call, 2 = Get mail, 3 = Check PDF ; null = panneau test).
   const [selStep, setSelStep] = useState<number | null>(1)
   const stepSelected = selStep !== null
   // Onglet du panneau test (affiché quand aucune step n'est sélectionnée).
@@ -184,6 +189,7 @@ const ChecksProto = () => {
   const [condsByStep, setCondsByStep] = useState<Record<number, Condition[]>>(() => ({
     1: INITIAL_CONDITIONS.map((c) => ({ ...c })),
     2: MAIL_INITIAL_CONDITIONS.map((c) => ({ ...c })),
+    3: PDF_INITIAL_CONDITIONS.map((c) => ({ ...c })),
   }))
   const activeStep = selStep ?? 1
   const conds = condsByStep[activeStep] ?? []
@@ -192,12 +198,16 @@ const ChecksProto = () => {
       ...cur,
       [activeStep]: typeof updater === 'function' ? updater(cur[activeStep] ?? []) : updater,
     }))
-  // Sujets proposés selon le step : réponse HTTP (API) ou email (Get mail).
-  const stepSubjects = activeStep === 2 ? MAIL_SUBJECTS : SUBJECTS
-  const respTabLabel = activeStep === 2 ? 'Message' : 'Response'
+  // Sujets proposés selon le step : réponse HTTP (API), email (Get mail) ou PDF (Read PDF).
+  const stepSubjects =
+    activeStep === 2 ? MAIL_SUBJECTS : activeStep === 3 ? PDF_SUBJECTS : SUBJECTS
+  const respTabLabel = activeStep === 2 ? 'Message' : activeStep === 3 ? 'File' : 'Response'
   const [method, setMethod] = useState('GET')
   const [action, setAction] = useState('API Call')
   const [action2, setAction2] = useState('Get mail')
+  const [action3, setAction3] = useState('Read PDF')
+  // Fichier source du step Read PDF (nom du fichier à lire).
+  const [pdfSource, setPdfSource] = useState('')
   const [mailbox, setMailbox] = useState('')
   const [startUrl, setStartUrl] = useState('https://kapptivate.com')
   // Texte éditable saisi APRÈS le tag variable {{URL}} dans les champs du canvas.
@@ -267,6 +277,35 @@ const ChecksProto = () => {
       ...cur,
       { id: nextId(), sev, ...resetForKind('Status code') } as Condition,
     ])
+  // Clic-droit sur un CHECK → menu (réf. du vrai produit) : appliquer ce check à
+  // toutes les steps du groupe, ou le supprimer.
+  const applyCheckToAll = (fromStep: number, c: Condition) =>
+    setCondsByStep((cur) => {
+      const next = { ...cur }
+      Object.keys(cur).forEach((k) => {
+        const s = Number(k)
+        if (s !== fromStep) next[s] = [...(cur[s] ?? []), { ...c, id: nextId() }]
+      })
+      return next
+    })
+  const deleteCheck = (step: number, id: string) =>
+    setCondsByStep((cur) => ({ ...cur, [step]: (cur[step] ?? []).filter((x) => x.id !== id) }))
+  const checkMenu = (step: number, c: Condition) => [
+    {
+      key: 'apply',
+      label: 'Apply to all steps in this group',
+      icon: <IconCopy size={14} />,
+      onClick: () => applyCheckToAll(step, c),
+    },
+    { type: 'divider' as const },
+    {
+      key: 'delete',
+      label: 'Delete',
+      danger: true,
+      icon: <IconTrash size={14} />,
+      onClick: () => deleteCheck(step, c.id),
+    },
+  ]
   // Construit une condition « JSON attribute » à partir d'un path (+ autofill
   // de la valeur depuis le dernier run).
   const condFromPath = (path: string, sev: Severity): Condition => {
@@ -528,6 +567,28 @@ const ChecksProto = () => {
   }
 
   const exprTail = (c: Condition) => {
+    // Check « Verify with AI » : champ Description en langage naturel, border
+    // en dégradé pour signaler la vérif IA (pas d'opérateur ni de valeur classique).
+    if (c.kind === 'ai') {
+      return (
+        <div className={styles.aiField}>
+          <SlateInputTag
+            borderless
+            fullWidth
+            value={toSegments(c.val ?? '')}
+            onChange={(segs) =>
+              patch(c.id, {
+                val: fromSegments(
+                  typeof segs === 'function' ? segs(toSegments(c.val ?? '')) : segs,
+                ),
+              })
+            }
+            suggestions={checkSuggestions}
+            placeholder="Describe what to verify in plain language…"
+          />
+        </div>
+      )
+    }
     if (c.kind === 'num' || c.kind === 'time') {
       return (
         <>
@@ -722,6 +783,11 @@ const ChecksProto = () => {
                 </span>
               )
             })()
+          ) : c.kind === 'ai' ? (
+            <span className={styles.subjTriggerVar}>
+              <IconSparkle size={13} />
+              {c.subj}
+            </span>
           ) : (
             <span className={styles.subjTriggerLabel}>{c.subj}</span>
           )}
@@ -731,12 +797,19 @@ const ChecksProto = () => {
     )
   }
 
-  const expr = (c: Condition) => (
-    <div className={`${styles.expr} ${styles.exprFill}`}>
-      {subjectPicker(c)}
-      {exprTail(c)}
-    </div>
-  )
+  const expr = (c: Condition) =>
+    // Check IA : pas de boîte grise .expr autour (le champ porte déjà le dégradé).
+    c.kind === 'ai' ? (
+      <div className={styles.exprAi}>
+        {subjectPicker(c)}
+        {exprTail(c)}
+      </div>
+    ) : (
+      <div className={`${styles.expr} ${styles.exprFill}`}>
+        {subjectPicker(c)}
+        {exprTail(c)}
+      </div>
+    )
 
   const rowMenu = (c: Condition) => (
     <Dropdown
@@ -902,20 +975,21 @@ const ChecksProto = () => {
     return (
       <div className={styles.fmBar}>
         {[...f, ...w].map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            className={styles.chip}
-            onClick={(e) => {
-              e.stopPropagation()
-              setSelStep(step)
-              setTab('checks')
-            }}
-            title="Edit checks"
-          >
-            <span className={c.sev === 'warn' ? styles.dotWarn : styles.dotFail} />
-            {conditionText(c)}
-          </button>
+          <ContextMenu key={c.id} options={checkMenu(step, c)}>
+            <button
+              type="button"
+              className={styles.chip}
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelStep(step)
+                setTab('checks')
+              }}
+              title="Edit checks"
+            >
+              <span className={c.sev === 'warn' ? styles.dotWarn : styles.dotFail} />
+              {conditionText(c)}
+            </button>
+          </ContextMenu>
         ))}
       </div>
     )
@@ -987,6 +1061,20 @@ const ChecksProto = () => {
     rows.filter((r) => r.k.trim() !== '' || r.v.trim() !== '').length
 
   const generalTab = () => {
+    // Step Read PDF : General = fichier source (la pièce jointe stockée).
+    if (activeStep === 3) {
+      return (
+        <div className={styles.advPane}>
+          <div className={styles.advGroup}>
+            <div className={styles.advTitle}>Source file</div>
+            <div className={styles.refEmpty}>
+              Reads the PDF attachment stored by the previous step. Add checks on its extracted
+              text, page count, file name or size below.
+            </div>
+          </div>
+        </div>
+      )
+    }
     // Step Get mail : General = référence visuelle (pas de request config).
     if (activeStep === 2) {
       return (
@@ -1401,65 +1489,108 @@ const ChecksProto = () => {
                 {/* step 1: API Call */}
                 <div
                   className={selStep === 1 ? styles.stepBodySelected : styles.stepBody}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSelStep((cur) => (cur === 1 ? null : 1))
-                    setTab('general')
-                  }}
-                >
-                  <div className={styles.stepCard}>
-                    <div className={styles.stepTop} onClick={(e) => e.stopPropagation()}>
-                      <span className={styles.stepNum}>1</span>
-                      <Select
-                        size="s"
-                        width="150px"
-                        className={styles.actionSelect}
-                        icon={IconNetwork}
-                        options={toOptions(ACTION_OPTIONS)}
-                        value={action}
-                        onChange={(_e: unknown, v: string) => setAction(v)}
-                      />
-                      <Select
-                        size="s"
-                        width="140px"
-                        options={toOptions(METHOD_OPTIONS)}
-                        value={method}
-                        onChange={(_e: unknown, v: string) => setMethod(v)}
-                      />
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelStep((cur) => (cur === 1 ? null : 1))
+                      setTab('general')
+                    }}
+                  >
+                    <div className={styles.stepCard}>
+                      <div className={styles.stepTop} onClick={(e) => e.stopPropagation()}>
+                        <span className={selStep === 1 ? styles.stepNumActive : styles.stepNum}>1</span>
+                        <Select
+                          size="s"
+                          width="150px"
+                          className={styles.actionSelect}
+                          icon={IconNetwork}
+                          options={toOptions(ACTION_OPTIONS)}
+                          value={action}
+                          onChange={(_e: unknown, v: string) => setAction(v)}
+                        />
+                        <Select
+                          size="s"
+                          width="140px"
+                          options={toOptions(METHOD_OPTIONS)}
+                          value={method}
+                          onChange={(_e: unknown, v: string) => setMethod(v)}
+                        />
+                      </div>
+                      {urlField(apiPath, setApiPath)}
+                      {formSummary(1)}
                     </div>
-                    {urlField(apiPath, setApiPath)}
-                    {formSummary(1)}
                   </div>
-                </div>
 
                 <div className={styles.stepSep} />
 
                 {/* step 2: Get mail */}
                 <div
                   className={selStep === 2 ? styles.stepBodySelected : styles.stepBody}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSelStep((cur) => (cur === 2 ? null : 2))
-                    setTab('general')
-                  }}
-                >
-                  <div className={styles.stepCard}>
-                    <div className={styles.stepTop} onClick={(e) => e.stopPropagation()}>
-                      <span className={styles.stepNum}>2</span>
-                      <Select
-                        size="s"
-                        width="150px"
-                        className={styles.actionSelect}
-                        icon={IconMail}
-                        options={toOptions(ACTION_OPTIONS)}
-                        value={action2}
-                        onChange={(_e: unknown, v: string) => setAction2(v)}
-                      />
-                      <div style={{ flex: 1, minWidth: 0 }}>{mailboxField()}</div>
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelStep((cur) => (cur === 2 ? null : 2))
+                      setTab('general')
+                    }}
+                  >
+                    <div className={styles.stepCard}>
+                      <div className={styles.stepTop} onClick={(e) => e.stopPropagation()}>
+                        <span className={selStep === 2 ? styles.stepNumActive : styles.stepNum}>2</span>
+                        <Select
+                          size="s"
+                          width="150px"
+                          className={styles.actionSelect}
+                          icon={IconMail}
+                          options={toOptions(ACTION_OPTIONS)}
+                          value={action2}
+                          onChange={(_e: unknown, v: string) => setAction2(v)}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>{mailboxField()}</div>
+                      </div>
+                      {formSummary(2)}
                     </div>
-                    {formSummary(2)}
                   </div>
-                </div>
+
+                <div className={styles.stepSep} />
+
+                {/* step 3: Read PDF (checks sur la pièce jointe stockée) */}
+                <div
+                  className={selStep === 3 ? styles.stepBodySelected : styles.stepBody}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelStep((cur) => (cur === 3 ? null : 3))
+                      setTab('general')
+                    }}
+                  >
+                    <div className={styles.stepCard}>
+                      <div className={styles.stepTop} onClick={(e) => e.stopPropagation()}>
+                        <span className={selStep === 3 ? styles.stepNumActive : styles.stepNum}>3</span>
+                        <Select
+                          size="s"
+                          width="150px"
+                          className={styles.actionSelect}
+                          icon={IconFile}
+                          options={toOptions(ACTION_OPTIONS)}
+                          value={action3}
+                          onChange={(_e: unknown, v: string) => setAction3(v)}
+                        />
+                        <span className={styles.canvasField} onClick={(e) => e.stopPropagation()}>
+                          <SlateInputTag
+                            fullWidth
+                            value={toSegments(pdfSource)}
+                            onChange={(segs) =>
+                              setPdfSource(
+                                fromSegments(
+                                  typeof segs === 'function' ? segs(toSegments(pdfSource)) : segs,
+                                ),
+                              )
+                            }
+                            suggestions={checkSuggestions}
+                            placeholder="Source file name"
+                          />
+                        </span>
+                      </div>
+                      {formSummary(3)}
+                    </div>
+                  </div>
 
                 <div className={styles.stepFooter}>
                   <Button color="invisible" size="s" icon={IconPlus}>Add step…</Button>
@@ -1480,7 +1611,9 @@ const ChecksProto = () => {
               <>
             <div className={styles.panelHeader}>
               <span className={styles.panelTitleNum}>{activeStep}</span>
-              <span className={styles.panelTitle}>{activeStep === 2 ? 'Get mail' : 'API Call'}</span>
+              <span className={styles.panelTitle}>
+                {activeStep === 2 ? 'Get mail' : activeStep === 3 ? 'Read PDF' : 'API Call'}
+              </span>
               <div className={styles.panelHeaderActions}>
                 <Dropdown
                   trigger="click"
