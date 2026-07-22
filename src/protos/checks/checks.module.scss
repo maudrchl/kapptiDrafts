@@ -24,6 +24,9 @@ $fail: var(--color-error, #e0473c);
 $fail-soft: #fbe3e0;
 $warn: #d98a00;
 $warn-soft: #fbeed3;
+$success: var(--color-success, #1fae7e);
+$success-soft: #dbf3ea;
+$success-ink: #0d7a58;
 $radius: 9px;
 $radius-sm: 7px;
 $shadow: 0 1px 2px rgba(38, 36, 31, 0.05), 0 8px 26px rgba(38, 36, 31, 0.07);
@@ -692,7 +695,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   height: 8px;
   border-radius: 50%;
   flex: none;
-  background: $muted;
+  background: $success;
 }
 .dotWarn {
   width: 8px;
@@ -1671,8 +1674,8 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 }
 .grpBadgeFail {
   @extend .grpBadge;
-  background: #eef0f3;
-  color: $ink-2;
+  background: $success-soft;
+  color: $success-ink;
 }
 .grpBadgeWarn {
   @extend .grpBadge;
@@ -1699,18 +1702,6 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   align-items: center;
   gap: 8px;
   width: 100%;
-}
-
-.grip {
-  display: inline-flex;
-  align-items: center;
-  color: $faint;
-  cursor: grab;
-  flex: none;
-
-  &:active {
-    cursor: grabbing;
-  }
 }
 
 .sevDot {
@@ -2163,7 +2154,8 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 }
 .checkIf {
   flex: none;
-  width: 56px;
+  width: auto;
+  min-width: 56px;
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
@@ -2185,7 +2177,8 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   border: 0;
   background: none;
   color: $muted;
-  cursor: pointer;
+  // Poignée façon Notion : drag pour déplacer entre groupes, clic pour le menu.
+  cursor: grab;
   display: grid;
   place-items: center;
   transition: background 0.12s, color 0.12s;
@@ -2193,6 +2186,9 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   &:hover {
     background: $surface-2;
     color: $ink;
+  }
+  &:active {
+    cursor: grabbing;
   }
 }
 
@@ -2218,6 +2214,11 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 
 .addWrap {
   margin-top: 12px;
+}
+
+/* Bouton d'ajout direct sous la liste de chaque groupe. */
+.grpAdd {
+  margin-top: 8px;
 }
 
 .sev {

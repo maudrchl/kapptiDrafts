@@ -34,7 +34,6 @@ import {
   IconBot,
   IconInfo,
   IconChevronRight,
-  IconGripVertical,
   IconMoreVertical,
   IconZap,
   IconLock,
@@ -295,10 +294,12 @@ const ChecksProto = () => {
   }
   const remove = (id: string) =>
     setConds((cur) => cur.filter((c) => c.id !== id))
+  // Ajoute une condition dans le groupe voulu, avec un sujet par défaut adapté
+  // au step (Status code en API, Sender en mail, Extracted text en PDF).
   const add = (sev: Severity) =>
     setConds((cur) => [
       ...cur,
-      { id: nextId(), sev, ...resetForKind('Status code') } as Condition,
+      { id: nextId(), sev, ...resetForKind(stepSubjects[0]?.label ?? 'Status code') } as Condition,
     ])
   // Clic-droit sur un CHECK → menu (réf. du vrai produit) : appliquer ce check à
   // toutes les steps du groupe, ou le supprimer.
@@ -859,7 +860,17 @@ const ChecksProto = () => {
         ],
       }}
     >
-      <button className={styles.kebab} aria-label="More actions">
+      <button
+        className={styles.kebab}
+        aria-label="More actions, drag to move between groups"
+        title="Drag to move · click for actions"
+        draggable
+        onDragStart={() => setDragId(c.id)}
+        onDragEnd={() => {
+          setDragId(null)
+          setDropSev(null)
+        }}
+      >
         <IconMoreVertical size={12} />
       </button>
     </Dropdown>
@@ -885,26 +896,6 @@ const ChecksProto = () => {
     />
   )
 
-  const addBtn = (
-    <div className={styles.addWrap}>
-      <Dropdown
-        trigger="click"
-        placement="topLeft"
-        menu={{
-          onClick: ({ key }: { key: string }) => add(key as Severity),
-          items: [
-            { key: 'fail', label: sevLabel(false, 'Success condition') },
-            { key: 'warn', label: sevLabel(true, 'Warning') },
-          ],
-        }}
-      >
-        <Button color="secondary" size="s" icon={IconPlus}>
-          Add condition
-        </Button>
-      </Dropdown>
-    </div>
-  )
-
   // Chaque groupe = une expression and/or, la conséquence est portée par le
   // groupe → pas de pastille par ligne.
   const groupExpr = (
@@ -914,28 +905,18 @@ const ChecksProto = () => {
     setG: (v: 'and' | 'or') => void,
     sev: Severity,
   ) => (
-    <div
-      key={c.id}
-      className={styles.cond}
-      data-anchor={`cond-${c.id}`}
-      draggable
-      onDragStart={() => setDragId(c.id)}
-      onDragEnd={() => {
-        setDragId(null)
-        setDropSev(null)
-      }}
-    >
+    <div key={c.id} className={styles.cond} data-anchor={`cond-${c.id}`}>
       {i === 0 ? (
-        // Deux logiques distinctes : « Passes if » = condition de succès
-        // (bloquante), « Warn if » = situation surveillée qui déclenche une alerte.
-        <span className={styles.checkIf}>{sev === 'fail' ? 'Passes if' : 'Warns if'}</span>
+        // Cadrage « condition désirée » (positif) dans les deux groupes : la
+        // condition décrit l'état attendu, la sévérité décrit la conséquence si
+        // elle n'est PAS remplie. « Passes if » → échec sinon ; « Warns if not »
+        // → warning sinon. Même sens → glisser un check entre groupes ne réécrit
+        // aucun opérateur.
+        <span className={styles.checkIf}>{sev === 'fail' ? 'Passes if' : 'Warns if not'}</span>
       ) : (
         connSelect(gLogic, setG, i > 1)
       )}
       <span className={styles.exprWrap}>{expr(c)}</span>
-      <span className={styles.grip} title="Drag to the other group">
-        <IconGripVertical size={15} />
-      </span>
       {rowMenu(c)}
     </div>
   )
@@ -965,7 +946,7 @@ const ChecksProto = () => {
           <span className={styles.grpNote}>
             {sev === 'fail'
               ? 'the step passes when these are met'
-              : 'the step still passes, but flags a warning when these happen'}
+              : "the step still passes, but flags a warning when these aren't met"}
           </span>
         </div>
         <div className={styles.condList}>
@@ -977,6 +958,13 @@ const ChecksProto = () => {
             </div>
           )}
         </div>
+        {/* Ajout direct dans CE groupe (accès direct, pas de menu) : les checks
+            les plus courants sont des success conditions. */}
+        <div className={styles.grpAdd}>
+          <Button color="secondary" size="s" icon={IconPlus} onClick={() => add(sev)}>
+            {sev === 'fail' ? 'Add condition' : 'Add warning'}
+          </Button>
+        </div>
       </div>
     )
   }
@@ -986,7 +974,6 @@ const ChecksProto = () => {
       {renderGroup('fail')}
       <div className={styles.grpDivider} />
       {renderGroup('warn')}
-      {addBtn}
     </div>
   )
 
