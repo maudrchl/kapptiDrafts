@@ -150,9 +150,16 @@ export default async function handler(req: Request): Promise<Response> {
   // On résout d'abord tout le monde. Les personnes sans compte Slack joignable
   // (lookup email KO) ne sont pas perdues : elles sont listées dans le DM
   // catch-all (Maud) sous forme « @Nom » + le lien, pour relais manuel.
+  // On ne notifie pas (ni ne liste en fallback) les identités non-réelles :
+  // « mood » (identité dev par défaut), invités, et alias +… (comptes de test).
+  const isNotifiable = (email: string) =>
+    !!email &&
+    email !== 'mood@kapptivate.com' &&
+    !email.startsWith('guest:') &&
+    !email.includes('+')
   const resolved: { email: string; uid: string | null }[] = []
   for (const email of recipients) {
-    if (email) resolved.push({ email, uid: await slackLookup(email) })
+    if (isNotifiable(email)) resolved.push({ email, uid: await slackLookup(email) })
   }
   const unreachable = resolved.filter((r) => !r.uid).map((r) => r.email)
   const fallbackNote = unreachable.length
