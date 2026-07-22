@@ -907,12 +907,11 @@ const ChecksProto = () => {
   ) => (
     <div key={c.id} className={styles.cond} data-anchor={`cond-${c.id}`}>
       {i === 0 ? (
-        // Cadrage « condition désirée » (positif) dans les deux groupes : la
-        // condition décrit l'état attendu, la sévérité décrit la conséquence si
-        // elle n'est PAS remplie. « Passes if » → échec sinon ; « Warns if not »
-        // → warning sinon. Même sens → glisser un check entre groupes ne réécrit
-        // aucun opérateur.
-        <span className={styles.checkIf}>{sev === 'fail' ? 'Passes if' : 'Warns if not'}</span>
+        // Deux verbes : « Passes if » = état attendu pour valider (échec sinon) ;
+        // « Warns if » = le DÉCLENCHEUR de l'alerte (le step reste passant). Le
+        // warning s'écrit donc en négatif/inversé (ex. « Warns if > 10s »), choix
+        // de Maud : « Warns if not » faisait trop réfléchir.
+        <span className={styles.checkIf}>{sev === 'fail' ? 'Passes if' : 'Warns if'}</span>
       ) : (
         connSelect(gLogic, setG, i > 1)
       )}
@@ -946,7 +945,7 @@ const ChecksProto = () => {
           <span className={styles.grpNote}>
             {sev === 'fail'
               ? 'the step passes when these are met'
-              : "the step still passes, but flags a warning when these aren't met"}
+              : 'the step still passes, but flags a warning when these happen'}
           </span>
         </div>
         <div className={styles.condList}>
