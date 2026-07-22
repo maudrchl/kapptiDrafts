@@ -205,8 +205,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  // marge droite réservée pour ne pas passer sous le bouton « Code » du ProtoFrame
-  padding: 0 92px 0 16px;
+  padding: 0 16px;
 }
 .crumb {
   display: flex;
@@ -496,13 +495,18 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: $primary;
+  background: var(--color-secondary, #1c4a47);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
   display: grid;
   place-items: center;
   flex: none;
+}
+// Step sélectionnée : bulle orange (sinon vert secondary).
+.stepNumActive {
+  @extend .stepNum;
+  background: $primary;
 }
 .stepSelect {
   display: inline-flex;
@@ -545,7 +549,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 }
 // +2px de gap entre l'icône et le texte des selects d'action (API Call / Get mail…)
 .actionSelect :global(.ant-select-selection-item) {
-  margin-left: 2px;
+  margin-left: 6px;
 }
 
 // Multi-sélection dans la full view JSON attribute.
@@ -772,6 +776,7 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   align-items: center;
   gap: 10px;
   padding: 16px 18px 12px;
+  border-bottom: 1px solid $border;
 }
 .panelTitleNum {
   width: 22px;
@@ -1564,7 +1569,8 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 
 /* card tabs : filet de séparation au-dessus de la barre d'onglets */
 .panelTabs {
-  border-top: 1px solid $border;
+  // pas de border-top : la topbar (panneau test) ou le header (panneau step)
+  // fournit déjà la séparation → évite la double bordure.
 }
 .tabs {
   display: flex;
@@ -1814,11 +1820,39 @@ $mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   align-items: center;
   min-width: 0;
 }
+// Ligne d'un check IA : le contour dégradé entoure TOUT (sujet + description),
+// radius comme les inputs.
+.exprAi {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(95deg, #7c5cff, #ed7846) border-box;
+
+  > * + * {
+    border-left: 1px solid $border;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+  }
+}
 // Champs URL / mailbox du canvas (SlateInputTag bordé qui remplit la ligne).
 .canvasField {
   display: flex;
   flex: 1 1 auto;
   min-width: 0;
+}
+// Champ description du check IA (le contour dégradé est porté par .exprAi).
+.aiField {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
 }
 // Label d'une variable dans le picker {} (pastille lavande + nom, façon produit).
 .suggVar {

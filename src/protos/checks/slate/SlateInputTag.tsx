@@ -831,7 +831,7 @@ const SlateInputTag = ({
               disabled: disabled,
               fullWidth: fullWidth,
               noStartPadding: shouldHideStartPadding,
-              [styles.borderless]: borderless,
+              borderless,
             })}
           >
             <Slate editor={editor} initialValue={slateValue} onValueChange={handleSlateChange}>
@@ -882,7 +882,7 @@ const SlateInputTag = ({
             active={openSuggestions && !!suggestions?.length && !disabled}
           >
             <div
-              className={cx(styles.suffix, { [styles.borderless]: borderless })}
+              className={cx(styles.suffix, { borderless })}
               onClick={(e) => {
                 if (disabled !== true && !!suggestions?.length) {
                   if (!openSuggestions && savedSelection) {
