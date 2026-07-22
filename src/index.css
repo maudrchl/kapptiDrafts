@@ -1,4 +1,4 @@
-/* Geist (embarquée via le package `geist`) — utilisée pour les initiales des avatars. */
+/* Geist (embarquée via le package `geist`), utilisée pour les initiales des avatars. */
 @font-face {
   font-family: 'Geist';
   src: url('../node_modules/geist/dist/fonts/geist-sans/Geist-Regular.woff2')

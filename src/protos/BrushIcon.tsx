@@ -1,7 +1,7 @@
 import type { ProtoIcon } from './registry'
 
 /**
- * Petit pinceau — ui-kit n'expose pas d'icône brush, on la fournit ici.
+ * Petit pinceau: ui-kit n'expose pas d'icône brush, on la fournit ici.
  * Signature alignée sur les icônes ui-kit ({ size, color }).
  */
 const IconBrush: ProtoIcon = ({ size = 20, color = 'currentColor' }) => (

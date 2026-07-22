@@ -576,7 +576,7 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
         </Modal.Footer>
       </Modal>
 
-      {/* Intent chooser — never start from a blank grid */}
+      {/* Intent chooser: never start from a blank grid */}
       <Modal open={intentGroup !== null} onCancel={() => setIntentGroup(null)} title="Add a panel" width={520}>
         <Modal.Content>
           <button className={styles.intentOption} onClick={askAiFor}>

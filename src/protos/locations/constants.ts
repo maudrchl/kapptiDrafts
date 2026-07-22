@@ -1,5 +1,5 @@
 /* ============================================================
- *  Locations proto — données & helpers
+ *  Locations proto: données & helpers
  *  Migré depuis le mock HTML « Public & private locations V2 »
  * ============================================================ */
 
@@ -80,7 +80,7 @@ export function zonePretty(zone: string): string {
 }
 
 export const LOCATIONS: Location[] = [
-  // PUBLIC — régions managées kapptivate (enabled = activée pour ce workspace)
+  // PUBLIC: régions managées kapptivate (enabled = activée pour ce workspace)
   { id: 'pub-par', name: 'Europe · Paris', kind: 'public', runner: 'cloud', scope: 'managed', zone: 'Europe/France/Paris', status: 'online', version: 'pw-1.48', region: 'eu-west-3', cont: 'Europe', flag: '🇫🇷', city: 'Paris, France', enabled: true, default: true },
   { id: 'pub-fra', name: 'Europe · Frankfurt', kind: 'public', runner: 'cloud', scope: 'managed', zone: 'Europe/Germany/Frankfurt', status: 'online', version: 'pw-1.48', region: 'eu-central-1', cont: 'Europe', flag: '🇩🇪', city: 'Frankfurt, Germany', enabled: true },
   { id: 'pub-lon', name: 'Europe · London', kind: 'public', runner: 'cloud', scope: 'managed', zone: 'Europe/UK/London', status: 'online', version: 'pw-1.48', region: 'eu-west-2', cont: 'Europe', flag: '🇬🇧', city: 'London, UK', enabled: false },
@@ -95,7 +95,7 @@ export const LOCATIONS: Location[] = [
   { id: 'pub-sin', name: 'Asia · Singapore', kind: 'public', runner: 'cloud', scope: 'managed', zone: 'Asia/Singapore', status: 'online', version: 'pw-1.48', region: 'ap-southeast-1', cont: 'Asia-Pacific', flag: '🇸🇬', city: 'Singapore', enabled: true },
   { id: 'pub-tok', name: 'Asia · Tokyo', kind: 'public', runner: 'cloud', scope: 'managed', zone: 'Asia/Japan/Tokyo', status: 'online', version: 'pw-1.48', region: 'ap-northeast-1', cont: 'Asia-Pacific', flag: '🇯🇵', city: 'Tokyo, Japan', enabled: false },
   { id: 'pub-syd', name: 'Asia · Sydney', kind: 'public', runner: 'cloud', scope: 'managed', zone: 'Asia-Pacific/Australia/Sydney', status: 'online', version: 'pw-1.48', region: 'ap-southeast-2', cont: 'Asia-Pacific', flag: '🇦🇺', city: 'Sydney, Australia', enabled: false },
-  // PRIVATE — robots (hardware partagé) par capacité + desktop runners
+  // PRIVATE: robots (hardware partagé) par capacité + desktop runners
   { id: 'ogn-3g-1', name: 'ogn-3g-1', kind: 'private', cat: 'cellular', runner: 'appliance', scope: 'shared', zone: 'Guinee/Conakry/Camayenne', status: 'online', version: 'v4.21.0', host: 'ogn-3g-1', uuid: 'c1a1-3g1', caps: 'Cellular · 4/4 SIM', devices: [] },
   { id: 'ogn-4g-01', name: 'ogn-4g-01', kind: 'private', cat: 'cellular', runner: 'appliance', scope: 'shared', zone: 'Guinee/Kankan', status: 'online', version: 'v4.21.3', host: 'ogn-4g-01', uuid: 'c1a1-4g01', caps: 'Cellular · 2/2 SIM', devices: [] },
   { id: 'ogn-4g-02', name: 'ogn-4g-02', kind: 'private', cat: 'cellular', runner: 'appliance', scope: 'shared', zone: 'Guinee/Aeroport', status: 'online', version: 'v4.21.3', host: 'ogn-4g-02', uuid: 'c1a1-4g02', caps: 'Cellular · 2/2 SIM', devices: [] },

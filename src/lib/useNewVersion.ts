@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 /**
  * Détecte qu'un nouveau déploiement est en ligne. Le build fige un `__BUILD_ID__`
  * (voir vite.config) et écrit le même identifiant dans `/version.json`. On
- * interroge ce fichier périodiquement — et à chaque retour d'onglet — et on
+ * interroge ce fichier périodiquement, et à chaque retour d'onglet, et on
  * renvoie `true` dès que la version servie diffère de celle chargée.
  *
  * En dev, le middleware sert le même BUILD_ID que le bundle : aucune fausse

@@ -53,7 +53,7 @@ const STATUS_ACCENT: Record<ProtoStatus, string> = {
   deployed: '#16a34a',
 }
 
-// Couleur propre par tag (badge/statut de la ligne) — distinct du violet générique.
+// Couleur propre par tag (badge/statut de la ligne), distinct du violet générique.
 const TAG_ACCENT: Record<string, string> = {
   Brand: '#db2777', // rose
   PM: '#0ea5e9', // bleu
@@ -369,7 +369,7 @@ const IndexPage = () => {
       defaultSortOrder: 'ascend' as const,
       sorter: withPin((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)),
       sortIcon: renderSortIcon,
-      // Statut en lecture seule — la source de vérité est le `meta.ts` du proto.
+      // Statut en lecture seule, la source de vérité est le `meta.ts` du proto.
       render: (_: ProtoStatus, p: Row) => (
         <div style={styles.statusCell}>
           <span

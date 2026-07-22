@@ -1,7 +1,7 @@
 import { StatusTag, Tag } from '@kapptivate/ui-kit'
 import type { Location } from './constants'
 
-/** Online / Offline — vrai composant ui-kit StatusTag. */
+/** Online / Offline: vrai composant ui-kit StatusTag. */
 export const StatusBadge = ({ status }: { status?: Location['status'] }) =>
   status === 'offline' ? (
     <StatusTag variant="ghost" color="failed">

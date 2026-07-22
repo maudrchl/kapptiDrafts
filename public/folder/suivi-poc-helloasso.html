@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi PoC — HelloAsso × kapptivate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#1C4A47;
+    --green-deep:#0c2422;
+    --green-card:#123330;
+    --orange:#ED7846;
+    --soft:#E6F4EA;
+    --muted:#8fb3ab;
+    --red:#e0564a;
+    --blue:#5aa9c9;
+    --amber:#e6b455;
+    --green-ok:#5bbf8a;
+    --line:rgba(230,244,234,.10);
+    --display:'Geist',system-ui,sans-serif;
+    --body:'Geist',system-ui,sans-serif;
+    --mono:'Geist Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:var(--body);
+    color:var(--soft);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(237,120,70,.14), transparent 60%),
+      linear-gradient(160deg, #0f2d2a 0%, var(--green-deep) 70%);
+    min-height:100vh;
+    padding:40px 24px 80px;
+    line-height:1.5;
+  }
+  .wrap{max-width:920px;margin:0 auto}
+
+  /* Header */
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);margin:0 0 8px}
+  h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0 0 6px;color:#fff;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 28px}
+  .sub b{color:var(--soft);font-weight:600}
+  .sub a{color:var(--muted);text-decoration:underline;text-underline-offset:2px}
+  .sub a:hover{color:var(--soft)}
+
+  /* Progress */
+  .panel{background:var(--green-card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:14px}
+  .prog-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .prog-top .big{font-family:var(--display);font-size:22px;font-weight:700;color:#fff}
+  .prog-top .big span{color:var(--muted);font-weight:500;font-size:15px}
+  .prog-top .side{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .bar{height:10px;background:rgba(0,0,0,.28);border-radius:99px;overflow:hidden;display:flex}
+  .bar i{display:block;height:100%;transition:width .4s ease}
+  .bar .s-ok{background:var(--green-ok)}
+  .bar .s-prog{background:var(--amber)}
+  .bar .s-back{background:rgba(230,244,234,.22)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:9px;height:9px;border-radius:99px;display:inline-block}
+  .note-banner{margin-top:16px;padding:12px 16px;border-radius:12px;font-size:13.5px;display:flex;gap:10px;align-items:center;background:rgba(91,191,138,.10);border:1px solid rgba(91,191,138,.32);color:#a9e3c4}
+
+  /* Section titles */
+  .sec-title{font-family:var(--display);font-size:15px;font-weight:600;color:#fff;margin:30px 0 4px;letter-spacing:-.01em}
+  .sec-sub{color:var(--muted);font-size:12.5px;margin:0 0 8px}
+
+  /* Impact chip + status badge (shared) */
+  .imp-chip{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.05em;padding:3px 7px;border-radius:6px;text-align:center;white-space:nowrap}
+  .imp-fort{background:rgba(237,120,70,.18);color:#f2b295}
+  .imp-moyen{background:rgba(230,180,85,.14);color:#e6c98a}
+  .imp-faible{background:rgba(143,179,171,.12);color:var(--muted)}
+  .imp-none{background:rgba(143,179,171,.06);color:rgba(143,179,171,.7)}
+  .st-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:10.5px;font-weight:600;font-family:var(--mono);white-space:nowrap}
+  .b-deploye{color:var(--green-ok);background:rgba(91,191,138,.16)}
+  .b-staging{color:#f0a3c4;background:rgba(224,86,138,.16)}
+  .b-delivery{color:var(--orange);background:rgba(237,120,70,.16)}
+  .b-planifie{color:var(--amber);background:rgba(230,180,85,.16)}
+  .b-evaluer{color:#9dd0e3;background:rgba(90,169,201,.15)}
+  .b-triage{color:var(--muted);background:rgba(143,179,171,.14)}
+  .b-depri{color:var(--muted);background:rgba(143,179,171,.08)}
+
+  /* À traiter — liste unique triée */
+  .todo-row{display:grid;grid-template-columns:58px 1fr auto;gap:14px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+  .todo-title{font-size:13.5px;color:var(--soft)}
+  .todo-type{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.03em;margin-right:8px}
+  @media(max-width:620px){
+    .todo-row{grid-template-columns:52px 1fr;gap:6px 12px}
+    .todo-row .st-badge{grid-column:2;justify-self:start}
+  }
+
+  /* Toutes les remontées — snapshot par statut */
+  .ins-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .ins-head a{color:var(--muted);font-size:12px;text-decoration:none;white-space:nowrap}
+  .ins-head a:hover{color:var(--soft)}
+  .grp{margin-top:18px}
+  .grp:first-child{margin-top:4px}
+  .grp-head{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+  .grp-head .g-count{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+  .ins-row{display:grid;grid-template-columns:104px 1fr auto;gap:14px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+  .ins-type{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--muted)}
+  .ins-title{font-size:13.5px;color:var(--soft)}
+  .ins-title.done{color:var(--muted)}
+  .ins-ticket{font-size:11px;color:var(--muted);text-decoration:none;font-family:var(--mono);white-space:nowrap}
+  .ins-ticket:hover{color:var(--orange)}
+  .ins-ticket.empty{opacity:0}
+  @media(max-width:620px){
+    .ins-row{grid-template-columns:1fr auto;gap:6px 10px}
+    .ins-type{grid-column:1/-1;order:-1}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="kicker">Suivi PoC · en cours</p>
+  <h1>PoC HelloAsso × kapptivate</h1>
+  <p class="sub">Snapshot des retours produit taggés <b>HelloAsso</b> dans « Product Inputs », au <b>20 juillet 2026</b>. Le PoC est <b>actif</b> : ce suivi reflète l'avancement réel des remontées et sert de fil pour le point client. <a href="https://app.notion.com/p/kapptivate/2851c6485ddc809ab63bf9d0b1414f08?v=3a31c6485ddc818daa4c000ce30c0677&source=copy_link" target="_blank" rel="noopener noreferrer">Source Notion ↗</a></p>
+
+  <div class="panel">
+    <div class="prog-top">
+      <div class="big"><span id="okCount">0</span> livrés <span>/ <span id="totalCount">0</span> remontées</span></div>
+      <div class="side" id="sideLabel"></div>
+    </div>
+    <div class="bar">
+      <i class="s-ok" id="barOk" style="width:0%"></i>
+      <i class="s-prog" id="barProg" style="width:0%"></i>
+      <i class="s-back" id="barBack" style="width:0%"></i>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--green-ok)"></i>Livré (Déployé)</span>
+      <span><i class="dot" style="background:var(--amber)"></i>En cours (staging + delivery + planifié)</span>
+      <span><i class="dot" style="background:rgba(230,244,234,.35)"></i>Backlog (à évaluer + triage)</span>
+    </div>
+    <div id="noteBanner" class="note-banner"></div>
+  </div>
+
+  <p class="sec-title">À traiter</p>
+  <p class="sec-sub" id="todoSub">Remontées encore ouvertes, triées par impact puis avancement.</p>
+  <div class="panel"><div id="todo"></div></div>
+
+  <p class="sec-title">Toutes les remontées</p>
+  <p class="sec-sub" id="allSub">Snapshot complet, groupé par statut.</p>
+  <div class="panel">
+    <div class="ins-head" style="margin-bottom:6px">
+      <span style="font-size:12.5px;color:var(--muted)">Ordre : Déployé → Triage → Déprioritisé</span>
+      <a href="https://app.notion.com/p/kapptivate/2851c6485ddc809ab63bf9d0b1414f08?v=3a31c6485ddc818daa4c000ce30c0677&source=copy_link" target="_blank" rel="noopener noreferrer">source : Notion ↗</a>
+    </div>
+    <div id="snapshot"></div>
+  </div>
+</div>
+
+<script>
+const T = { bug:"Bug", feat:"Feature", imp:"Improvement", ux:"UX Problem", lim:"Limitation", none:"—" };
+
+// Snapshot du tableau Notion « Product Inputs » — items taggés HelloAsso (20/07/2026).
+const SNAPSHOT = [
+  // Déployé
+  {st:"deploye", type:T.bug, title:"Modale d'assertion qui ferme la modale du site recordé", imp:"Moyen", ticket:null, ticketTxt:"kompagnon 1.1.1"},
+  {st:"deploye", type:T.bug, title:"Pause du recorder qui ne survit pas au refresh / changement de page", imp:"Moyen", ticket:null, ticketTxt:"kompagnon 1.1.1"},
+  {st:"deploye", type:T.bug, title:"Tests « ongoing » qui restent en queued", imp:"Moyen", ticket:"https://linear.app/kapptivate/issue/KTMAPP-2477", ticketTxt:"KTMAPP-2477"},
+  {st:"deploye", type:T.bug, title:"PoC HelloAsso — Vidéos indisponibles", imp:"Faible", ticket:"https://linear.app/kapptivate/issue/452ffe46-1c83-4117-8928-c04cd24eefcc", ticketTxt:"ticket"},
+  {st:"deploye", type:T.feat, title:"Validation de code reçu par SMS (web + smartphone)", imp:"Moyen", ticket:"https://linear.app/kapptivate/issue/KTMAPP-2657", ticketTxt:"KTMAPP-2657"},
+  {st:"deploye", type:T.imp, title:"Sélecteurs priorisés sur le data test id unique", imp:"Moyen", ticket:null, ticketTxt:"kompagnon 1.1.1"},
+  {st:"deploye", type:T.imp, title:"Déplacer une étape d'un bloc à l'autre (drag & drop entre step groups)", imp:"Moyen", ticket:"https://linear.app/kapptivate/issue/L3-1171", ticketTxt:"L3-1171"},
+  {st:"deploye", type:T.imp, title:"Lenteur remplissage des champs input (« Login failed »)", imp:"Moyen", ticket:"https://linear.app/kapptivate/issue/6c5e13ea-8b4c-478b-b893-ad5bc748f2e5", ticketTxt:"ticket"},
+  {st:"deploye", type:T.bug, title:"Captures de référence absentes malgré des runs en succès", imp:"Moyen", ticket:"https://linear.app/kapptivate/issue/KTMAPP-2476", ticketTxt:"KTMAPP-2476"},
+  {st:"deploye", type:T.bug, title:"PoC HelloAsso — internal error in OTP service", imp:"Moyen", ticket:"https://linear.app/kapptivate/issue/0c461b6d-74ec-4178-9fe6-9dd11bf4c8af", ticketTxt:"ticket"},
+
+  // Staging
+  {st:"staging", type:T.bug, title:"Composant réutilisable non exécutable seul pour le tester", imp:"Moyen", ticket:"https://linear.app/kapptivate/issue/KTMAPP-2667", ticketTxt:"KTMAPP-2667"},
+
+  // En delivery
+  {st:"delivery", type:T.bug, title:"Cocher une checkbox échoue (« elem is not a checkbox »)", imp:"Moyen", ticket:"https://linear.app/kapptivate/issue/c5079abb-aa17-466d-a880-ca9646b58061", ticketTxt:"L3"},
+  {st:"delivery", type:T.imp, title:"Porter l'explorateur d'éléments (get XML) côté mobile", imp:"Fort", eff:"L", ticket:"https://linear.app/kapptivate/issue/9f3ea621-4b09-4772-92bc-a46f86db485b", ticketTxt:"L3-1176"},
+  {st:"delivery", type:T.imp, title:"Smartphone v2 : choisir le sélecteur (pendant et après recording)", imp:"Moyen", eff:"M", ticket:"https://linear.app/kapptivate/project/smartphone-improvements-v2-be45fc3dbb96", ticketTxt:"projet Linear"},
+
+  // Planifié
+  {st:"planifie", type:T.feat, title:"Checks spécifiques à l'action « Get mail » : contenu, objet et expéditeur", imp:"Fort", ticket:"https://linear.app/kapptivate/issue/KTMAPP-2677", ticketTxt:"KTMAPP-2677"},
+  {st:"planifie", type:T.feat, title:"Action « PDF » : vérifier le contenu d'un document PDF ouvert pendant un test", imp:"Moyen", ticket:"https://linear.app/kapptivate/issue/KTMAPP-2680", ticketTxt:"KTMAPP-2680"},
+  {st:"planifie", type:T.imp, title:"Temps d'exécution long en web (recorder : clic + fill = 2x)", imp:"Moyen", ticket:"https://linear.app/kapptivate/issue/84af4244-7daa-4038-9996-44382bf33ebe", ticketTxt:"ticket"},
+  {st:"planifie", type:T.feat, title:"Retry automatique des scénarios sur erreur technique", imp:"Fort", ticket:"https://linear.app/kapptivate/issue/KTMAPP-2470", ticketTxt:"KTMAPP-2470"},
+
+  // À évaluer
+  {st:"evaluer", type:T.bug, title:"Formulaire de paiement (inputs CB) impossible à remplir", imp:"Fort", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.bug, title:"Saisie dans un input qui bascule automatiquement en mode assertion", imp:"Fort", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.bug, title:"Extension kompagnon peu fiable (ne s'ouvre pas, popin persistante)", imp:"Moyen", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.feat, title:"Upload de bundles Android .AAB (pas seulement .APK)", imp:"Moyen", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.bug, title:"Champ date de naissance bloqué par le masque « / » automatique", imp:"Moyen", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.ux, title:"Gesture mobile qui demande des scripts (maintenance)", imp:"Moyen", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.bug, title:"Champ « Select sim » : erreur « Empty Owner » sur réception SMS", imp:"Moyen", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.bug, title:"Bandeau cookies axeptio en webview mobile non cliquable", imp:"Moyen", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.feat, title:"Smartphone iOS pour tester sur les deux OS", imp:"Moyen", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.bug, title:"Remplissage d'input non fiable sur mobile (MFA)", imp:"Moyen", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.ux, title:"Champ intention vs sélecteur peu clair en création manuelle de test", imp:"Fort", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.bug, title:"Import de fichier via l'explorateur natif de l'OS", imp:"Moyen", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.bug, title:"Lien de doc cassé sur les SMS actions (404)", imp:"Faible", ticket:null, ticketTxt:""},
+  {st:"evaluer", type:T.feat, title:"Voir si un test est en cours d'édition par quelqu'un d'autre", imp:"Faible", ticket:null, ticketTxt:""},
+
+  // Triage
+  {st:"triage", type:T.feat, title:"Lancer une campagne de test sur une version d'APK spécifique", imp:"Moyen", ticket:null, ticketTxt:""},
+  {st:"triage", type:T.bug, title:"En création, l'agent s'arrête et signale sur une action impossible au lieu de la forcer", imp:"Moyen", ticket:null, ticketTxt:""},
+  {st:"triage", type:T.feat, title:"Scénario multi-device en une session sans réinitialiser le contexte (MFA web/mobile/web)", imp:"Moyen", ticket:null, ticketTxt:""},
+  {st:"triage", type:T.ux, title:"Ne pas être obligé de remplir toutes les values à la création d'un variant", imp:"", ticket:null, ticketTxt:""},
+  {st:"triage", type:T.ux, title:"Vider les infos du nouveau variant dans les variables globales", imp:"", ticket:null, ticketTxt:""},
+
+  // Déprioritisé
+  {st:"depri", type:T.lim, title:"Rattacher un domaine email client propre (au-delà de kappti.dev)", imp:"Faible", ticket:null, ticketTxt:""},
+  {st:"depri", type:T.feat, title:"Priorité explicite sur les tests (au-delà des tags et de l'état)", imp:"Faible", ticket:null, ticketTxt:""}
+];
+
+const GROUPS = [
+  {st:"deploye",  label:"Déployé",     cls:"b-deploye"},
+  {st:"staging",  label:"Staging",     cls:"b-staging"},
+  {st:"delivery", label:"En delivery", cls:"b-delivery"},
+  {st:"planifie", label:"Planifié",    cls:"b-planifie"},
+  {st:"evaluer",  label:"À évaluer",   cls:"b-evaluer"},
+  {st:"triage",   label:"Triage",      cls:"b-triage"},
+  {st:"depri",    label:"Déprioritisé",cls:"b-depri"}
+];
+const ST_LABEL = Object.fromEntries(GROUPS.map(g=>[g.st, g.label]));
+const ST_CLS   = Object.fromEntries(GROUPS.map(g=>[g.st, g.cls]));
+
+const IMP_RANK = { "Fort":3, "Moyen":2, "Faible":1, "":0 };
+const IMP_CHIP = { "Fort":{cls:"imp-fort",txt:"FORT"}, "Moyen":{cls:"imp-moyen",txt:"MOYEN"}, "Faible":{cls:"imp-faible",txt:"FAIBLE"}, "":{cls:"imp-none",txt:"—"} };
+// avancement : ce qui bouge déjà remonte en premier à impact égal
+const ST_RANK = { "staging":0, "delivery":1, "planifie":2, "evaluer":3, "triage":4 };
+
+function impChip(imp){ const c = IMP_CHIP[imp]||IMP_CHIP[""]; return `<span class="imp-chip ${c.cls}">${c.txt}</span>`; }
+function stBadge(st){ return `<span class="st-badge ${ST_CLS[st]}">${ST_LABEL[st]}</span>`; }
+function ticketEl(it){
+  if(it.ticket) return `<a class="ins-ticket" href="${it.ticket}" target="_blank" rel="noopener noreferrer">${it.ticketTxt} ↗</a>`;
+  if(it.ticketTxt) return `<span class="ins-ticket">${it.ticketTxt}</span>`;
+  return `<span class="ins-ticket empty">—</span>`;
+}
+
+/* ---------- À traiter (liste unique triée) ---------- */
+function renderTodo(){
+  const open = SNAPSHOT.filter(x=>x.st!=="deploye" && x.st!=="depri");
+  open.sort((a,b)=>{
+    const d = (IMP_RANK[b.imp]??0) - (IMP_RANK[a.imp]??0);
+    if(d) return d;
+    return (ST_RANK[a.st]??9) - (ST_RANK[b.st]??9);
+  });
+  document.getElementById("todoSub").textContent =
+    `${open.length} remontées encore ouvertes (staging, delivery, planifié, à évaluer, triage) — triées par impact puis avancement.`;
+  document.getElementById("todo").innerHTML = open.map(it=>`
+    <div class="todo-row">
+      ${impChip(it.imp)}
+      <span class="todo-title"><span class="todo-type">${it.type}</span>${it.title}</span>
+      ${stBadge(it.st)}
+    </div>`).join("");
+}
+
+/* ---------- Toutes les remontées (par statut) ---------- */
+function renderSnapshot(){
+  const root = document.getElementById("snapshot");
+  root.innerHTML = GROUPS.map(g=>{
+    const items = SNAPSHOT.filter(x=>x.st===g.st);
+    if(!items.length) return "";
+    const done = (g.st==="deploye");
+    return `
+      <div class="grp">
+        <div class="grp-head">
+          <span class="st-badge ${g.cls}">${g.label}</span>
+          <span class="g-count">${items.length}</span>
+        </div>
+        ${items.map(it=>`
+          <div class="ins-row">
+            <span class="ins-type">${it.type}</span>
+            <span class="ins-title${done?' done':''}">${it.title}</span>
+            ${ticketEl(it)}
+          </div>`).join("")}
+      </div>`;
+  }).join("");
+}
+
+/* ---------- Panneau d'avancement ---------- */
+function updateSummary(){
+  const total = SNAPSHOT.filter(x=>x.st!=="depri").length;
+  const ok = SNAPSHOT.filter(x=>x.st==="deploye").length;
+  const prog = SNAPSHOT.filter(x=>x.st==="staging"||x.st==="delivery"||x.st==="planifie").length;
+  const back = SNAPSHOT.filter(x=>x.st==="evaluer"||x.st==="triage").length;
+
+  document.getElementById("okCount").textContent = ok;
+  document.getElementById("totalCount").textContent = total;
+  document.getElementById("barOk").style.width = (ok/total*100)+"%";
+  document.getElementById("barProg").style.width = (prog/total*100)+"%";
+  document.getElementById("barBack").style.width = (back/total*100)+"%";
+  document.getElementById("sideLabel").textContent = `${prog} en cours · ${back} en backlog`;
+
+  document.getElementById("noteBanner").textContent =
+    `PoC actif : ${ok} remontées livrées, ${prog} en cours de traitement. Le mobile et le parcours de paiement restent les plus gros chantiers.`;
+}
+
+updateSummary();
+renderTodo();
+renderSnapshot();
+</script>
+</body>
+</html>

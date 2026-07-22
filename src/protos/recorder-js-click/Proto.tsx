@@ -13,12 +13,12 @@ import {
 import styles from './recorder.module.scss'
 
 /**
- * Panneau latéral du web-recorder — version « best » de l'action « click »
+ * Panneau latéral du web-recorder, version « best » de l'action « click »
  * qui détecte un élément non cliquable normalement (cf. L3-1199 HelloAsso :
  * <input> caché en `visually-hidden`, label enveloppant un <a>).
  *
  * Parti pris (vs la V1 du dev) :
- *  1. On ne raconte PLUS où le clic atterrit (centre / lien) — c'est de la
+ *  1. On ne raconte PLUS où le clic atterrit (centre / lien), c'est de la
  *     mécanique WebDriver relative qui ne veut rien dire pour l'utilisateur.
  *     On dit juste : l'élément ne se clique pas normalement, on le cible
  *     directement.
@@ -26,7 +26,7 @@ import styles from './recorder.module.scss'
  *     de suite, l'utilisateur peut revenir en arrière en connaissance de cause.
  *  3. Le « pourquoi » technique reste accessible (repli) mais ne crie pas :
  *     dans un outil de test, savoir que l'élément est caché peut révéler un
- *     vrai bug côté app — on le surface, on ne l'enterre pas.
+ *     vrai bug côté app: on le surface, on ne l'enterre pas.
  */
 
 type Action = {

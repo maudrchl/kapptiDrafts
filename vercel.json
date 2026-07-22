@@ -8,6 +8,7 @@
   "rewrites": [
     { "source": "/folder/(.*)", "destination": "/folder/$1" },
     { "source": "/suivi-poc2-lbc", "destination": "/folder/suivi-poc2-lbc.html" },
+    { "source": "/suivi-poc-helloasso", "destination": "/folder/suivi-poc-helloasso.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

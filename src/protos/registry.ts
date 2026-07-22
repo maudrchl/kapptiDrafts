@@ -84,7 +84,7 @@ export type CatalogEntry = ProtoMeta & {
 
 /**
  * Prototypes HTML legacy (archives autonomes servies depuis `/folder`).
- * On n'en crée plus de nouveaux — les nouveaux protos sont en React.
+ * On n'en crée plus de nouveaux, les nouveaux protos sont en React.
  */
 export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
   {
@@ -92,16 +92,25 @@ export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
     title: 'Suivi PoC LBC',
     status: 'wip design',
     tag: 'PM',
-    description: 'Suivi des conditions du POC 2 — LeBonCoin × kapptivate',
+    description: 'Suivi des conditions du POC 2 · LeBonCoin × kapptivate',
     icon: IconRocket,
     href: '/suivi-poc2-lbc',
+  },
+  {
+    slug: 'suivi-poc-helloasso',
+    title: 'Suivi PoC HelloAsso',
+    status: 'wip design',
+    tag: 'PM',
+    description: 'Suivi du PoC HelloAsso × kapptivate, retours produit & avancement',
+    icon: IconRocket,
+    href: '/suivi-poc-helloasso',
   },
   {
     slug: 'exploration-ui',
     title: 'Exploration UI',
     status: 'wip design',
     tag: 'Brand',
-    description: 'Explorations de branding — lockups, palette & composants',
+    description: 'Explorations de branding : lockups, palette & composants',
     icon: IconBrush,
     href: '/folder/Exploration UI.html',
   },

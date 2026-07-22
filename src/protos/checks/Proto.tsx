@@ -59,7 +59,7 @@ import {
   IconArrowRightFromLine,
   IconPencil,
 } from '@kapptivate/ui-kit'
-import { useReportScreen } from '../../context/ScreenContext'
+import { useReportScreen, useScreenNavigation } from '../../context/ScreenContext'
 import SlateInputTag, { type TagInputValue, type Suggestions } from './slate/SlateInputTag'
 import styles from './checks.module.scss'
 import {
@@ -251,7 +251,30 @@ const ChecksProto = () => {
   const [skipDuringRun, setSkipDuringRun] = useState(false)
   const [addCapabilities, setAddCapabilities] = useState(false)
 
-  useReportScreen(tab)
+  // Écran collab : on encode la vue exacte (step + onglet, ou panneau test +
+  // onglet) → chaque commentaire est scopé à sa vue, et un clic depuis
+  // l'historique/le pin peut la restaurer.
+  const screenId = stepSelected ? `check:step${selStep}:${tab}` : `check:test:${testTab}`
+  useReportScreen(screenId)
+
+  // Canal inverse : un clic sur un commentaire demande de revenir sur son écran.
+  // On parse l'id d'écran et on rétablit la sélection de step + l'onglet.
+  const { pendingScreen, clearPendingScreen } = useScreenNavigation()
+  useEffect(() => {
+    if (!pendingScreen) return
+    const step = /^check:step(\d+):(.+)$/.exec(pendingScreen)
+    if (step) {
+      setSelStep(Number(step[1]))
+      setTab(step[2])
+    } else {
+      const test = /^check:test:(.+)$/.exec(pendingScreen)
+      if (test) {
+        setSelStep(null)
+        setTestTab(test[1])
+      }
+    }
+    clearPendingScreen()
+  }, [pendingScreen, clearPendingScreen])
 
   const patch = (id: string, next: Partial<Condition>) =>
     setConds((cur) => cur.map((c) => (c.id === id ? { ...c, ...next } : c)))
@@ -894,6 +917,7 @@ const ChecksProto = () => {
     <div
       key={c.id}
       className={styles.cond}
+      data-anchor={`cond-${c.id}`}
       draggable
       onDragStart={() => setDragId(c.id)}
       onDragEnd={() => {
@@ -926,6 +950,7 @@ const ChecksProto = () => {
     return (
       <div
         className={`${styles.grp} ${dropSev === sev ? styles.grpDrop : ''}`}
+        data-anchor={`checks-${sev === 'fail' ? 'success' : 'warnings'}-s${activeStep}`}
         onDragOver={(e) => {
           e.preventDefault()
           if (dropSev !== sev) setDropSev(sev)
@@ -957,7 +982,7 @@ const ChecksProto = () => {
   }
 
   const checksBody = () => (
-    <div className={styles.checksBody}>
+    <div className={styles.checksBody} data-anchor={`s${activeStep}-checks`}>
       {renderGroup('fail')}
       <div className={styles.grpDivider} />
       {renderGroup('warn')}
@@ -1064,7 +1089,7 @@ const ChecksProto = () => {
     // Step Read PDF : General = fichier source (la pièce jointe stockée).
     if (activeStep === 3) {
       return (
-        <div className={styles.advPane}>
+        <div className={styles.advPane} data-anchor={`s${activeStep}-general`}>
           <div className={styles.advGroup}>
             <div className={styles.advTitle}>Source file</div>
             <div className={styles.refEmpty}>
@@ -1078,7 +1103,7 @@ const ChecksProto = () => {
     // Step Get mail : General = référence visuelle (pas de request config).
     if (activeStep === 2) {
       return (
-        <div className={styles.advPane}>
+        <div className={styles.advPane} data-anchor={`s${activeStep}-general`}>
           <div className={styles.advGroup}>
             <div className={styles.advTitle}>Reference screenshot</div>
             <div className={styles.refEmpty}>No reference screenshot available for this step</div>
@@ -1087,7 +1112,7 @@ const ChecksProto = () => {
       )
     }
     return (
-    <div className={styles.genPane}>
+    <div className={styles.genPane} data-anchor={`s${activeStep}-general`}>
       <div className={styles.subTabs}>
         <button
           className={genTab === 'headers' ? styles.subTabActive : styles.subTab}
@@ -1160,7 +1185,7 @@ const ChecksProto = () => {
     setOutDraft((d) => (d ? { ...d, ...next } : d))
 
   const variablesTab = () => (
-    <div className={styles.varsPane}>
+    <div className={styles.varsPane} data-anchor={`s${activeStep}-variables`}>
       {/* Global variables: même structure div que Output pour aligner la
           colonne nom (220px) et garder la même compacité. */}
       <div className={styles.outTable}>
@@ -1260,7 +1285,7 @@ const ChecksProto = () => {
     // Step Get mail : Execution settings + Capabilities (pas d'options HTTP).
     if (activeStep === 2) {
       return (
-        <div className={styles.advPane}>
+        <div className={styles.advPane} data-anchor={`s${activeStep}-advanced`}>
           {execSettingsGroup}
           <div className={styles.advDivider} />
           <div className={styles.advGroup}>
@@ -1274,7 +1299,7 @@ const ChecksProto = () => {
       )
     }
     return (
-      <div className={styles.advPane}>
+      <div className={styles.advPane} data-anchor={`s${activeStep}-advanced`}>
         <div className={styles.advGroup}>
           <div className={styles.advTitle}>API Call Settings</div>
           {advCheckbox('adv-dns', 'Override DNS', overrideDns, setOverrideDns)}
@@ -1462,7 +1487,7 @@ const ChecksProto = () => {
           {/* canvas: clic hors step = désélection (referme le panneau) */}
           <div className={styles.canvas} onClick={() => setSelStep(null)}>
             <div className={styles.canvasInner}>
-              <div className={styles.startRow}>
+              <div className={styles.startRow} data-anchor="start-row">
                 <span className={styles.startFlag}><IconFlag size={16} /></span>
                 <span className={styles.startLabel}>
                   <IconGlobe size={15} /> Navigate to starting page
@@ -1489,6 +1514,7 @@ const ChecksProto = () => {
                 {/* step 1: API Call */}
                 <div
                   className={selStep === 1 ? styles.stepBodySelected : styles.stepBody}
+                  data-anchor="step-1"
                     onClick={(e) => {
                       e.stopPropagation()
                       setSelStep((cur) => (cur === 1 ? null : 1))
@@ -1525,6 +1551,7 @@ const ChecksProto = () => {
                 {/* step 2: Get mail */}
                 <div
                   className={selStep === 2 ? styles.stepBodySelected : styles.stepBody}
+                  data-anchor="step-2"
                     onClick={(e) => {
                       e.stopPropagation()
                       setSelStep((cur) => (cur === 2 ? null : 2))
@@ -1554,6 +1581,7 @@ const ChecksProto = () => {
                 {/* step 3: Read PDF (checks sur la pièce jointe stockée) */}
                 <div
                   className={selStep === 3 ? styles.stepBodySelected : styles.stepBody}
+                  data-anchor="step-3"
                     onClick={(e) => {
                       e.stopPropagation()
                       setSelStep((cur) => (cur === 3 ? null : 3))
@@ -1609,7 +1637,7 @@ const ChecksProto = () => {
           <aside className={styles.panel}>
             {stepSelected ? (
               <>
-            <div className={styles.panelHeader}>
+            <div className={styles.panelHeader} data-anchor={`panel-header-s${activeStep}`}>
               <span className={styles.panelTitleNum}>{activeStep}</span>
               <span className={styles.panelTitle}>
                 {activeStep === 2 ? 'Get mail' : activeStep === 3 ? 'Read PDF' : 'API Call'}

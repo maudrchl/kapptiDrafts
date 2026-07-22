@@ -7,8 +7,8 @@ import type { PresentUser } from './usePresence'
 export type PresenceMap = Record<string, PresentUser[]>
 
 /**
- * Présence temps réel agrégée pour la home. On s'abonne — en simple
- * observateur, sans se « tracker » soi-même — aux mêmes canaux que
+ * Présence temps réel agrégée pour la home. On s'abonne: en simple
+ * observateur, sans se « tracker » soi-même, aux mêmes canaux que
  * `usePresence` côté proto (`presence:proto:<slug>`), et on renvoie, par slug,
  * la liste des personnes qui le consultent actuellement. Supabase multiplexe
  * tous ces canaux sur une seule connexion, donc un canal par proto reste léger.

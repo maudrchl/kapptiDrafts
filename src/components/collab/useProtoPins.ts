@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
 // Cache local du dernier état connu des épingles. Sert à afficher le BON ordre
-// immédiatement au (re)chargement de l'index — y compris après un rechargement
-// complet de la SPA (retour depuis un proto HTML) — sans attendre Supabase, ce
+// immédiatement au (re)chargement de l'index, y compris après un rechargement
+// complet de la SPA (retour depuis un proto HTML), sans attendre Supabase, ce
 // qui évitait un re-tri visible (« l'ordre change tout seul »).
 const CACHE_KEY = 'kapptidrafts:pinned-protos'
 const readCache = (): Set<string> => {

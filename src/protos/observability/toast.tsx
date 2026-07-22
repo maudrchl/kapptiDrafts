@@ -2,10 +2,10 @@ import { useEffect } from 'react'
 import { useNotification } from '@kapptivate/ui-kit'
 
 /* ─────────────────────────────────────────────────────────────
- *  Toast ui-kit — le vrai composant.
+ *  Toast ui-kit: le vrai composant.
  *
  *  `useNotification()` lit son contexte depuis `NotificationProvider`,
- *  qui est embarqué dans `AntdTheme` — déjà monté à la racine dans
+ *  qui est embarqué dans `AntdTheme`, déjà monté à la racine dans
  *  `main.tsx`. Le hook fonctionne donc partout dans l'app, sans provider
  *  supplémentaire (icônes, placement et thème gérés par le kit).
  *

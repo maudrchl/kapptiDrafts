@@ -7,7 +7,7 @@ import { resolveShare } from '../lib/shares'
 import { useCurrentUser } from '../context/CurrentUser'
 
 /**
- * Lien d'exploration scopé (user interview), public — hors auth Google (cf.
+ * Lien d'exploration scopé (user interview), public, hors auth Google (cf.
  * middleware). Résout le token → proto et n'affiche QUE ce proto, sans le
  * chrome de l'app (`scoped`). La couche collab reste active : l'invité, une
  * fois son prénom saisi, peut laisser des commentaires (identité invité).
