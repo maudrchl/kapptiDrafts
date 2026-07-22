@@ -27,10 +27,10 @@ export type CurrentUser = {
 
 /**
  * Emails avec droits d'administration collab (ex. supprimer les réactions
- * emoji d'autres personnes). `mood@kapptivate.com` est l'identité par défaut
- * en dev (voir `devEmail`).
+ * emoji d'autres personnes). `maud.rochel@kapptivate.com` est aussi l'identité
+ * par défaut en dev (voir `devEmail`) → même profil partout.
  */
-const ADMIN_EMAILS = new Set(['mood@kapptivate.com'])
+const ADMIN_EMAILS = new Set(['maud.rochel@kapptivate.com'])
 
 /** L'utilisateur courant a-t-il les droits admin collab ? */
 export const isAdmin = (user: CurrentUser | null): boolean =>
@@ -79,7 +79,7 @@ const devEmail = (): string | null => {
   // `?guest` force le parcours invité (pour tester les liens de partage en local).
   if (params.has('guest')) return null
   const as = params.get('as')
-  return `${as || 'mood'}@kapptivate.com`
+  return `${as || 'maud.rochel'}@kapptivate.com`
 }
 
 /** Identité « invité » (lien de partage, sans compte Kapptivate). */

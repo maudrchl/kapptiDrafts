@@ -11,7 +11,7 @@ export const config = { runtime: 'edge' }
  * L'écriture est gardée côté serveur (session Google) → seul le profil
  * autorisé peut modifier, même si l'UI est contournée.
  */
-const EDITORS = ['mood@kapptivate.com']
+const EDITORS = ['maud.rochel@kapptivate.com']
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
