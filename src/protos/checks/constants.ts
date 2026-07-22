@@ -52,7 +52,7 @@ export const PDF_SUBJECTS: { label: string; kind: SubjectKind }[] = [
   { label: 'Verify with AI', kind: 'ai' },
 ]
 
-export const NUM_OPS = ['=', '<', '≤', '>', '≥']
+export const NUM_OPS = ['=', '≠', '<', '≤', '>', '≥']
 export const TEXT_PREDS = ['is exactly', 'contains', 'starts with', 'ends with']
 export const BODY_PREDS = ['is valid JSON', 'is empty', 'contains', 'is exactly']
 // Sujet « Attachment » : présence + assertion sur le nom du fichier.
@@ -113,8 +113,10 @@ export const shortUnit = (u: string | null) =>
 
 export const INITIAL_CONDITIONS: Condition[] = [
   { id: 'c1', subj: 'Status code', kind: 'num', op: '=', pred: null, val: '200', unit: null, headerName: null, sev: 'fail' },
-  // Warning par défaut : « Warn if Response time > 10s » (surveillé, non bloquant).
-  { id: 'c2', subj: 'Response time', kind: 'time', op: '>', pred: null, val: '10', unit: 'seconds', headerName: null, sev: 'warn' },
+  // Cadrage « condition désirée » : on stocke l'état ATTENDU (Response time ≤ 10s),
+  // le groupe Warnings alerte quand il n'est PAS respecté (soit > 10s). Même sens
+  // positif que les success conditions → passer fail↔warn ne réécrit aucun opérateur.
+  { id: 'c2', subj: 'Response time', kind: 'time', op: '≤', pred: null, val: '10', unit: 'seconds', headerName: null, sev: 'warn' },
 ]
 
 // Conditions par défaut du step « Get mail » : contenu attendu + présence d'une pièce jointe.
