@@ -79,7 +79,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .brand .logo{display:flex;align-items:center;gap:8px;color:var(--sidebar-white);font-weight:700;font-size:16px}
 .collapse{color:var(--sidebar-label)}
 .nav-sep{height:1px;background:var(--sidebar-line);margin:12px -12px}
-.ws{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px;margin-bottom:16px}
+.ws{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px;margin-bottom:8px}
 .ws .avatar{width:32px;height:32px;border-radius:4px;background:#f6ede2;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
 .ws .name{color:var(--sidebar-white);font-weight:500;font-size:14px;line-height:1.2}
 .ws .sub{color:var(--sidebar-white);opacity:.7;font-size:9px;line-height:1.2;margin-top:1px}
@@ -128,9 +128,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .product-switcher .chevron svg{width:15px;height:15px}
 
 /* ── segmented (patterns 2b, 3a) ── */
-.prod-seg{display:flex;background:rgba(255,255,255,0.06);border-radius:6px;padding:2px;margin-bottom:8px}
-.prod-seg-btn{flex:1;padding:6px 0;border:none;border-radius:5px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;background:transparent;color:var(--sidebar-label);transition:all .15s}
-.prod-seg-btn.active{background:var(--sidebar-active);color:var(--sidebar-white)}
+.prod-seg{display:flex;background:transparent;border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:2px;margin-bottom:16px}
+.prod-seg-btn{flex:1;padding:6px 0;border:1px solid transparent;border-radius:4px;font-size:11px;font-weight:500;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;background:transparent;color:var(--sidebar-label);transition:all .15s}
+.prod-seg-btn:hover{background:var(--sidebar-hover)}
+.prod-seg-btn.active{background:var(--sidebar-active);color:var(--sidebar-white);border-color:rgba(255,255,255,0.15)}
 .prod-seg-btn svg{width:12px;height:12px}
 
 /* ── collapsible groups (option 2) ── */
@@ -302,11 +303,11 @@ const exploreContent1a = `
 
 document.getElementById('sb-1a').innerHTML = `
   ${brand}${sep}
+  ${ws}
   <div class="prod-seg" id="pseg-1a">
     <button class="prod-seg-btn active" onclick="switchSeg('1a','run')">${I.zap} Run</button>
     <button class="prod-seg-btn" onclick="switchSeg('1a','obs')">${I.eye} Explore</button>
   </div>
-  ${ws}
   <div class="mode-stack">
     <div id="p1a-run">${runContent1a}</div>
     <div id="p1a-explore" class="hidden">${exploreContent1a}</div>

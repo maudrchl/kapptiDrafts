@@ -96,9 +96,9 @@ import PersesView from './PersesView'
 import LineChart from './LineChart'
 import { toast, ToastMount } from './toast'
 import { dashboardStore } from './dashboardStore'
-import { interpretPrompt, TRACE_OVERVIEW_PANELS, TRACE_COMPARE_PANEL, makePanel } from './perses'
+import { interpretPrompt, TRACE_OVERVIEW_PANELS, TRACE_COMPARE_PANEL, makePanel, K8S_CPU_PANEL, K8S_MEM_PANEL } from './perses'
 import type { PanelSpec } from './perses'
-import type { ExploreTab, PodEntry, SignalKey, TraceEntry, ServiceNode, LogEntry, AlertItem, DestinationItem, IncidentItem, DestinationType } from './constants'
+import type { ExploreTab, PodEntry, PodPhase, DeployResource, SignalKey, TraceEntry, ServiceNode, LogEntry, AlertItem, DestinationItem, IncidentItem, DestinationType } from './constants'
 import {
   EXPLORE_TABS,
   PAGE_META,
@@ -110,6 +110,9 @@ import {
   SERVICES,
   EDGES,
   PODS,
+  K8S_NAMESPACES,
+  K8S_DEPLOYMENTS,
+  K8S_CLUSTER,
   SIGNALS,
   DAILY_GB,
   DAILY_BUDGET_GB,
@@ -177,7 +180,7 @@ const NAV_EXPLORE: { section: string; items: { key: ExploreTab; icon: React.Comp
   },
 ]
 
-/* Sévérité (DA unifiée logs) — pastille colorée + label mono discret. */
+/* Sévérité (DA unifiée logs), pastille colorée + label mono discret. */
 const SEV_COLOR: Record<LogEntry['level'], string> = {
   error: '#e0372e',
   warn: '#f2b338',
@@ -199,7 +202,7 @@ const idFrom = (seed: string, len: number) => {
   return out
 }
 
-/* Extrait des attributs HTTP d'un message de log type "GET /api/x 200 — 39ms". */
+/* Extrait des attributs HTTP d'un message de log type "GET /api/x 200, 39ms". */
 const httpAttrs = (msg: string): { method: string; route: string; status: string; dur: string } | null => {
   const m = msg.match(/^(GET|POST|PATCH|PUT|DELETE)\s+(\S+)\s+(\d{3})\s+-\s+(\d+)ms/)
   if (!m) return null
@@ -229,7 +232,7 @@ type AlertDraft = {
   createsIncident: boolean
 }
 
-/* Log volume — le time range régénère buckets + labels → le contrôle scope
+/* Log volume: le time range régénère buckets + labels → le contrôle scope
    vraiment le graph (SVG maison, Highcharts absent du proto). */
 /* Fenêtre plus courte = buckets plus fins = moins de logs par barre (amplitude
    plus basse). Chaque range a donc une forme + une échelle Y distinctes. */
@@ -829,7 +832,7 @@ const serviceRedPanels = (s: ServiceNode) => {
   }
 }
 
-/* Telemetry (onglet du drawer service) — scatter spans, bars logs, table metrics */
+/* Telemetry (onglet du drawer service), scatter spans, bars logs, table metrics */
 const SPAN_DOTS: { x: number; y: number; err?: boolean }[] = [
   { x: 0.02, y: 360 }, { x: 0.05, y: 355 }, { x: 0.06, y: 110 }, { x: 0.07, y: 130 }, { x: 0.08, y: 105 },
   { x: 0.1, y: 20 }, { x: 0.12, y: 8 }, { x: 0.15, y: 5 }, { x: 0.2, y: 9 }, { x: 0.25, y: 6 },
@@ -1024,7 +1027,7 @@ const sampleEdgeCalls = (edge: { from: string; to: string }, count: number) => {
   })
 }
 
-/* ─── Service map — React Flow (inspiré dash0 : nœuds colorés par santé,
+/* ─── Service map: React Flow (inspiré dash0 : nœuds colorés par santé,
    flux orientés animés, layout Flow gauche→droite ou Force organique) ─── */
 type SvcHealth = 'healthy' | 'warn' | 'critical'
 type SvcMetric = 'requests' | 'errors' | 'duration'
@@ -1691,7 +1694,7 @@ const ServiceMapInner = ({ onGoToLogs, onGoToTraces }: ServiceMapProps) => {
           })()}
       </Drawer>
 
-      {/* Dependency (edge) detail drawer — calls & logs de la dépendance */}
+      {/* Dependency (edge) detail drawer, calls & logs de la dépendance */}
       <Drawer
         open={!!drawerEdge}
         onClose={() => setDrawerEdge(null)}
@@ -1766,37 +1769,207 @@ const ServiceMapView = (props: ServiceMapProps) => (
   </ReactFlowProvider>
 )
 
-/* ─── Kubernetes mock data (deployments / services / events) ─── */
-const K8S_DEPLOYMENTS = [
-  { key: 'd1', name: 'demo-site', ready: '2/2', uptodate: 2, available: 2, age: '9d', ns: 'rocket-corp' },
-  { key: 'd2', name: 'payment-service', ready: '1/2', uptodate: 2, available: 1, age: '9d', ns: 'rocket-corp' },
-  { key: 'd3', name: 'notification', ready: '1/1', uptodate: 1, available: 1, age: '7d', ns: 'rocket-corp' },
-  { key: 'd4', name: 'postgres', ready: '1/1', uptodate: 1, available: 1, age: '9d', ns: 'rocket-corp' },
-  { key: 'd5', name: 'redis', ready: '1/1', uptodate: 1, available: 1, age: '9d', ns: 'rocket-corp' },
-]
-const K8S_SERVICES = [
-  { key: 's1', name: 'demo-site', type: 'LoadBalancer', clusterIP: '10.24.1.10', ports: '443/TCP', age: '9d', ns: 'rocket-corp' },
-  { key: 's2', name: 'payment-service', type: 'ClusterIP', clusterIP: '10.24.2.31', ports: '8080/TCP', age: '9d', ns: 'rocket-corp' },
-  { key: 's3', name: 'postgres', type: 'ClusterIP', clusterIP: '10.24.2.44', ports: '5432/TCP', age: '9d', ns: 'rocket-corp' },
-  { key: 's4', name: 'redis', type: 'ClusterIP', clusterIP: '10.24.2.58', ports: '6379/TCP', age: '9d', ns: 'rocket-corp' },
-]
-const K8S_EVENTS = [
-  { key: 'e1', type: 'Warning', reason: 'BackOff', object: 'pod/payment-service-9e2f1a-t2w5k', message: 'Back-off restarting failed container', age: '2m', ns: 'rocket-corp' },
-  { key: 'e2', type: 'Warning', reason: 'Unhealthy', object: 'pod/payment-service-9e2f1a-t2w5k', message: 'Liveness probe failed: HTTP 500', age: '3m', ns: 'rocket-corp' },
-  { key: 'e3', type: 'Normal', reason: 'Scheduled', object: 'pod/demo-site-7f8d9c-q9v2m', message: 'Successfully assigned to node-2', age: '8m', ns: 'rocket-corp' },
-  { key: 'e4', type: 'Normal', reason: 'Pulled', object: 'pod/demo-site-7f8d9c-x4k2p', message: 'Container image already present on machine', age: '14m', ns: 'rocket-corp' },
-]
-
 /* ─── Kubernetes View ─── */
-const KubernetesView = () => (
-  <div className={styles.centerEmpty}>
-    <EmptyState
-      icon={<IconBox />}
-      text="No Kubernetes data yet"
-      description="Connect a cluster to start monitoring pods, resource usage and cluster health here."
-    />
-  </div>
-)
+const RESTART_WARN = 5
+
+type Health = 'success' | 'warning' | 'failed'
+const HEALTH_DOT: Record<Health, string> = {
+  success: 'var(--color-success, #1fae7e)',
+  warning: '#f2b338',
+  failed: 'var(--color-error, #e0372e)',
+}
+
+const podHealth = (p: { status: PodPhase; restarts: number }): Health =>
+  p.status === 'CrashLoopBackOff' || p.status === 'Failed' || p.status === 'Pending'
+    ? 'failed'
+    : p.restarts >= RESTART_WARN
+      ? 'warning'
+      : 'success'
+
+/* Phase pod -> couleur StatusTag DS. */
+const phaseColor = (s: PodPhase): 'success' | 'info' | 'warning' | 'failed' =>
+  s === 'Running' ? 'success' : s === 'Succeeded' ? 'info' : s === 'Pending' ? 'warning' : 'failed'
+
+/* Pire santé des pods d'un namespace (pour le point sur la chip). */
+const nsHealth = (n: string): Health => {
+  const hs = PODS.filter((p) => p.ns === n).map(podHealth)
+  return hs.includes('failed') ? 'failed' : hs.includes('warning') ? 'warning' : 'success'
+}
+
+const fmtMem = (v: number) => (v >= 1024 ? `${(v / 1024).toFixed(1)}Gi` : `${v}Mi`)
+
+/* Palette catégorielle stable (par index de déploiement) pour les barres. */
+const DEPLOY_COLORS = ['#c2477e', '#ed7846', '#06b6d4', '#a855f7', '#e0372e', '#1fae7e', '#3b82f6', '#f2b338']
+const deployColor = (name: string) => {
+  const i = K8S_DEPLOYMENTS.findIndex((d) => d.name === name)
+  return DEPLOY_COLORS[(i < 0 ? 0 : i) % DEPLOY_COLORS.length]
+}
+
+/* Request by deployment - réutilise le style .sigRow de "Usage by signal". */
+const DeployBars = ({ metric, showZero }: { metric: 'cpu' | 'mem'; showZero: boolean }) => {
+  const valOf = (d: DeployResource) => (metric === 'cpu' ? d.cpuReq : d.memReq)
+  const rows = [...K8S_DEPLOYMENTS].sort((a, b) => valOf(b) - valOf(a)).filter((d) => showZero || valOf(d) > 0)
+  const max = Math.max(1, ...rows.map(valOf))
+  const total = Math.max(1, K8S_DEPLOYMENTS.reduce((s, d) => s + valOf(d), 0))
+  const fmt = (v: number) => (metric === 'cpu' ? `${v}m` : fmtMem(v))
+  const hidden = K8S_DEPLOYMENTS.length - rows.length
+  return (
+    <>
+      {rows.map((d) => {
+        const v = valOf(d)
+        const sp = (v / total) * 100
+        return (
+          <div key={d.name} className={styles.sigRow}>
+            <div className={styles.sigHead}>
+              <span className={styles.sigName}><span className={styles.sigDot} style={{ background: deployColor(d.name) }} />{d.name}</span>
+              <span className={styles.sigVals}><b>{fmt(v)}</b> <span className={styles.detailLabel}>{sp.toFixed(0)}%</span></span>
+            </div>
+            <div className={styles.sigTrack}><div className={styles.sigFill} style={{ width: `${Math.max((v / max) * 100, 2)}%`, background: deployColor(d.name) }} /></div>
+          </div>
+        )
+      })}
+      {hidden > 0 && <div className={styles.cardSub} style={{ marginTop: 4 }}>{hidden} deployments with no request hidden</div>}
+    </>
+  )
+}
+
+const KubernetesView = () => {
+  const [ns, setNs] = useState<string>('all')
+  const [onlyUnhealthy, setOnlyUnhealthy] = useState(false)
+  const [showZero, setShowZero] = useState(false)
+
+  const runningCount = PODS.filter((p) => p.status === 'Running').length
+  const doneCount = PODS.filter((p) => p.status === 'Succeeded').length
+  const elevated = PODS.filter((p) => podHealth(p) !== 'success')
+  const restarters = PODS.filter((p) => p.restarts > 0).sort((a, b) => b.restarts - a.restarts)
+  const maxRestart = elevated.length ? Math.max(...elevated.map((p) => p.restarts)) : 0
+
+  // namespaces : les moins sains d'abord (triage)
+  const rank: Record<Health, number> = { failed: 0, warning: 1, success: 2 }
+  const orderedNs = [...K8S_NAMESPACES].sort((a, b) => rank[nsHealth(a)] - rank[nsHealth(b)])
+  const shownNs = ns === 'all' ? orderedNs : [ns]
+  const podsOf = (n: string) =>
+    PODS.filter((p) => p.ns === n)
+      .filter((p) => !onlyUnhealthy || podHealth(p) !== 'success')
+      .sort((a, b) => (a.status === 'Running' ? 1 : 0) - (b.status === 'Running' ? 1 : 0) || b.restarts - a.restarts)
+
+  const restartCols = [
+    {
+      title: 'Pod', dataIndex: 'name', key: 'name',
+      render: (v: string, r: PodEntry) => (
+        <span className={styles.alertName}><span className={styles.sevDot} style={{ background: HEALTH_DOT[podHealth(r)] }} /><span className={styles.mono}>{v}</span></span>
+      ),
+    },
+    { title: 'Namespace', dataIndex: 'ns', key: 'ns', width: 230, render: (v: string) => <Tag mono>{v}</Tag> },
+    { title: 'Status', dataIndex: 'status', key: 'status', width: 130, render: (v: PodPhase) => <StatusTag variant="ghost" color={phaseColor(v)}>{v}</StatusTag> },
+    { title: 'Restarts', dataIndex: 'restarts', key: 'restarts', width: 120, render: (v: number) => <StatusTag variant="ghost" color={v >= RESTART_WARN ? 'warning' : 'info'}>{String(v)}</StatusTag> },
+  ]
+
+  return (
+    <div className={styles.usageStack}>
+      {/* Lecture cluster en clair + saut vers les pods à problème (esprit kubeli) */}
+      {elevated.length > 0 && (
+        <Banner
+          variant="warning"
+          description={`${elevated.length} pods are restarting repeatedly`}
+          subDescription={
+            <>
+              cert-manager, the OpenTelemetry operator and the rabbitmq operators keep crash-looping (up to <b>{maxRestart} restarts</b>). CPU and memory usage sit well below requests, so this is a stability issue, not capacity.
+            </>
+          }
+          icon={<IconAlertTriangle size={18} />}
+          aside={<Button color="secondary" size="s" onClick={() => { setOnlyUnhealthy(true); setNs('all') }}>View unhealthy pods</Button>}
+        />
+      )}
+
+      {/* Santé cluster en un coup d'oeil (remplace les jauges quasi vides) */}
+      <CounterCardGroup>
+        <CounterCard title="Pods running" value={`${runningCount} / ${PODS.length}`} trend={<StatusTag variant="ghost" color="success">{`${doneCount} completed`}</StatusTag>} />
+        <CounterCard title="Restarting pods" value={String(elevated.length)} trend={<StatusTag variant="ghost" color={elevated.length ? 'warning' : 'success'}>{elevated.length ? 'needs attention' : 'stable'}</StatusTag>} />
+        <CounterCard title="CPU usage" value={`${K8S_CLUSTER.cpuUsedMilli}m`} trend={<StatusTag variant="ghost" color="success">{`${K8S_CLUSTER.cpuPct}% of request`}</StatusTag>} />
+        <CounterCard title="Memory usage" value={fmtMem(K8S_CLUSTER.memUsedMi)} trend={<StatusTag variant="ghost" color="success">{`${K8S_CLUSTER.memPct}% of request`}</StatusTag>} />
+      </CounterCardGroup>
+
+      {/* Pod map orientée santé */}
+      <Card className={styles.usageCard}>
+        <Card.Header title="Pod map" icon={IconBox} asideContent={<Toggle title="Only unhealthy" value={onlyUnhealthy} onChange={setOnlyUnhealthy} />} />
+        <Card.Content>
+          <div className={styles.usageCardBody}>
+            <div className={styles.nsChips}>
+              <button className={ns === 'all' ? styles.nsChipActive : styles.nsChip} onClick={() => setNs('all')}>All</button>
+              {orderedNs.map((n) => (
+                <button key={n} className={ns === n ? styles.nsChipActive : styles.nsChip} onClick={() => setNs(n)}>
+                  <span className={styles.nsDot} style={{ background: HEALTH_DOT[nsHealth(n)] }} />
+                  {n}
+                </button>
+              ))}
+            </div>
+            <div className={styles.nsGroups}>
+              {shownNs.map((n) => {
+                const pods = podsOf(n)
+                if (!pods.length) return null
+                return (
+                  <div key={n} className={styles.nsGroup}>
+                    <div className={styles.nsGroupHead}>{n}<span className={styles.nsGroupCount}>{pods.length}</span></div>
+                    <div className={styles.podGrid}>
+                      {pods.map((p) => (
+                        <div key={p.key} className={styles.podCard} style={{ ['--pod-accent' as string]: HEALTH_DOT[podHealth(p)] }}>
+                          <div className={styles.podName} title={p.name}>{p.name}</div>
+                          <div className={styles.podMeta}>
+                            <StatusTag variant="ghost" color={phaseColor(p.status)}>{p.status}</StatusTag>
+                            {p.restarts > 0 && <StatusTag variant="ghost" color={p.restarts >= RESTART_WARN ? 'warning' : 'info'}>{`${p.restarts} restarts`}</StatusTag>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+              {shownNs.every((n) => podsOf(n).length === 0) && (
+                <div className={styles.cardSub}>No unhealthy pods in this scope.</div>
+              )}
+            </div>
+            <div className={styles.podSummary}>{PODS.length} pods across {K8S_NAMESPACES.length} namespaces</div>
+          </div>
+        </Card.Content>
+      </Card>
+
+      {/* Pods qui restartent le plus (remplace la courbe de moyenne, illisible) */}
+      <Card className={styles.usageCard}>
+        <Card.Header title="Pods by restart count" icon={IconActivity} asideContent={<span className={styles.cardSub}>Click a row to filter the pod map</span>} />
+        <Card.Content>
+          <div className={styles.usageCardBody}>
+            <Table rowKey="key" columns={restartCols} data={restarters} showHeader onClickRow={(r: PodEntry) => { setOnlyUnhealthy(false); setNs(r.ns) }} />
+          </div>
+        </Card.Content>
+      </Card>
+
+      {/* Usage vs request */}
+      <div className={styles.kRow2}>
+        <Card className={styles.usageCard}>
+          <Card.Header title="CPU usage vs request" icon={IconGauge} />
+          <Card.Content><div className={styles.usageCardBody}><LineChart panel={K8S_CPU_PANEL} height={220} /></div></Card.Content>
+        </Card>
+        <Card className={styles.usageCard}>
+          <Card.Header title="Memory usage vs request" icon={IconGauge} />
+          <Card.Content><div className={styles.usageCardBody}><LineChart panel={K8S_MEM_PANEL} height={220} /></div></Card.Content>
+        </Card>
+      </div>
+
+      {/* Request by deployment (déploiements à 0 masqués par défaut) */}
+      <div className={styles.kRow2}>
+        <Card className={styles.usageCard}>
+          <Card.Header title="CPU request by deployment" icon={IconBarChartBig} asideContent={<Toggle title="Show empty" value={showZero} onChange={setShowZero} />} />
+          <Card.Content><div className={styles.usageCardBody}><DeployBars metric="cpu" showZero={showZero} /></div></Card.Content>
+        </Card>
+        <Card className={styles.usageCard}>
+          <Card.Header title="Memory request by deployment" icon={IconBarChartBig} asideContent={<Toggle title="Show empty" value={showZero} onChange={setShowZero} />} />
+          <Card.Content><div className={styles.usageCardBody}><DeployBars metric="mem" showZero={showZero} /></div></Card.Content>
+        </Card>
+      </div>
+    </div>
+  )
+}
 
 /* ─── Usage & ingestion View ─── */
 type Period = '7' | '14' | 'month'
@@ -1863,7 +2036,7 @@ const UsageView = ({
 
   return (
     <div className={styles.usageStack}>
-      {/* State banner — aligné sur l'expérience AI Usage */}
+      {/* State banner: aligné sur l'expérience AI Usage */}
       {pct >= 80 && (
         <Banner
           variant={pct >= 95 ? 'error' : 'warning'}
@@ -2101,7 +2274,7 @@ const UsageView = ({
         </Modal.Footer>
       </Modal>
 
-      {/* Issue new key — confirm */}
+      {/* Issue new key: confirm */}
       <Alert
         open={keyStep === 'issue'}
         danger
@@ -2114,7 +2287,7 @@ const UsageView = ({
         If you issue a new key, the current one stops working immediately. Every collector using the old key will start getting 401s until you roll out the new one.
       </Alert>
 
-      {/* Issue new key — reveal once */}
+      {/* Issue new key: reveal once */}
       <Modal open={keyStep === 'reveal'} onCancel={() => setKeyStep('none')} maskClosable={false} title="Your new API key" width={480}>
         <Modal.Content>
           <div className={styles.cardSub} style={{ marginBottom: 12 }}>
@@ -2150,7 +2323,7 @@ const UsageView = ({
         </Modal.Footer>
       </Modal>
 
-      {/* Revoke — confirm */}
+      {/* Revoke: confirm */}
       <Alert
         open={keyStep === 'revoke'}
         danger
@@ -2181,6 +2354,16 @@ const incidentStatusColor = (s: IncidentItem['status']): 'failed' | 'warning' | 
   s === 'open' ? 'failed' : s === 'acknowledged' ? 'warning' : 'success'
 const opText = (op: string) => ALERT_OPERATORS.find((o) => o.value === op)?.label ?? op
 const destTypeLabel = (t: DestinationType) => DESTINATION_TYPES.find((x) => x.value === t)?.label ?? t
+
+const WipView = ({ label }: { label: string }) => (
+  <div className={styles.usageStack}>
+    <EmptyState
+      icon={<IconWrench />}
+      text={`${label} - work in progress`}
+      description="This view isn't designed yet. It's a placeholder while we shape the flow, not the final version."
+    />
+  </div>
+)
 
 const AlertsView = ({
   alerts,
@@ -2257,7 +2440,7 @@ const DestinationsView = ({ destinations }: { destinations: DestinationItem[] })
 /* ─── Main Proto ─── */
 const ExploreTabsProto = () => {
   const [mode, setMode] = useState<'run' | 'obs'>('obs')
-  // Onglet actif, synchronisé avec l'URL (?tab=…) — persiste au refresh, Logs par défaut.
+  // Onglet actif, synchronisé avec l'URL (?tab=…): persiste au refresh, Logs par défaut.
   const [tab, setTab] = useState<ExploreTab>(() => {
     const t = new URLSearchParams(window.location.search).get('tab')
     return EXPLORE_TABS.some((x) => x.key === t) ? (t as ExploreTab) : 'logs'
@@ -2469,8 +2652,8 @@ const ExploreTabsProto = () => {
         setConnectOpen(true)
         break
       case 'Refresh':
-        toast.info('Refreshing service map…')
-        setTimeout(() => toast.success('Service map refreshed successfully'), 700)
+        toast.info(`Refreshing ${meta.title.toLowerCase()}…`)
+        setTimeout(() => toast.success(`${meta.title} refreshed successfully`), 700)
         break
       case 'Read docs':
         toast.info('Opening documentation')
@@ -2538,11 +2721,11 @@ const ExploreTabsProto = () => {
       case 'usage':
         return <UsageView cap={cap} setCap={setCap} quotaOpen={quotaOpen} setQuotaOpen={setQuotaOpen} />
       case 'alerts':
-        return <AlertsView alerts={alerts} destinations={destinations} onOpen={setAlertDetail} />
+        return <WipView label="Alerts" />
       case 'incidents':
-        return <IncidentsView incidents={incidents} onOpen={setIncidentDetail} />
+        return <WipView label="Incidents" />
       case 'destinations':
-        return <DestinationsView destinations={destinations} />
+        return <WipView label="Destinations" />
       case 'perses':
         return <PersesView headerSlot={persesHeaderSlot} />
     }
@@ -2559,6 +2742,14 @@ const ExploreTabsProto = () => {
         </div>
         <div className={styles.navSep} />
 
+        <div className={styles.ws}>
+          <div className={styles.wsAvatar}>🚀</div>
+          <div>
+            <div className={styles.wsName}>Rocket Corp</div>
+            <div className={styles.wsSub}>Workspace</div>
+          </div>
+        </div>
+
         <div className={styles.segmented}>
           <button className={mode === 'run' ? styles.segBtnActive : styles.segBtn} onClick={() => setMode('run')}>
             <IconZap size={12} /> Run
@@ -2566,14 +2757,6 @@ const ExploreTabsProto = () => {
           <button className={mode === 'obs' ? styles.segBtnActive : styles.segBtn} onClick={() => setMode('obs')}>
             <IconEye size={12} /> Explore
           </button>
-        </div>
-
-        <div className={styles.ws}>
-          <div className={styles.wsAvatar}>🚀</div>
-          <div>
-            <div className={styles.wsName}>Rocket Corp</div>
-            <div className={styles.wsSub}>Workspace</div>
-          </div>
         </div>
 
         <div className={styles.modeStack}>
