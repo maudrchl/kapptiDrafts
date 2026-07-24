@@ -653,3 +653,790 @@ $title-font: 'Clash Grotesk', 'Geist', system-ui, sans-serif;
   justify-content: flex-end;
   gap: 10px;
 }
+
+/* ============================================================
+ *  Variable edit screen (Configurations > Variables)
+ *  Fidèle au design Figma (Web Testing Delivery File, nodes
+ *  9648:67701 « Variables » + 9656:69049 « Create variable »).
+ * ============================================================ */
+$grey2: #f5f5f8;
+$muted2: #b2b7c2;
+
+/* Product tab bar (Tabs > Environments) */
+.vtabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 45px;
+  padding: 0 48px;
+  background: $white;
+  border-bottom: 1px solid $border;
+  flex-shrink: 0;
+}
+
+.vtab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 45px;
+  padding: 0 8px 14px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: $muted;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.14px;
+  cursor: pointer;
+
+  svg {
+    color: $muted;
+  }
+}
+
+.vtabActive {
+  composes: vtab;
+  color: $text;
+  border-bottom-color: $text;
+
+  svg {
+    color: $text;
+  }
+}
+
+/* Left-aligned content (table is full width, not centered) */
+.vcontent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.vtoolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vtitle {
+  flex: 1 0 0;
+  min-width: 0;
+  font-family: $title-font;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.3;
+  color: $text;
+}
+
+.vbody {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Search */
+.vsearch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  min-width: 200px;
+  width: 260px;
+  max-width: 100%;
+  padding: 0 12px 0 8px;
+  background: $white;
+  border: 1px solid $border;
+  border-radius: 6px;
+  color: $muted;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: $text;
+    font-family: inherit;
+
+    &::placeholder {
+      color: $muted2;
+    }
+  }
+}
+
+/* Collection cards */
+.vcollections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.vcollection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 219px;
+  max-width: 100%;
+  padding: 12px;
+  background: $white;
+  border: 1px solid $border;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+
+  &:hover {
+    background: $grey;
+    border-color: #d7d7de;
+  }
+}
+
+.vcolBadge {
+  width: 35px;
+  height: 35px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $grey;
+  border: 1px solid $border;
+  border-radius: 4px;
+  color: $muted;
+}
+
+.vcolName {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.14px;
+  color: $text;
+  line-height: 1.5;
+}
+
+.vcolSub {
+  font-size: 12px;
+  color: $muted;
+  line-height: 1.2;
+}
+
+/* Variables table */
+.vtable {
+  border: 1px solid $border;
+  border-radius: 6px;
+  overflow: hidden;
+  background: $white;
+}
+
+.vthead {
+  display: flex;
+  align-items: stretch;
+}
+
+.vth {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 6px 12px;
+  background: $grey2;
+  border-bottom: 1px solid $border;
+  font-size: 13px;
+  font-weight: 500;
+  color: $muted;
+}
+
+.vthName {
+  composes: vth;
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.vthValues {
+  composes: vth;
+  flex: 1 0 0;
+  min-width: 0;
+  border-left: 1px solid $border;
+}
+
+.vthUsage {
+  composes: vth;
+  width: 150px;
+  flex-shrink: 0;
+  border-left: 1px solid $border;
+}
+
+.vthActions {
+  composes: vth;
+  width: 40px;
+  flex-shrink: 0;
+  border-left: 1px solid $border;
+}
+
+.vrow {
+  display: flex;
+  align-items: stretch;
+
+  &:not(:last-child) .vcell {
+    border-bottom: 1px solid $border;
+  }
+}
+
+.vcell {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: $text;
+}
+
+.vcellName {
+  composes: vcell;
+  width: 300px;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.vcellValue {
+  composes: vcell;
+  flex: 1 0 0;
+  min-width: 0;
+  border-left: 1px solid $border;
+  font-weight: 500;
+}
+
+.vcellValueText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vcellUsage {
+  composes: vcell;
+  width: 150px;
+  flex-shrink: 0;
+  gap: 6px;
+  border-left: 1px solid $border;
+}
+
+.vcellActions {
+  composes: vcell;
+  width: 40px;
+  flex-shrink: 0;
+  justify-content: center;
+  border-left: 1px solid $border;
+}
+
+.vBraces {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $accent-blue-bg;
+  border-radius: 4px;
+  color: $accent-blue;
+}
+
+.vVarName {
+  font-size: 13px;
+  font-weight: 500;
+  color: $text;
+}
+
+.vUsageChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: $muted;
+
+  svg {
+    color: $muted;
+  }
+}
+
+.vKebab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  color: $muted;
+  cursor: pointer;
+
+  &:hover {
+    background: $grey;
+    color: $text;
+  }
+}
+
+.vRowMenu {
+  position: fixed;
+  z-index: 41;
+  min-width: 160px;
+  padding: 4px;
+  background: $white;
+  border: 1px solid $border;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
+  display: flex;
+  flex-direction: column;
+}
+
+.vRowMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: $text;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: $grey;
+  }
+}
+
+.vRowMenuItemDanger {
+  composes: vRowMenuItem;
+  color: $err;
+
+  svg {
+    color: $err;
+  }
+}
+
+.vActionsWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Edit-variable modal fields */
+.formRow {
+  display: flex;
+  gap: 16px;
+}
+
+.formCol {
+  flex: 1 0 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: $muted;
+  line-height: 1.5;
+}
+
+.formHint {
+  font-size: 11px;
+  font-weight: 500;
+  color: $muted2;
+}
+
+/* Name field "Input - Pre / Post tab" ({ … }) */
+.nameInput {
+  display: flex;
+  align-items: stretch;
+  height: 40px;
+  background: $white;
+  border: 1px solid $border;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.nameAffix {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  background: $grey2;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: $muted;
+  flex-shrink: 0;
+}
+
+.nameAffixPre {
+  composes: nameAffix;
+  border-right: 1px solid $border;
+}
+
+.nameAffixPost {
+  composes: nameAffix;
+  border-left: 1px solid $border;
+}
+
+.nameField {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  padding: 0 12px;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.14px;
+  color: $text;
+
+  &::placeholder {
+    color: $muted2;
+  }
+}
+
+/* Static "Type" field (single value, non-editable in this flow) */
+.typeField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  background: $white;
+  border: 1px solid $border;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.14px;
+  color: $text;
+
+  svg {
+    color: $muted;
+    flex-shrink: 0;
+  }
+}
+
+.typeFieldChevron {
+  margin-left: auto;
+  color: $muted;
+}
+
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Propagation modal (update value everywhere OR not) */
+.propHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  font-size: 13.5px;
+  color: $text;
+}
+
+.propGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+
+  & + & {
+    margin-top: 14px;
+  }
+}
+
+.propGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: $muted;
+
+  svg {
+    color: $muted;
+  }
+}
+
+/* Dense single-line rows so a long usage list stays manageable */
+.propItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+
+  &:hover {
+    background: $grey;
+  }
+}
+
+.propItemOn {
+  background: rgba(237, 120, 70, 0.06);
+
+  &:hover {
+    background: rgba(237, 120, 70, 0.1);
+  }
+}
+
+.propItemMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.propItemName {
+  font-size: 13px;
+  font-weight: 500;
+  color: $text;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.propItemMeta {
+  font-size: 12px;
+  color: $muted;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Usage row inside the DS MultiSelectModal (icon + name + type tag) */
+.usageOpt {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: $text;
+}
+
+.usageOptMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.usageOptName {
+  font-size: 14px;
+  font-weight: 500;
+  color: $text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Propagation modal: dense multi-select (DS look) + type filter */
+.propDiff {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Headless-modal header (own title + close, no divider under the title) */
+.msHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 16px 16px 8px;
+}
+
+.msTitle {
+  margin: 0;
+  font-family: 'Geist', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.3;
+  color: $text;
+}
+
+.msClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  color: $text;
+  cursor: pointer;
+
+  &:hover {
+    background: $grey;
+  }
+}
+
+/* Value switch, with the divider under it (moved off the title) */
+.msDiff {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 0 16px 12px;
+  border-bottom: 1px solid $border;
+}
+
+/* Full-width banner, flush to the modal edges: no rounding, no dashed border */
+.msBanner {
+  overflow: hidden;
+
+  > div {
+    border: none;
+    border-radius: 0;
+  }
+}
+
+.msHead {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid $border;
+}
+
+.msControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.msSelectAll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid $border;
+  border-radius: 6px;
+  background: $white;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: $text;
+  flex-shrink: 0;
+  white-space: nowrap;
+
+  &:hover {
+    background: $grey;
+  }
+}
+
+.msList {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.msItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+
+  &:hover {
+    background: $grey;
+  }
+}
+
+.msItemOn {
+  background: rgba(237, 120, 70, 0.06);
+
+  &:hover {
+    background: rgba(237, 120, 70, 0.1);
+  }
+}
+
+.msEmpty {
+  padding: 24px;
+  text-align: center;
+  color: $muted;
+  font-size: 13px;
+}
+
+/* Chrome-level screen switcher (kapptiDrafts meta-nav) */
+.switch {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 2147483647;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid #ececf0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.1);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.switchTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #667085;
+  cursor: pointer;
+  white-space: nowrap;
+
+  svg {
+    opacity: 0.8;
+  }
+
+  &:hover {
+    color: #1a1a1a;
+  }
+}
+
+.switchTabActive {
+  composes: switchTab;
+  color: #1c4a47;
+  font-weight: 600;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12);
+}
