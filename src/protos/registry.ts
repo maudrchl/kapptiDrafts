@@ -125,7 +125,7 @@ export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
   {
     slug: 'observability-navigation',
     title: 'Observability Navigation',
-    status: 'wip design',
+    status: 'deployed',
     collection: 'Observability',
     description: 'Patterns de navigation sidebar pour l\'observabilité',
     icon: IconNavigation,
