@@ -348,10 +348,6 @@ const Proto = () => {
                 <span className={styles.libCardDesc}>{libItem.description}</span>
               )}
               {varChips(libItem)}
-              <span className={styles.libCardMeta}>
-                <IconZap size={12} /> Linked to library, edits propagate to every
-                test using it
-              </span>
             </div>
             <div className={styles.libCardActions}>
               <Button
