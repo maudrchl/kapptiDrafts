@@ -634,7 +634,6 @@ const Proto = () => {
                   activeKey="general"
                   tabs={[
                     { key: 'general', label: 'General', children: generalTab() },
-                    { key: 'checks', label: 'Checks', children: <div className={styles.libEmpty}>No checks on this step.</div> },
                     { key: 'advanced', label: 'Advanced settings', children: <div className={styles.libEmpty}>No advanced settings.</div> },
                   ]}
                 />
