@@ -1,0 +1,1202 @@
+/* ============================================================
+ *  Custom step library proto
+ *  Reproduit l'écran d'édition d'un test (canvas + panneau droit),
+ *  focalisé sur l'étape « Custom step » et sa bibliothèque partagée.
+ *  Le shell (rail / topbar / canvas / panneau) est repris du proto Checks.
+ * ============================================================ */
+
+$primary: var(--color-primary, #ed7846);
+$accent-soft: #fbe7dd;
+$rail-bg: #163d3a;
+$rail-active: #245450;
+$rail-icon: rgba(255, 255, 255, 0.62);
+$rail-icon-active: #fff;
+$bg: #f6f7f8;
+$surface: #fff;
+$surface-2: var(--color-surface-grey, #f6f7f8);
+$step-bg: #fdf0e9;
+$step-border: #f4cdb6;
+$border: var(--color-border, #e4e7ec);
+$border-strong: #d0d5dd;
+$ink: var(--color-text-primary, #24292f);
+$ink-2: var(--color-text-secondary, #667085);
+$muted: #7c8593;
+$faint: #98a2b3;
+$secondary: var(--color-secondary, #1c4a47);
+$success: var(--color-success, #1fae7e);
+$fail: var(--color-error, #e0473c);
+$radius: 9px;
+$radius-sm: 7px;
+$mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+.app {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: $bg;
+  color: $ink;
+  font-size: 14px;
+}
+
+/* ===================== RAIL ===================== */
+.rail {
+  width: 56px;
+  flex-shrink: 0;
+  background: $rail-bg;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0 12px;
+}
+.railLogo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 8px;
+}
+.railLogoImg {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+.railCollapse {
+  width: 26px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover {
+    color: $rail-icon-active;
+    background: rgba(255, 255, 255, 0.07);
+  }
+}
+.railWorkspace {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0 4px;
+}
+.railWsMode {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: $rail-icon;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover {
+    color: $rail-icon-active;
+    background: rgba(255, 255, 255, 0.07);
+  }
+}
+.railWsLogo img {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: block;
+  object-fit: cover;
+}
+.railSections {
+  flex: 1 1 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding-top: 10px;
+  overflow-y: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+.railSection {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+
+  & + &::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+.railItem {
+  width: 38px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: $rail-icon;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover {
+    color: $rail-icon-active;
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+.railItemActive {
+  @extend .railItem;
+  color: $rail-icon-active;
+  background: $rail-active;
+}
+.railHelp {
+  padding-top: 10px;
+}
+.railHelpBtn {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+
+/* ===================== WORKSPACE ===================== */
+.workspace {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.topbar {
+  height: 52px;
+  flex-shrink: 0;
+  border-bottom: 1px solid $border;
+  background: $surface;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===================== BODY ===================== */
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+@media (max-width: 900px) {
+  .body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+}
+
+/* ---- canvas ---- */
+.canvas {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 34px 40px 60px;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 1px 1px, #e3ded7 1px, transparent 0) 0 0 / 24px 24px,
+    $bg;
+}
+.canvasInner {
+  width: 100%;
+  max-width: 720px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.startRow {
+  width: 100%;
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.startFlag {
+  color: $muted;
+  display: inline-flex;
+}
+.startLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.startField {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.canvasField {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+}
+.connector {
+  width: 1px;
+  height: 26px;
+  background: $border-strong;
+}
+.plusNode {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid $border-strong;
+  background: $surface;
+  color: $muted;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+
+  &:hover {
+    color: $primary;
+    border-color: $primary;
+  }
+}
+
+/* step group */
+.stepGroup {
+  width: 100%;
+  background: $surface;
+  border: 1px solid $step-border;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.stepGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: $step-bg;
+  border-bottom: 1px solid rgba(244, 205, 182, 0.55);
+}
+.stepGroupMark {
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.stepGroupTitle {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.stepGroupSub {
+  font-size: 13px;
+  color: $muted;
+  margin-top: 1px;
+}
+.stepGroupMore {
+  margin-left: auto;
+  color: $muted;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+
+  &:hover {
+    color: $ink;
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+.stepBody {
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background 0.12s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.02);
+  }
+}
+.stepBodySelected {
+  @extend .stepBody;
+  background: $surface-2;
+
+  &:hover {
+    background: $surface-2;
+  }
+}
+.stepCard {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.stepTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stepNum {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: $secondary;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.stepNumActive {
+  @extend .stepNum;
+  background: $primary;
+}
+.stepName {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+}
+.stepFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-top: 1px solid $border;
+}
+
+/* ===================== RIGHT PANEL ===================== */
+.panel {
+  width: 605px;
+  flex-shrink: 0;
+  background: $surface;
+  border-left: 1px solid $border;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+@media (max-width: 900px) {
+  .panel {
+    width: 100%;
+    border-left: 0;
+    border-top: 1px solid $border;
+  }
+}
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid $border;
+}
+.panelTitleNum {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: $secondary;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.panelTitle {
+  font-weight: 650;
+  font-size: 15px;
+}
+.panelTitleEdit {
+  color: $faint;
+  display: inline-flex;
+  cursor: pointer;
+
+  &:hover {
+    color: $ink-2;
+  }
+}
+.panelHeaderActions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+/* Onglets du panneau : évite la double ligne des card tabs antd
+ * (bordure basse de chaque tab + trait ::before du nav) → une seule ligne. */
+.panelTabs {
+  :global(.ant-tabs-nav) {
+    margin-bottom: 0 !important;
+  }
+  :global(.ant-tabs-tab) {
+    border-bottom-color: transparent !important;
+  }
+  :global(.ant-tabs-content-holder) {
+    border-top: none !important;
+  }
+}
+
+/* ===================== CUSTOM STEP — GENERAL TAB ===================== */
+.general {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Empty state (aucun code encore) */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 56px 16px;
+  text-align: center;
+}
+.emptyIcon {
+  color: $faint;
+}
+.emptyTitle {
+  font-size: 14px;
+  color: $ink-2;
+}
+.emptyActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Select d'action de la step (canvas) : plus d'air entre l'icône et le label.
+ * L'icône est absolue (~10px, ~16px de large) ; on pousse le padding gauche du
+ * selector pour dégager le texte. `!important` pour battre la règle de base ui-kit. */
+.stepActionSelect {
+  :global(.ant-select-selector) {
+    // défaut ui-kit = spacing-3 (8px) → icône collée au texte ; +6px de gap
+    padding-left: 14px !important;
+  }
+}
+
+/* Segmented Import / Edit manually */
+.segmentRow {
+  display: flex;
+}
+.segLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---- Import mode: carte d'étape de bibliothèque ---- */
+.libCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid $border;
+  border-radius: 12px;
+  background: $surface;
+}
+.libCardMain {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.libCardName {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.libCardDesc {
+  font-size: 12.5px;
+  color: $muted;
+}
+.libCardVars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.varChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: $mono;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 6px;
+  color: #6b52c4;
+  background: #efeafb;
+}
+.varChipArrow {
+  @extend .varChip;
+  color: #b6317f;
+  background: #fbe7f2;
+}
+.libCardMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: $primary;
+}
+.libCardActions {
+  display: flex;
+  gap: 6px;
+  flex: none;
+  align-items: center;
+}
+
+/* ---- Edit manually mode: éditeur de code inline ---- */
+.codeBlock {
+  border: 1px solid $border;
+  border-radius: 6px; // radius-md DS (le 12px lisait trop rond)
+  overflow: hidden;
+  background: $surface;
+  transition: border-color 0.12s, box-shadow 0.12s;
+
+  // signale que la zone de code est éditable quand on la focus
+  &:focus-within {
+    border-color: $primary;
+    box-shadow: 0 0 0 3px rgba(237, 120, 70, 0.12);
+  }
+}
+.codeHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 14px;
+  border-bottom: 1px solid $border;
+}
+.codeHeadTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink-2;
+  flex: 1 1 auto;
+}
+.codeHeadActions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+.codeInlineEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 16px;
+  text-align: center;
+}
+.codeFooter {
+  padding: 8px;
+  border-top: 1px solid $border;
+  background: $surface-2;
+}
+
+/* ===================== CODE EDITOR (light + dark) ===================== */
+.editor {
+  position: relative;
+  display: flex;
+  font-family: $mono;
+  font-size: 12.5px;
+  line-height: 1.6;
+  tab-size: 2;
+}
+.editorGutter {
+  flex: none;
+  padding: 12px 0 12px 12px;
+  text-align: right;
+  user-select: none;
+  white-space: pre;
+  min-width: 28px;
+}
+.editorMain {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: auto;
+}
+.editorHl,
+.editorInput {
+  margin: 0;
+  padding: 12px 14px;
+  font: inherit;
+  line-height: inherit;
+  white-space: pre;
+  tab-size: inherit;
+  border: 0;
+}
+.editorHl {
+  pointer-events: none;
+  min-width: 100%;
+}
+
+/* mode hauteur figée (panneau) : l'éditeur scrolle en interne, le footer ne bouge pas */
+.editorScroll {
+  height: 300px;
+  overflow: auto;
+
+  .editorMain {
+    overflow: visible;
+  }
+}
+.editorInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  background: transparent;
+  color: transparent;
+  caret-color: currentColor;
+  overflow: hidden;
+  outline: none;
+
+  &::selection {
+    background: rgba(120, 150, 255, 0.28);
+  }
+  &::placeholder {
+    color: #aab0ba;
+    opacity: 1;
+  }
+}
+
+/* light theme (panneau inline) */
+.editorLight {
+  background: $surface;
+  color: $ink; // couleur de base (texte non tokenisé par Prism)
+
+  .editorGutter {
+    color: #b8bfc9;
+  }
+  .editorInput {
+    caret-color: $ink;
+  }
+  :global(.token.comment) {
+    color: #8a919e;
+  }
+  :global(.token.punctuation) {
+    color: #57606a;
+  }
+  :global(.token.keyword),
+  :global(.token.boolean),
+  :global(.token.constant) {
+    color: #cf222e;
+  }
+  :global(.token.function) {
+    color: #8250df;
+  }
+  :global(.token.string),
+  :global(.token.char),
+  :global(.token.template-string),
+  :global(.token.template-punctuation),
+  :global(.token.attr-value) {
+    color: #0a7d33;
+  }
+  :global(.token.number) {
+    color: #0550ae;
+  }
+  :global(.token.operator) {
+    color: #57606a;
+  }
+  :global(.token.class-name),
+  :global(.token.tag) {
+    color: #953800;
+  }
+}
+
+/* dark theme (éditeur plein écran) */
+.editorDark {
+  background: #1c1c22;
+  color: #e6e6ea; // couleur de base (texte non tokenisé par Prism)
+
+  .editorGutter {
+    color: #4a4d57;
+  }
+  .editorInput {
+    caret-color: #e6e6ea;
+
+    &::selection {
+      background: rgba(120, 150, 255, 0.32);
+    }
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.34);
+    }
+  }
+  :global(.token.comment) {
+    color: #6b7280;
+  }
+  :global(.token.punctuation) {
+    color: #b7bcc7;
+  }
+  :global(.token.keyword),
+  :global(.token.boolean),
+  :global(.token.constant) {
+    color: #cc99cd;
+  }
+  :global(.token.function) {
+    color: #f08d70;
+  }
+  :global(.token.string),
+  :global(.token.char),
+  :global(.token.template-string),
+  :global(.token.template-punctuation),
+  :global(.token.attr-value) {
+    color: #8fd18f;
+  }
+  :global(.token.number) {
+    color: #f0a878;
+  }
+  :global(.token.operator) {
+    color: #67cdcc;
+  }
+  :global(.token.class-name),
+  :global(.token.tag) {
+    color: #f8c98a;
+  }
+}
+
+/* ===================== FULLSCREEN EDITOR MODAL ===================== */
+// Le header ui-kit est un flex [titre][croix] en justify-between. On met notre
+// header dans le `title` et on le fait grandir (flex:1) pour caler les boutons
+// à droite (juste avant la croix). L'IDE va bord à bord (Modal.Content sans padding).
+.editorModalTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.editorModalName {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editorModalActions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+// Hauteur figée : la modale ne scrolle pas, l'éditeur remplit l'espace restant.
+.editorModal {
+  :global(.ant-modal) {
+    max-width: 1560px;
+  }
+  :global(._modal_93hc0_5) {
+    height: 90vh; // fixe (le conteneur est déjà flex column + overflow hidden)
+  }
+  // Modal.Content remplit sous le header ; colonne flex pour l'éditeur.
+  :global(.uikit-modal-content) {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+}
+// Banner full-bleed en haut de la modale (primary, sans arrondi)
+.flushBanner {
+  border-radius: 0 !important;
+}
+.editorStage {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #17171c;
+  overflow: hidden;
+}
+/* colonne IA (gauche) */
+.aiPane {
+  width: 320px;
+  flex: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+.aiHint {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.aiThread {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 12px;
+}
+.aiMsgUser {
+  align-self: flex-end;
+  max-width: 88%;
+  background: rgba(237, 120, 70, 0.22);
+  color: #f4e9e3;
+  border-radius: 12px 12px 4px 12px;
+  padding: 8px 11px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.aiMsgAi {
+  align-self: flex-start;
+  max-width: 92%;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.82);
+  border-radius: 12px 12px 12px 4px;
+  padding: 8px 11px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.aiMsgSparkle {
+  color: $primary;
+  margin-right: 5px;
+  display: inline-flex;
+  vertical-align: -2px;
+}
+.aiSparkle {
+  color: $primary;
+}
+.aiInput {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.aiInputField {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: #e6e6ea;
+  font: inherit;
+  font-size: 13px;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+}
+.aiSend {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  display: inline-flex;
+  padding: 2px;
+
+  &:hover {
+    color: #fff;
+  }
+}
+/* colonne code (droite) */
+.codePane {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.codePaneTop {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  overflow: auto;
+}
+.codePaneTop .editor {
+  flex: 1 1 auto;
+  min-height: 100%;
+}
+.codeTools {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+}
+.codeToolBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: #e6e6ea;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+}
+.consoleBar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: #202027;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+}
+.consoleBarTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: $mono;
+  flex: 1 1 auto;
+}
+.consoleBarActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.consoleBtn {
+  font: inherit;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  padding: 3px 9px;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+}
+.consoleIconBtn {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  display: inline-flex;
+  padding: 2px;
+
+  &:hover {
+    color: #fff;
+  }
+}
+.consolePane {
+  flex: none;
+  height: 168px;
+  overflow: auto;
+  background: #17171c;
+  padding: 14px 16px;
+  font-family: $mono;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+.consoleEmpty {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.32);
+  text-align: center;
+}
+.consoleLine {
+  color: #c8ccd4;
+  white-space: pre-wrap;
+}
+.consoleOk {
+  color: #8fd18f;
+}
+.consoleDim {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ===================== LIBRARY MODAL ===================== */
+.libModalHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.libSearch {
+  flex: 1 1 auto;
+  max-width: 320px;
+}
+.libModalCreate {
+  margin-left: auto;
+  flex: none;
+}
+.libList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.libRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid $border;
+  border-radius: 8px;
+  background: $surface;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s;
+
+  &:hover {
+    border-color: $primary;
+    box-shadow: 0 1px 2px rgba(237, 120, 70, 0.14);
+  }
+}
+.libRowMain {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.libRowRight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: none;
+  white-space: nowrap;
+}
+.libRowBtns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.libEmpty {
+  padding: 40px 16px;
+  text-align: center;
+  color: $muted;
+  font-size: 13px;
+}
+
+/* ===================== TEST PANEL (Live browser) ===================== */
+.livePane {
+  display: flex;
+  flex-direction: column;
+}
+.liveScreen {
+  margin: 12px;
+  min-height: 372px;
+  border: 1px solid $border;
+  border-radius: 8px;
+  background: $surface-2;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.liveHint {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  color: $ink-2;
+  font-size: 13px;
+}
+.keycap {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid $border-strong;
+  border-radius: 6px;
+  background: $surface;
+  color: $ink-2;
+}
+.lastResults {
+  border-top: 1px solid $border;
+  border-bottom: 1px solid $border;
+  background: $surface-2;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink-2;
+}
+.lastResultsBody {
+  min-height: 120px;
+}
+
+/* ===================== ADD TO LIBRARY MODAL ===================== */
+// Banner « full width » collé en haut : on annule le padding du body antd
+// (Modal.Content garde son propre padding pour le reste du contenu).
+.bannerModal {
+  :global(.ant-modal-body) {
+    padding: 0;
+  }
+}
+.addLibForm {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+}

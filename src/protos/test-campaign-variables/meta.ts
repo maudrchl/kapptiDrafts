@@ -3,7 +3,7 @@ import type { ProtoMeta } from '../registry'
 
 const meta: ProtoMeta = {
   title: 'Test campaign - variable changes',
-  status: 'wip design',
+  status: 'wip dev',
   collection: 'Testing',
   description:
     'Create tests campaign page (Figma-faithful) with a banner + review flow when variables change in Configurations',
