@@ -1161,7 +1161,7 @@ const VariablesProto = () => {
                     <span className={chrome.connector} />
                     <div className={chrome.stepGroup}>
                       <div
-                        className={chrome.stepGroupHead}
+                        className={`${chrome.stepGroupHead} ${open ? '' : styles.groupHeadClosed}`}
                         onClick={(e) => {
                           e.stopPropagation()
                           setOpenGroup(open ? null : g.n)

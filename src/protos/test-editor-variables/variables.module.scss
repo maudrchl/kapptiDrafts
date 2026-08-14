@@ -132,6 +132,11 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
     margin-left: 0;
   }
 }
+/* replié, l'en-tête est le dernier enfant : son filet du bas doublerait celui
+   de la carte du groupe. */
+.groupHeadClosed.groupHeadClosed {
+  border-bottom: 0;
+}
 /* accordéon : le chevron pivote quand le groupe est déplié */
 .groupCaret {
   display: inline-flex;
