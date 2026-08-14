@@ -130,6 +130,8 @@ const VariablesProto = () => {
   /** onglet du panneau d'un step (General / Variables / Checks / Advanced) */
   const [stepTab, setStepTab] = useState('general')
   const [flash, setFlash] = useState<number | null>(null)
+  /** un seul step group déplié à la fois (null = tout replié) */
+  const [openGroup, setOpenGroup] = useState<number | null>(1)
   const [targetOpen, setTargetOpen] = useState<string | null>(null)
   const [pathOpen, setPathOpen] = useState<string | null>(null)
   /** menu d'actions : step ouvert, recherche, catégories dépliées */
@@ -179,6 +181,9 @@ const VariablesProto = () => {
   const gotoStep = (n: number) => {
     setSel(n)
     setFlash(n)
+    // le step visé peut être dans le groupe replié : on le déplie
+    const g = steps.find((s) => s.n === n)?.group
+    if (g) setOpenGroup(g)
     window.setTimeout(() => setFlash(null), 1200)
     window.requestAnimationFrame(() => {
       document.getElementById(`tev-step-${n}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -666,7 +671,7 @@ const VariablesProto = () => {
         setSel((cur) => (cur === n ? null : n))
       }}
     >
-      <div className={chrome.stepCard}>{children}</div>
+      <div className={`${chrome.stepCard} ${styles.stepCardPad}`}>{children}</div>
     </div>
   )
 
@@ -1049,14 +1054,27 @@ const VariablesProto = () => {
                 </div>
               </div>
 
-              {/* deux groupes : la connexion, puis la commande */}
+              {/* deux groupes, en accordéon : ouvrir l'un replie l'autre */}
               {STEP_GROUPS.map((g) => {
                 const groupSteps = steps.filter((s) => s.group === g.n)
+                const open = openGroup === g.n
                 return (
                   <div key={g.n} className={styles.groupWrap}>
                     <span className={chrome.connector} />
                     <div className={chrome.stepGroup}>
-                      <div className={chrome.stepGroupHead}>
+                      <div
+                        className={chrome.stepGroupHead}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setOpenGroup(open ? null : g.n)
+                          // un step replié ne doit pas rester sélectionné
+                          if (open && sel != null && steps.some((s) => s.n === sel && s.group === g.n)) {
+                            setSel(null)
+                          }
+                        }}
+                        role="button"
+                        aria-expanded={open}
+                      >
                         <span className={chrome.stepGroupMark}>
                           <IconColouredLogo size={32} />
                         </span>
@@ -1064,26 +1082,40 @@ const VariablesProto = () => {
                           <div className={chrome.stepGroupTitle}>{g.title}</div>
                           <div className={chrome.stepGroupSub}>{groupSteps.length} steps</div>
                         </div>
-                        <button className={chrome.stepGroupMore}>
+                        <span className={`${styles.groupCaret} ${open ? styles.groupCaretOpen : ''}`}>
+                          <IconChevronDown size={18} />
+                        </span>
+                        <button
+                          className={chrome.stepGroupMore}
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <IconMoreHorizontal size={18} />
                         </button>
                       </div>
 
-                      {groupSteps.map((s, i) => (
-                        <div key={s.id}>
-                          {i > 0 && <div className={chrome.stepSep} />}
-                          {s.kind === 'api' ? apiCard(s) : s.kind === 'ui' ? uiCard(s) : setCard(s)}
-                        </div>
-                      ))}
+                      {open && (
+                        <>
+                          {groupSteps.map((s, i) => (
+                            <div key={s.id}>
+                              {i > 0 && <div className={chrome.stepSep} />}
+                              {s.kind === 'api'
+                                ? apiCard(s)
+                                : s.kind === 'ui'
+                                  ? uiCard(s)
+                                  : setCard(s)}
+                            </div>
+                          ))}
 
-                      <div className={chrome.stepFooter}>
-                        <Button color="invisible" size="s" icon={IconPlus}>
-                          Add step…
-                        </Button>
-                        <Button color="secondary" size="s" icon={IconPlay}>
-                          Use recorder
-                        </Button>
-                      </div>
+                          <div className={chrome.stepFooter}>
+                            <Button color="invisible" size="s" icon={IconPlus}>
+                              Add step…
+                            </Button>
+                            <Button color="secondary" size="s" icon={IconPlay}>
+                              Use recorder
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )

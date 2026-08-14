@@ -134,6 +134,22 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   flex-direction: column;
   align-items: center;
 }
+/* accordéon : le chevron pivote quand le groupe est déplié */
+.groupCaret {
+  margin-left: auto;
+  display: inline-flex;
+  color: $muted;
+  transform: rotate(-90deg);
+  transition: transform 0.15s ease;
+}
+.groupCaretOpen {
+  transform: rotate(0deg);
+}
+/* nos lignes sont plus denses que celles de `checks` : on respire un peu plus
+   autour du formulaire du step (le padding vient de chrome.stepBody). */
+.stepCardPad.stepCardPad {
+  padding: 4px 6px;
+}
 /* locator d'un step d'interface : mono, largeur souple */
 .locator {
   flex: 0 1 190px;
