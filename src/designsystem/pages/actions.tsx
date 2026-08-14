@@ -40,16 +40,28 @@ export const ButtonPage = () => (
     </Demo>
 
     <Demo title="With icon">
-      <Button color="primary" icon={IconPlus}>
+      <Button
+        color="primary"
+      >
+        <Button.Icon icon={IconPlus} />
         Create
       </Button>
-      <Button color="secondary" icon={IconDownload}>
+      <Button
+        color="secondary"
+      >
+        <Button.Icon icon={IconDownload} />
         Export
       </Button>
-      <Button color="secondary" icon={IconChevronDown} iconRight>
+      <Button
+        color="secondary"
+      >
         Options
+        <Button.Icon icon={IconChevronDown} />
       </Button>
-      <Button color="danger-s" icon={IconTrash}>
+      <Button
+        color="danger-s"
+      >
+        <Button.Icon icon={IconTrash} />
         Delete
       </Button>
     </Demo>
@@ -61,8 +73,11 @@ export const ButtonPage = () => (
       <Button color="primary" disabled>
         Disabled
       </Button>
-      <Button color="secondary" counter={4}>
+      <Button
+        color="secondary"
+      >
         Filters
+        <Button.Counter>{4}</Button.Counter>
       </Button>
     </Demo>
 
@@ -92,13 +107,22 @@ export const ButtonGroupPage = () => (
   >
     <Demo title="Action group">
       <ButtonGroup>
-        <Button color="secondary" icon={IconPencil}>
+        <Button
+          color="secondary"
+        >
+          <Button.Icon icon={IconPencil} />
           Edit
         </Button>
-        <Button color="secondary" icon={IconCopy}>
+        <Button
+          color="secondary"
+        >
+          <Button.Icon icon={IconCopy} />
           Duplicate
         </Button>
-        <Button color="secondary" icon={IconSettings}>
+        <Button
+          color="secondary"
+        >
+          <Button.Icon icon={IconSettings} />
           Settings
         </Button>
       </ButtonGroup>
@@ -136,8 +160,11 @@ export const DropdownPage = () => (
   >
     <Demo title="Menu on a button">
       <Dropdown menu={MENU}>
-        <Button color="secondary" icon={IconChevronDown} iconRight>
+        <Button
+          color="secondary"
+        >
           Actions
+          <Button.Icon icon={IconChevronDown} />
         </Button>
       </Dropdown>
     </Demo>
@@ -163,7 +190,10 @@ export const ButtonDropdownPage = () => (
     importCode={"import { ButtonDropdown } from '@kapptivate/ui-kit'"}
   >
     <Demo title="Button + menu">
-      <ButtonDropdown color="primary" icon={IconPlus} menu={MENU}>
+      <ButtonDropdown
+        color="primary" menu={MENU}
+      >
+        <Button.Icon icon={IconPlus} />
         Create
       </ButtonDropdown>
     </Demo>

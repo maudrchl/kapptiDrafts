@@ -64,10 +64,10 @@ const ConsumptionChart = ({ budgetState }: Props) => {
 
   return (
     <Card className={styles.uiCard}>
-      <Card.Content
-        title="Daily consumption"
-        description={u.sub}
-        asideContent={
+      <Card.Content>
+        <Card.Content.Title>Daily consumption</Card.Content.Title>
+        <Card.Content.Description>{u.sub}</Card.Content.Description>
+        <Card.Content.Aside>
           <Segmented
             size="small"
             options={[
@@ -77,8 +77,7 @@ const ConsumptionChart = ({ budgetState }: Props) => {
             value={unit}
             onChange={(val) => setUnit(val as ChartUnit)}
           />
-        }
-      >
+        </Card.Content.Aside>
 
       <svg className={styles.chart} viewBox={`0 0 ${W} ${H}`}>
         {/* Grid */}

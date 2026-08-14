@@ -327,7 +327,10 @@ const ChecksProto = () => {
 
   const addBtn = (
     <div className={styles.addWrap}>
-      <Button color="secondary" size="s" icon={IconPlus} onClick={add}>
+      <Button
+        color="secondary" size="s" onClick={add}
+      >
+        <Button.Icon icon={IconPlus} />
         Add condition
       </Button>
     </div>
@@ -552,17 +555,20 @@ const ChecksProto = () => {
       <div className={styles.workspace}>
         <header className={styles.topbar}>
           <div className={styles.crumb}>
-            <Breadcrumb items={[{ title: 'Tests' }, { title: 'API' }]} />
+            <Breadcrumb>
+              <Breadcrumb.Item>Tests</Breadcrumb.Item>
+              <Breadcrumb.Item>API</Breadcrumb.Item>
+            </Breadcrumb>
           </div>
           <div className={styles.topActions}>
             <ButtonGroup>
-              <Button color="secondary" size="m" icon={IconLock} />
-              <Button color="secondary" size="m" icon={IconMonitor} />
-              <Button color="secondary" size="m" icon={IconStar} />
-              <Button color="danger-s" size="m" icon={IconTrash} />
+              <Button color="secondary" size="m"><Button.Icon icon={IconLock} /></Button>
+              <Button color="secondary" size="m"><Button.Icon icon={IconMonitor} /></Button>
+              <Button color="secondary" size="m"><Button.Icon icon={IconStar} /></Button>
+              <Button color="danger-s" size="m"><Button.Icon icon={IconTrash} /></Button>
             </ButtonGroup>
-            <Button color="secondary" size="m" icon={IconSave}>Save</Button>
-            <Button color="primary" size="m" icon={IconZap}>Run</Button>
+            <Button color="secondary" size="m"><Button.Icon icon={IconSave} />Save</Button>
+            <Button color="primary" size="m"><Button.Icon icon={IconZap} />Run</Button>
           </div>
         </header>
 
@@ -634,8 +640,18 @@ const ChecksProto = () => {
                 </div>
 
                 <div className={styles.stepFooter}>
-                  <Button color="invisible" size="s" icon={IconPlus}>Add step…</Button>
-                  <Button color="secondary" size="s" icon={IconPlay}>Use recorder</Button>
+                  <Button
+                    color="invisible" size="s"
+                  >
+                    <Button.Icon icon={IconPlus} />
+                    Add step…
+                  </Button>
+                  <Button
+                    color="secondary" size="s"
+                  >
+                    <Button.Icon icon={IconPlay} />
+                    Use recorder
+                  </Button>
                 </div>
               </div>
 
@@ -652,9 +668,13 @@ const ChecksProto = () => {
               <span className={styles.panelTitleNum}>1</span>
               <span className={styles.panelTitle}>API Call</span>
               <div className={styles.panelHeaderActions}>
-                <Button color="secondary" size="s" icon={IconSquareArrowOutUpRight} />
-                <Button color="secondary" size="s" icon={IconCopy} />
-                <Button color="danger-s" size="s" icon={IconTrash} />
+                <Button
+                  color="secondary" size="s"
+                >
+                  <Button.Icon icon={IconSquareArrowOutUpRight} />
+                </Button>
+                <Button color="secondary" size="s"><Button.Icon icon={IconCopy} /></Button>
+                <Button color="danger-s" size="s"><Button.Icon icon={IconTrash} /></Button>
               </div>
             </div>
 

@@ -483,10 +483,13 @@ const VariablesProto = () => {
         </div>
       }
     >
-      <Tooltip content="Pick from the last response">
-        <span>
-          <Button color="secondary" size="s" icon={IconCode} />
-        </span>
+      <Tooltip>
+        <Tooltip.Trigger>
+          <span>
+            <Button color="secondary" size="s"><Button.Icon icon={IconCode} /></Button>
+          </span>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Pick from the last response</Tooltip.Content>
       </Tooltip>
     </Popover>
   )
@@ -763,7 +766,10 @@ const VariablesProto = () => {
           ))}
         </div>
         <div className={chrome.addWrap}>
-          <Button color="secondary" size="s" icon={IconPlus}>
+          <Button
+            color="secondary" size="s"
+          >
+            <Button.Icon icon={IconPlus} />
             Add input
           </Button>
         </div>
@@ -819,7 +825,7 @@ const VariablesProto = () => {
           <span className={chrome.panelTitleNum}>{n}</span>
           <span className={chrome.panelTitle}>{title}</span>
           <div className={chrome.panelHeaderActions}>
-            <Button color="secondary" size="s" icon={IconMoreHorizontal} />
+            <Button color="secondary" size="s"><Button.Icon icon={IconMoreHorizontal} /></Button>
           </div>
         </div>
         <Tabs
@@ -993,19 +999,28 @@ const VariablesProto = () => {
         <header className={chrome.topbar}>
           <div className={chrome.crumb}>
             {/* court : le fil d'Ariane du chrome kapptiDrafts recouvre le début de la barre */}
-            <Breadcrumb items={[{ title: 'Tests' }, { title: 'Checkout' }]} />
+            <Breadcrumb>
+              <Breadcrumb.Item>Tests</Breadcrumb.Item>
+              <Breadcrumb.Item>Checkout</Breadcrumb.Item>
+            </Breadcrumb>
           </div>
           <div className={chrome.topActions}>
             <ButtonGroup>
-              <Button color="secondary" size="m" icon={IconLock} />
-              <Button color="secondary" size="m" icon={IconMonitor} />
-              <Button color="secondary" size="m" icon={IconStar} />
-              <Button color="danger-s" size="m" icon={IconTrash} />
+              <Button color="secondary" size="m"><Button.Icon icon={IconLock} /></Button>
+              <Button color="secondary" size="m"><Button.Icon icon={IconMonitor} /></Button>
+              <Button color="secondary" size="m"><Button.Icon icon={IconStar} /></Button>
+              <Button color="danger-s" size="m"><Button.Icon icon={IconTrash} /></Button>
             </ButtonGroup>
-            <Button color="secondary" size="m" icon={IconSave}>
+            <Button
+              color="secondary" size="m"
+            >
+              <Button.Icon icon={IconSave} />
               Save
             </Button>
-            <Button color="primary" size="m" icon={IconZap}>
+            <Button
+              color="primary" size="m"
+            >
+              <Button.Icon icon={IconZap} />
               Run
             </Button>
           </div>
@@ -1058,10 +1073,16 @@ const VariablesProto = () => {
                 ))}
 
                 <div className={chrome.stepFooter}>
-                  <Button color="invisible" size="s" icon={IconPlus}>
+                  <Button
+                    color="invisible" size="s"
+                  >
+                    <Button.Icon icon={IconPlus} />
                     Add step…
                   </Button>
-                  <Button color="secondary" size="s" icon={IconPlay}>
+                  <Button
+                    color="secondary" size="s"
+                  >
+                    <Button.Icon icon={IconPlay} />
                     Use recorder
                   </Button>
                 </div>

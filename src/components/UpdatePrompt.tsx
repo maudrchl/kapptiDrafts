@@ -25,9 +25,9 @@ const UpdatePrompt = () => {
       <Button
         color="primary"
         size="s"
-        icon={IconRefreshCw}
         onClick={() => window.location.reload()}
       >
+        <Button.Icon icon={IconRefreshCw} />
         Refresh
       </Button>
     </div>

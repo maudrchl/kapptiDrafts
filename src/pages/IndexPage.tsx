@@ -337,8 +337,11 @@ const IndexPage = () => {
         // Ancre en inline-block réduite à la largeur du texte, sinon le tooltip
         // se centre sur toute la cellule (Text s'étale en bloc).
         return abs ? (
-          <Tooltip content={abs}>
-            <span style={{ display: 'inline-block' }}>{label}</span>
+          <Tooltip>
+            <Tooltip.Trigger>
+              <span style={{ display: 'inline-block' }}>{label}</span>
+            </Tooltip.Trigger>
+            <Tooltip.Content>{abs}</Tooltip.Content>
           </Tooltip>
         ) : (
           label
@@ -410,9 +413,9 @@ const IndexPage = () => {
         </div>
         <Button
           color="secondary"
-          icon={IconLayoutGrid}
           onClick={() => navigate('/design-system')}
         >
+          <Button.Icon icon={IconLayoutGrid} />
           Design System
         </Button>
       </header>

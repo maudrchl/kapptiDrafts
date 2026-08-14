@@ -65,8 +65,9 @@ export const Overview = () => (
       <div className="dsBannerBottom">
         <Banner
           variant="primary"
-          description="Tip: the 'Copy' button on each import block gives you the exact line to paste."
-        />
+        >
+          <Banner.Description>Tip: the 'Copy' button on each import block gives you the exact line to paste.</Banner.Description>
+        </Banner>
       </div>
     </Demo>
   </Page>

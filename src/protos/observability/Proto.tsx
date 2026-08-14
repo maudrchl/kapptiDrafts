@@ -499,12 +499,12 @@ const LogsView = ({
           />
           <Button
             color={live ? 'primary' : 'secondary'}
-            icon={IconPlay}
             onClick={() => {
               setLive((s) => !s)
               toast.info(live ? 'Live tail stopped' : 'Live tail started')
             }}
           >
+            <Button.Icon icon={IconPlay} />
             {live ? 'Streaming…' : 'Live tail'}
           </Button>
         </div>
@@ -1489,7 +1489,10 @@ const ServiceMapInner = ({ onGoToLogs, onGoToTraces }: ServiceMapProps) => {
               ],
             }}
           >
-            <Button icon={IconSlidersHorizontal} color="secondary" onClick={() => setDisplayOpen(true)}>
+            <Button
+              color="secondary" onClick={() => setDisplayOpen(true)}
+            >
+              <Button.Icon icon={IconSlidersHorizontal} />
               Display
             </Button>
           </Dropdown>
@@ -1682,11 +1685,17 @@ const ServiceMapInner = ({ onGoToLogs, onGoToTraces }: ServiceMapProps) => {
                     On ne refait pas de moteur de filtre dans le drawer : on
                     envoie vers Logs / Traces qui savent déjà filtrer. */}
                 <div className={styles.svcGoToRow}>
-                  <Button color="secondary" size="s" icon={ArrowUpRight} iconRight onClick={() => onGoToLogs(s.label)}>
+                  <Button
+                    color="secondary" size="s" onClick={() => onGoToLogs(s.label)}
+                  >
                     View logs
+                    <Button.Icon icon={ArrowUpRight} />
                   </Button>
-                  <Button color="secondary" size="s" icon={ArrowUpRight} iconRight onClick={() => onGoToTraces(s.label)}>
+                  <Button
+                    color="secondary" size="s" onClick={() => onGoToTraces(s.label)}
+                  >
                     View traces
+                    <Button.Icon icon={ArrowUpRight} />
                   </Button>
                 </div>
               </>
@@ -1871,15 +1880,16 @@ const KubernetesView = () => {
       {elevated.length > 0 && (
         <Banner
           variant="warning"
-          description={`${elevated.length} pods are restarting repeatedly`}
-          subDescription={
+        >
+          <Banner.Icon><IconAlertTriangle size={18} /></Banner.Icon>
+          <Banner.Description>{`${elevated.length} pods are restarting repeatedly`}</Banner.Description>
+          <Banner.SubDescription>
             <>
               cert-manager, the OpenTelemetry operator and the rabbitmq operators keep crash-looping (up to <b>{maxRestart} restarts</b>). CPU and memory usage sit well below requests, so this is a stability issue, not capacity.
             </>
-          }
-          icon={<IconAlertTriangle size={18} />}
-          aside={<Button color="secondary" size="s" onClick={() => { setOnlyUnhealthy(true); setNs('all') }}>View unhealthy pods</Button>}
-        />
+          </Banner.SubDescription>
+          <Banner.Aside><Button color="secondary" size="s" onClick={() => { setOnlyUnhealthy(true); setNs('all') }}>View unhealthy pods</Button></Banner.Aside>
+        </Banner>
       )}
 
       {/* Santé cluster en un coup d'oeil (remplace les jauges quasi vides) */}
@@ -1892,7 +1902,10 @@ const KubernetesView = () => {
 
       {/* Pod map orientée santé */}
       <Card className={styles.usageCard}>
-        <Card.Header title="Pod map" icon={IconBox} asideContent={<Toggle title="Only unhealthy" value={onlyUnhealthy} onChange={setOnlyUnhealthy} />} />
+        <Card.Header>
+          <Card.Header.Title><Card.Header.Icon icon={IconBox} />Pod map</Card.Header.Title>
+          <Card.Header.Aside><Toggle title="Only unhealthy" value={onlyUnhealthy} onChange={setOnlyUnhealthy} /></Card.Header.Aside>
+        </Card.Header>
         <Card.Content>
           <div className={styles.usageCardBody}>
             <div className={styles.nsChips}>
@@ -1936,7 +1949,10 @@ const KubernetesView = () => {
 
       {/* Pods qui restartent le plus (remplace la courbe de moyenne, illisible) */}
       <Card className={styles.usageCard}>
-        <Card.Header title="Pods by restart count" icon={IconActivity} asideContent={<span className={styles.cardSub}>Click a row to filter the pod map</span>} />
+        <Card.Header>
+          <Card.Header.Title><Card.Header.Icon icon={IconActivity} />Pods by restart count</Card.Header.Title>
+          <Card.Header.Aside><span className={styles.cardSub}>Click a row to filter the pod map</span></Card.Header.Aside>
+        </Card.Header>
         <Card.Content>
           <div className={styles.usageCardBody}>
             <Table rowKey="key" columns={restartCols} data={restarters} showHeader onClickRow={(r: PodEntry) => { setOnlyUnhealthy(false); setNs(r.ns) }} />
@@ -1947,11 +1963,15 @@ const KubernetesView = () => {
       {/* Usage vs request */}
       <div className={styles.kRow2}>
         <Card className={styles.usageCard}>
-          <Card.Header title="CPU usage vs request" icon={IconGauge} />
+          <Card.Header>
+            <Card.Header.Title><Card.Header.Icon icon={IconGauge} />CPU usage vs request</Card.Header.Title>
+          </Card.Header>
           <Card.Content><div className={styles.usageCardBody}><LineChart panel={K8S_CPU_PANEL} height={220} /></div></Card.Content>
         </Card>
         <Card className={styles.usageCard}>
-          <Card.Header title="Memory usage vs request" icon={IconGauge} />
+          <Card.Header>
+            <Card.Header.Title><Card.Header.Icon icon={IconGauge} />Memory usage vs request</Card.Header.Title>
+          </Card.Header>
           <Card.Content><div className={styles.usageCardBody}><LineChart panel={K8S_MEM_PANEL} height={220} /></div></Card.Content>
         </Card>
       </div>
@@ -1959,11 +1979,17 @@ const KubernetesView = () => {
       {/* Request by deployment (déploiements à 0 masqués par défaut) */}
       <div className={styles.kRow2}>
         <Card className={styles.usageCard}>
-          <Card.Header title="CPU request by deployment" icon={IconBarChartBig} asideContent={<Toggle title="Show empty" value={showZero} onChange={setShowZero} />} />
+          <Card.Header>
+            <Card.Header.Title><Card.Header.Icon icon={IconBarChartBig} />CPU request by deployment</Card.Header.Title>
+            <Card.Header.Aside><Toggle title="Show empty" value={showZero} onChange={setShowZero} /></Card.Header.Aside>
+          </Card.Header>
           <Card.Content><div className={styles.usageCardBody}><DeployBars metric="cpu" showZero={showZero} /></div></Card.Content>
         </Card>
         <Card className={styles.usageCard}>
-          <Card.Header title="Memory request by deployment" icon={IconBarChartBig} asideContent={<Toggle title="Show empty" value={showZero} onChange={setShowZero} />} />
+          <Card.Header>
+            <Card.Header.Title><Card.Header.Icon icon={IconBarChartBig} />Memory request by deployment</Card.Header.Title>
+            <Card.Header.Aside><Toggle title="Show empty" value={showZero} onChange={setShowZero} /></Card.Header.Aside>
+          </Card.Header>
           <Card.Content><div className={styles.usageCardBody}><DeployBars metric="mem" showZero={showZero} /></div></Card.Content>
         </Card>
       </div>
@@ -2040,25 +2066,25 @@ const UsageView = ({
       {pct >= 80 && (
         <Banner
           variant={pct >= 95 ? 'error' : 'warning'}
-          description={pct >= 95 ? 'Monthly ingestion quota nearly exhausted' : `${pct.toFixed(0)}% of your monthly ingestion quota used`}
-          subDescription={
+        >
+          <Banner.Icon><IconAlertTriangle size={18} /></Banner.Icon>
+          <Banner.Description>{pct >= 95 ? 'Monthly ingestion quota nearly exhausted' : `${pct.toFixed(0)}% of your monthly ingestion quota used`}</Banner.Description>
+          <Banner.SubDescription>
             <>
               At the current rate, your <b>{fmtGB(cap)}</b> monthly quota runs out around{' '}
               <b>day {Math.min(USAGE_DAYS_IN_MONTH, Math.round((cap / USAGE_INGESTED_GB) * USAGE_DAY_OF_MONTH))}</b>. Ingestion keeps working; overage is billed and admins are notified.
             </>
-          }
-          icon={<IconAlertTriangle size={18} />}
-          aside={<Button color="secondary" size="s" onClick={() => setQuotaOpen(true)}>Adjust quota</Button>}
-        />
+          </Banner.SubDescription>
+          <Banner.Aside><Button color="secondary" size="s" onClick={() => setQuotaOpen(true)}>Adjust quota</Button></Banner.Aside>
+        </Banner>
       )}
 
       {/* Quota & consumption */}
       <Card className={styles.usageCard}>
-        <Card.Header
-          title="Quota usage"
-          icon={IconBarChartBig}
-          asideContent={<StatusTag variant="ghost" color={status.color}>{status.label}</StatusTag>}
-        />
+        <Card.Header>
+          <Card.Header.Title><Card.Header.Icon icon={IconBarChartBig} />Quota usage</Card.Header.Title>
+          <Card.Header.Aside><StatusTag variant="ghost" color={status.color}>{status.label}</StatusTag></Card.Header.Aside>
+        </Card.Header>
         <Card.Content>
           <div data-anchor="usage:quota" className={styles.usageCardBody}>
           <div className={styles.usageHero}>
@@ -2094,10 +2120,9 @@ const UsageView = ({
       <div className={styles.usageGrid}>
       {/* Daily consumption chart */}
       <Card className={styles.usageCard}>
-        <Card.Header
-          title="Daily consumption"
-          icon={IconActivity}
-          asideContent={
+        <Card.Header>
+          <Card.Header.Title><Card.Header.Icon icon={IconActivity} />Daily consumption</Card.Header.Title>
+          <Card.Header.Aside>
             <div className={styles.segRow}>
               <Segmented<SignalFilter>
                 size="small"
@@ -2121,8 +2146,8 @@ const UsageView = ({
                 ]}
               />
             </div>
-          }
-        />
+          </Card.Header.Aside>
+        </Card.Header>
         <Card.Content>
           <div data-anchor="usage:consumption" className={styles.usageCardBody}>
           <div className={styles.cardSub} style={{ marginBottom: 12 }}>Ingested bytes per day vs daily budget · current month (UTC)</div>
@@ -2156,7 +2181,9 @@ const UsageView = ({
 
       {/* Usage by signal */}
       <Card className={styles.usageCard}>
-        <Card.Header title="Usage by signal" icon={IconLayers} />
+        <Card.Header>
+          <Card.Header.Title><Card.Header.Icon icon={IconLayers} />Usage by signal</Card.Header.Title>
+        </Card.Header>
         <Card.Content>
           <div data-anchor="usage:signals" className={styles.usageCardBody}>
           {SIGNALS.map((s) => {
@@ -2179,11 +2206,10 @@ const UsageView = ({
 
       {/* Connection & OTLP key */}
       <Card className={styles.usageCard}>
-        <Card.Header
-          title="OTLP connection & key"
-          icon={IconServer}
-          asideContent={<StatusTag variant="ghost" color={revoked ? 'failed' : 'success'}>{revoked ? 'Revoked' : 'Active'}</StatusTag>}
-        />
+        <Card.Header>
+          <Card.Header.Title><Card.Header.Icon icon={IconServer} />OTLP connection & key</Card.Header.Title>
+          <Card.Header.Aside><StatusTag variant="ghost" color={revoked ? 'failed' : 'success'}>{revoked ? 'Revoked' : 'Active'}</StatusTag></Card.Header.Aside>
+        </Card.Header>
         <Card.Content>
           <div data-anchor="usage:otlp-key" className={styles.usageCardBody}>
           <p className={styles.cardSub} style={{ marginBottom: 12 }}>
@@ -2204,7 +2230,12 @@ const UsageView = ({
             <Input value={revoked ? '' : OTLP_KEY_MASKED} canCopy={!revoked} mono disabled fullWidth size="m" />
           </div>
           <div className={styles.cardFooter}>
-            <Button color="primary" icon={KeyRound} onClick={() => setKeyStep('issue')}>Issue key</Button>
+            <Button
+              color="primary" onClick={() => setKeyStep('issue')}
+            >
+              <Button.Icon icon={KeyRound} />
+              Issue key
+            </Button>
             <Button color="danger-s" disabled={revoked} onClick={() => setKeyStep('revoke')}>Revoke key</Button>
           </div>
           </div>
@@ -2213,11 +2244,10 @@ const UsageView = ({
 
       {/* Retention */}
       <Card className={styles.usageCard}>
-        <Card.Header
-          title="Data retention"
-          icon={IconBox}
-          asideContent={<StatusTag variant="ghost" color="info">{retTier}</StatusTag>}
-        />
+        <Card.Header>
+          <Card.Header.Title><Card.Header.Icon icon={IconBox} />Data retention</Card.Header.Title>
+          <Card.Header.Aside><StatusTag variant="ghost" color="info">{retTier}</StatusTag></Card.Header.Aside>
+        </Card.Header>
         <Card.Content>
           <div data-anchor="usage:retention" className={styles.usageCardBody}>
           <div className={styles.cardSub} style={{ marginBottom: 12 }}>
@@ -2277,14 +2307,12 @@ const UsageView = ({
       {/* Issue new key: confirm */}
       <Alert
         open={keyStep === 'issue'}
-        danger
-        title="Issue a new key?"
-        okText="Issue new key"
-        cancelText="Cancel"
         onCancel={() => setKeyStep('none')}
-        onOk={issueKey}
       >
-        If you issue a new key, the current one stops working immediately. Every collector using the old key will start getting 401s until you roll out the new one.
+        <Alert.Title>Issue a new key?</Alert.Title>
+        <Alert.Description>If you issue a new key, the current one stops working immediately. Every collector using the old key will start getting 401s until you roll out the new one.</Alert.Description>
+        <Alert.Cancel>Cancel</Alert.Cancel>
+        <Alert.Action danger onClick={issueKey}>Issue new key</Alert.Action>
       </Alert>
 
       {/* Issue new key: reveal once */}
@@ -2297,12 +2325,12 @@ const UsageView = ({
           <div style={{ marginTop: 12 }}>
             <Button
               color="secondary"
-              icon={keyCopied ? Check : Copy}
               onClick={() => {
                 navigator.clipboard?.writeText(newKey)
                 setKeyCopied(true)
               }}
             >
+              <Button.Icon icon={keyCopied ? Check : Copy} />
               {keyCopied ? 'Copied' : 'Copy key'}
             </Button>
           </div>
@@ -2326,18 +2354,16 @@ const UsageView = ({
       {/* Revoke: confirm */}
       <Alert
         open={keyStep === 'revoke'}
-        danger
-        title="Revoke key?"
-        okText="Revoke key"
-        cancelText="Keep key"
         onCancel={() => setKeyStep('none')}
-        onOk={() => {
+      >
+        <Alert.Title>Revoke key?</Alert.Title>
+        <Alert.Description>If you revoke this key, ingestion stops until you issue a new one. This action cannot be undone.</Alert.Description>
+        <Alert.Cancel>Keep key</Alert.Cancel>
+        <Alert.Action danger onClick={() => {
           setKeyState({ status: 'revoked' })
           setKeyStep('none')
           toast.success('API key revoked successfully')
-        }}
-      >
-        If you revoke this key, ingestion stops until you issue a new one. This action cannot be undone.
+        }}>Revoke key</Alert.Action>
       </Alert>
     </div>
   )
@@ -2809,16 +2835,30 @@ const ExploreTabsProto = () => {
               <div className={styles.contentActions} ref={setPersesHeaderSlot} />
             ) : (
               <div className={styles.contentActions}>
-                {meta.actions.map((a) => (
-                  <Button
-                    key={a.label}
-                    color={a.primary ? 'primary' : 'secondary'}
-                    icon={a.label === 'Export' ? IconDownload : a.label === 'Create alert' ? Plus : a.label === 'Pin as panel' ? Pin : a.label === 'Refresh' ? RefreshCw : undefined}
-                    onClick={() => runAction(a.label)}
-                  >
-                    {a.label}
-                  </Button>
-                ))}
+                {meta.actions.map((a) => {
+                  // Toutes les actions n'ont pas d'icône : le slot Button.Icon en exige
+                  // une, donc on ne le rend que s'il y en a.
+                  const ActionIcon =
+                    a.label === 'Export'
+                      ? IconDownload
+                      : a.label === 'Create alert'
+                        ? Plus
+                        : a.label === 'Pin as panel'
+                          ? Pin
+                          : a.label === 'Refresh'
+                            ? RefreshCw
+                            : null
+                  return (
+                    <Button
+                      key={a.label}
+                      color={a.primary ? 'primary' : 'secondary'}
+                      onClick={() => runAction(a.label)}
+                    >
+                      {ActionIcon && <Button.Icon icon={ActionIcon} />}
+                      {a.label}
+                    </Button>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -3265,8 +3305,18 @@ helm install kapp-agent kapptivate/agent \\
                 )}
 
                 <div className={styles.drawerLinks}>
-                  <Button color="secondary" icon={IconEye} onClick={() => toast.info('Opening test result details')}>Test result details</Button>
-                  <Button color="secondary" icon={IconActivity} onClick={() => toast.info('Opening resource metrics')}>Resource metrics</Button>
+                  <Button
+                    color="secondary" onClick={() => toast.info('Opening test result details')}
+                  >
+                    <Button.Icon icon={IconEye} />
+                    Test result details
+                  </Button>
+                  <Button
+                    color="secondary" onClick={() => toast.info('Opening resource metrics')}
+                  >
+                    <Button.Icon icon={IconActivity} />
+                    Resource metrics
+                  </Button>
                 </div>
               </>
             )

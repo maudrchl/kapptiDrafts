@@ -166,12 +166,22 @@ const EditPanelDrawer = ({
               placeholder="Describe the data instead of writing SQL… e.g. p95 duration by service"
               onChange={(e) => setAiText(e.target.value)}
             />
-            <Button type="submit" color="secondary" icon={Wand2} disabled={!aiText.trim()}>Generate</Button>
+            <Button
+              type="submit" color="secondary" disabled={!aiText.trim()}
+            >
+              <Button.Icon icon={Wand2} />
+              Generate
+            </Button>
           </form>
 
           <div className={styles.queryHead}>
             <span className={styles.queryHeadLeft}><ChevronDown size={16} /> Query #1</span>
-            <Button color="secondary" icon={RotateCw} onClick={() => toast.success('Query executed successfully')}>Run query</Button>
+            <Button
+              color="secondary" onClick={() => toast.success('Query executed successfully')}
+            >
+              <Button.Icon icon={RotateCw} />
+              Run query
+            </Button>
           </div>
           <div className={styles.editField} style={{ maxWidth: 320, marginBottom: 16 }}>
             <label>Query type</label>
@@ -181,7 +191,12 @@ const EditPanelDrawer = ({
           <textarea className={styles.sqlEditor} value={draft.sql} spellCheck={false} onChange={(e) => set({ sql: e.target.value })} />
           <div className={styles.sqlHint}>{SQL_HINT}</div>
           <div className={styles.addQueryRow}>
-            <Button color="secondary" icon={Plus} onClick={() => toast.info('This proto supports a single query per panel')}>Add query</Button>
+            <Button
+              color="secondary" onClick={() => toast.info('This proto supports a single query per panel')}
+            >
+              <Button.Icon icon={Plus} />
+              Add query
+            </Button>
           </div>
         </div>
       )}
@@ -466,7 +481,12 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
   {/* Seuls Save/Cancel remontent dans le bandeau du haut (alignés comme les autres tabs). */}
   const headerActions = (
     <>
-      <Button color="primary" icon={Save} disabled={!dirty} onClick={save}>Save</Button>
+      <Button
+        color="primary" disabled={!dirty} onClick={save}
+      >
+        <Button.Icon icon={Save} />
+        Save
+      </Button>
       <Button color="invisible" onClick={cancel}>Cancel</Button>
     </>
   )
@@ -482,11 +502,26 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
           <Tag color="orange" textColor="orange" weight="semibold">beta</Tag>
         </div>
         <div className={styles.toolbarActions}>
-          <Button color="secondary" icon={Sparkles} onClick={() => setAiOpen(true)}>Ask AI</Button>
+          <Button
+            color="secondary" onClick={() => setAiOpen(true)}
+          >
+            <Button.Icon icon={Sparkles} />
+            Ask AI
+          </Button>
           <span className={styles.actionsDivider} />
           <ButtonGroup>
-            <Button color="secondary" icon={PlusSquare} onClick={() => setIntentGroup(dashboard.groups[0]?.id ?? null)}>Panel</Button>
-            <Button color="secondary" icon={LayoutGrid} onClick={addGroup}>Panel group</Button>
+            <Button
+              color="secondary" onClick={() => setIntentGroup(dashboard.groups[0]?.id ?? null)}
+            >
+              <Button.Icon icon={PlusSquare} />
+              Panel
+            </Button>
+            <Button
+              color="secondary" onClick={addGroup}
+            >
+              <Button.Icon icon={LayoutGrid} />
+              Panel group
+            </Button>
           </ButtonGroup>
         </div>
       </div>
@@ -533,9 +568,24 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
                   <div className={styles.emptyGroup}>
                     <p className={styles.emptyTitle}>This group is empty. How do you want to start?</p>
                     <div className={styles.emptyActions}>
-                      <Button color="primary" icon={Sparkles} onClick={askAiFor}>Describe with AI</Button>
-                      <Button color="secondary" icon={BarChart3} onClick={() => setIntentGroup(group.id)}>Pick a metric</Button>
-                      <Button color="invisible" icon={FileCode} onClick={() => addBlankPanel(group.id)}>Blank SQL panel</Button>
+                      <Button
+                        color="primary" onClick={askAiFor}
+                      >
+                        <Button.Icon icon={Sparkles} />
+                        Describe with AI
+                      </Button>
+                      <Button
+                        color="secondary" onClick={() => setIntentGroup(group.id)}
+                      >
+                        <Button.Icon icon={BarChart3} />
+                        Pick a metric
+                      </Button>
+                      <Button
+                        color="invisible" onClick={() => addBlankPanel(group.id)}
+                      >
+                        <Button.Icon icon={FileCode} />
+                        Blank SQL panel
+                      </Button>
                     </div>
                   </div>
                 ) : (

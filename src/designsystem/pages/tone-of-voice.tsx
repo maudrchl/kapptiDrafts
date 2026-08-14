@@ -97,7 +97,11 @@ export const ToneOfVoice = () => (
         Exceptions: acronyms stay uppercase (API Keys, CI/CD, DNS, SSL). Product name is always "Kapptivate" with capital K.
       </Text>
       <div className="dsBannerBottom">
-        <Banner variant="primary" description="Sentence case everywhere. Capitalize only the first word and proper nouns. Applies to buttons, page titles, table headers, labels, banners, tooltips." />
+        <Banner
+          variant="primary"
+        >
+          <Banner.Description>Sentence case everywhere. Capitalize only the first word and proper nouns. Applies to buttons, page titles, table headers, labels, banners, tooltips.</Banner.Description>
+        </Banner>
       </div>
     </Demo>
 
@@ -402,7 +406,11 @@ export const ToneOfVoice = () => (
         ]}
       />
       <div className="dsBannerBottom">
-        <Banner variant="primary" description="The product is bilingual EN/FR. These rules ensure the French UI stays consistent with the English voice while respecting French typographic conventions." />
+        <Banner
+          variant="primary"
+        >
+          <Banner.Description>The product is bilingual EN/FR. These rules ensure the French UI stays consistent with the English voice while respecting French typographic conventions.</Banner.Description>
+        </Banner>
       </div>
     </Demo>
   </Page>

@@ -279,11 +279,13 @@ export const CardPage = () => (
     <Demo title="Composed card" column>
       <div style={{ maxWidth: 420, width: '100%' }}>
         <Card>
-          <Card.Header icon={IconActivity} title="Realtime status" />
-          <Card.Content
-            title="All systems operational"
-            description="No incident in the last 24 hours."
-          />
+          <Card.Header>
+            <Card.Header.Title><Card.Header.Icon icon={IconActivity} />Realtime status</Card.Header.Title>
+          </Card.Header>
+          <Card.Content>
+            <Card.Content.Title>All systems operational</Card.Content.Title>
+            <Card.Content.Description>No incident in the last 24 hours.</Card.Content.Description>
+          </Card.Content>
         </Card>
       </div>
     </Demo>

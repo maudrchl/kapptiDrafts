@@ -144,7 +144,10 @@ const ListView = ({
             </span>
           </div>
           <div className={styles.bannerActions}>
-            <Button color="secondary" icon={IconDownload} onClick={onAddLocation}>
+            <Button
+              color="secondary" onClick={onAddLocation}
+            >
+              <Button.Icon icon={IconDownload} />
               Download app
             </Button>
             <Button color="primary" onClick={onAddLocation}>
@@ -187,10 +190,16 @@ const ListView = ({
       <div className={styles.pageHead}>
         <h1 className={styles.title}>Locations</h1>
         <div className={styles.headActions}>
-          <Button color="secondary" icon={IconExternalLink}>
+          <Button
+            color="secondary"
+          >
+            <Button.Icon icon={IconExternalLink} />
             Help
           </Button>
-          <Button color="primary" icon={IconPlus} onClick={onAddLocation}>
+          <Button
+            color="primary" onClick={onAddLocation}
+          >
+            <Button.Icon icon={IconPlus} />
             Add location
           </Button>
         </div>
@@ -270,10 +279,10 @@ const ListView = ({
         {tab === 'public' && (
           <Button
             color="secondary"
-            icon={IconListFilter}
             onClick={onManageRegions}
             style={{ marginLeft: 'auto' }}
           >
+            <Button.Icon icon={IconListFilter} />
             Manage regions
           </Button>
         )}

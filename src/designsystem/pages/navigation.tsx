@@ -69,29 +69,26 @@ export const BreadcrumbPage = () => (
     importCode={"import { Breadcrumb } from '@kapptivate/ui-kit'"}
   >
     <Demo title="Default" column>
-      <Breadcrumb
-        items={[
-          { title: 'Products' },
-          { title: 'Monitoring' },
-          { title: 'checkout-api' },
-        ]}
-      />
+      <Breadcrumb>
+        <Breadcrumb.Item>Products</Breadcrumb.Item>
+        <Breadcrumb.Item>Monitoring</Breadcrumb.Item>
+        <Breadcrumb.Item>checkout-api</Breadcrumb.Item>
+      </Breadcrumb>
     </Demo>
     <Demo title="Single item" column>
-      <Breadcrumb items={[{ title: 'Products' }]} />
+      <Breadcrumb><Breadcrumb.Item>Products</Breadcrumb.Item></Breadcrumb>
     </Demo>
     <Demo title="Collapsed (long path)" column>
       <Breadcrumb
-        maxLength={2}
-        items={[
-          { title: 'Products' },
-          { title: 'Monitoring' },
-          { title: 'Environments' },
-          { title: 'Production' },
-          { title: 'checkout-api' },
-          { title: 'Latency check' },
-        ]}
-      />
+        maxItems={2}
+      >
+        <Breadcrumb.Item>Products</Breadcrumb.Item>
+        <Breadcrumb.Item>Monitoring</Breadcrumb.Item>
+        <Breadcrumb.Item>Environments</Breadcrumb.Item>
+        <Breadcrumb.Item>Production</Breadcrumb.Item>
+        <Breadcrumb.Item>checkout-api</Breadcrumb.Item>
+        <Breadcrumb.Item>Latency check</Breadcrumb.Item>
+      </Breadcrumb>
     </Demo>
 
     <PropsTable

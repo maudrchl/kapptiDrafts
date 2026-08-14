@@ -49,7 +49,7 @@ const GuidelineBlock = ({
         {tip}
       </Text>
     )}
-    <Banner variant={variant} description={example} />
+    <Banner variant={variant}><Banner.Description>{example}</Banner.Description></Banner>
   </div>
 )
 
@@ -76,19 +76,40 @@ export const BannerPage = () => (
   >
     <Demo title="Variants" column>
       <Stack>
-        <Banner variant="primary" description="Informational message." />
-        <Banner variant="success" description="Operation succeeded." />
-        <Banner variant="warning" description="Quota almost reached." />
-        <Banner variant="danger" description="Immediate action required." />
-        <Banner variant="error" description="Something went wrong." />
+        <Banner
+          variant="primary"
+        >
+          <Banner.Description>Informational message.</Banner.Description>
+        </Banner>
+        <Banner
+          variant="success"
+        >
+          <Banner.Description>Operation succeeded.</Banner.Description>
+        </Banner>
+        <Banner
+          variant="warning"
+        >
+          <Banner.Description>Quota almost reached.</Banner.Description>
+        </Banner>
+        <Banner
+          variant="danger"
+        >
+          <Banner.Description>Immediate action required.</Banner.Description>
+        </Banner>
+        <Banner
+          variant="error"
+        >
+          <Banner.Description>Something went wrong.</Banner.Description>
+        </Banner>
       </Stack>
     </Demo>
     <Demo title="With sub-description" column>
       <Banner
         variant="warning"
-        description="SSL certificate expiring soon"
-        subDescription="Renew it before the 30th to avoid an outage."
-      />
+      >
+        <Banner.Description>SSL certificate expiring soon</Banner.Description>
+        <Banner.SubDescription>Renew it before the 30th to avoid an outage.</Banner.SubDescription>
+      </Banner>
     </Demo>
 
     <Demo
@@ -243,24 +264,21 @@ export const AlertPage = () => {
         </Button>
         <Alert
           open={open}
-          title="Publish changes?"
-          okText="Publish"
-          cancelText="Cancel"
-          onOk={() => setOpen(false)}
           onCancel={() => setOpen(false)}
         >
-          Changes will be visible immediately.
+          <Alert.Title>Publish changes?</Alert.Title>
+          <Alert.Description>Changes will be visible immediately.</Alert.Description>
+          <Alert.Cancel>Cancel</Alert.Cancel>
+          <Alert.Action onClick={() => setOpen(false)}>Publish</Alert.Action>
         </Alert>
         <Alert
           open={danger}
-          danger
-          title="Delete this test?"
-          okText="Delete"
-          cancelText="Cancel"
-          onOk={() => setDanger(false)}
           onCancel={() => setDanger(false)}
         >
-          This action cannot be undone.
+          <Alert.Title>Delete this test?</Alert.Title>
+          <Alert.Description>This action cannot be undone.</Alert.Description>
+          <Alert.Cancel>Cancel</Alert.Cancel>
+          <Alert.Action danger onClick={() => setDanger(false)}>Delete</Alert.Action>
         </Alert>
       </Demo>
 
@@ -410,17 +428,29 @@ export const TooltipPage = () => (
     importCode={"import { Tooltip } from '@kapptivate/ui-kit'"}
   >
     <Demo title="Placements">
-      <Tooltip content="Top" placement="top">
-        <Button color="secondary">Top</Button>
+      <Tooltip>
+        <Tooltip.Trigger>
+          <Button color="secondary">Top</Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Top</Tooltip.Content>
       </Tooltip>
-      <Tooltip content="Right" placement="right">
-        <Button color="secondary">Right</Button>
+      <Tooltip>
+        <Tooltip.Trigger>
+          <Button color="secondary">Right</Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content side="right">Right</Tooltip.Content>
       </Tooltip>
-      <Tooltip content="Bottom" placement="bottom">
-        <Button color="secondary">Bottom</Button>
+      <Tooltip>
+        <Tooltip.Trigger>
+          <Button color="secondary">Bottom</Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content side="bottom">Bottom</Tooltip.Content>
       </Tooltip>
-      <Tooltip content="Left" placement="left">
-        <Button color="secondary">Left</Button>
+      <Tooltip>
+        <Tooltip.Trigger>
+          <Button color="secondary">Left</Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content side="left">Left</Tooltip.Content>
       </Tooltip>
     </Demo>
 
@@ -459,7 +489,10 @@ export const PopoverPage = () => (
           </div>
         }
       >
-        <Button color="secondary" icon={IconHelpCircle}>
+        <Button
+          color="secondary"
+        >
+          <Button.Icon icon={IconHelpCircle} />
           Learn more
         </Button>
       </Popover>

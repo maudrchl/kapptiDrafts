@@ -279,20 +279,23 @@ const ToolBtn = ({
   counter?: number
   onClick: () => void
 }) => (
-  <Tooltip content={label}>
-    <button
-      type="button"
-      aria-label={label}
-      aria-pressed={active}
-      onClick={onClick}
-      style={{
-        ...styles.btn,
-        ...(active ? styles.btnActive : null),
-      }}
-    >
-      {glyph ?? (Icon ? <Icon size={17} /> : null)}
-      {counter != null && <span style={styles.counter}>{counter}</span>}
-    </button>
+  <Tooltip>
+    <Tooltip.Trigger>
+      <button
+        type="button"
+        aria-label={label}
+        aria-pressed={active}
+        onClick={onClick}
+        style={{
+          ...styles.btn,
+          ...(active ? styles.btnActive : null),
+        }}
+      >
+        {glyph ?? (Icon ? <Icon size={17} /> : null)}
+        {counter != null && <span style={styles.counter}>{counter}</span>}
+      </button>
+    </Tooltip.Trigger>
+    <Tooltip.Content>{label}</Tooltip.Content>
   </Tooltip>
 )
 

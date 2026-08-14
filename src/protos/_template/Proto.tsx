@@ -33,8 +33,9 @@ const Proto = () => {
 
       <Banner
         variant="primary"
-        description="Tout ui-kit est dispo — voir /gallery pour la liste."
-      />
+      >
+        <Banner.Description>Tout ui-kit est dispo — voir /gallery pour la liste.</Banner.Description>
+      </Banner>
 
       <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>
         <Button color="primary">Action principale</Button>

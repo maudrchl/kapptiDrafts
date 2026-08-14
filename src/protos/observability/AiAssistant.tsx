@@ -112,10 +112,10 @@ const AiAssistant = ({ open, onClose }: { open: boolean; onClose: () => void }) 
                       })}
                       <Button
                         color={msg.added ? 'secondary' : 'primary'}
-                        icon={msg.added ? Check : Plus}
                         disabled={msg.added}
                         onClick={() => addProposal(i, msg.proposal!)}
                       >
+                        <Button.Icon icon={msg.added ? Check : Plus} />
                         {msg.added
                           ? 'Added'
                           : msg.proposal.panels.length > 1
@@ -150,7 +150,11 @@ const AiAssistant = ({ open, onClose }: { open: boolean; onClose: () => void }) 
               placeholder="Describe a panel… e.g. error rate by service"
               onChange={(e) => setInput(e.target.value)}
             />
-            <Button type="submit" color="primary" icon={Send} disabled={!input.trim() || thinking} />
+            <Button
+              type="submit" color="primary" disabled={!input.trim() || thinking}
+            >
+              <Button.Icon icon={Send} />
+            </Button>
           </form>
         </div>
       </div>
