@@ -341,62 +341,56 @@ const VariablesProto = () => {
     )
     const avail = localsBefore(step.n)
     /**
-     * Le menu de cible suit l'ACTION choisie : « Update global variable » ne
-     * propose que des globales, « Set local variable » ne propose que des
-     * locales (nouvelle ou existante). Une action, une famille de cible.
+     * Le menu ne sert qu'à CHOISIR une variable existante : le nom d'une
+     * nouvelle locale se tape dans le champ. Donc pas de chevron quand il n'y a
+     * rien à choisir (aucune locale en amont), et pas d'item « New local
+     * variable » qui doublerait la saisie.
      */
     const content =
       t.kind === 'global' ? (
         <div className={styles.targetPop}>
-          <div className={styles.popGroup}>
-            <div className={styles.popGroupHead}>Global variables</div>
-            {GLOBALS.map((g) =>
-              item(
-                optLabel(g.name, 'global'),
-                t.name === g.name,
-                () => setTarget(step, 'global', g.name),
-                `gl-${g.name}`,
-              ),
-            )}
-            <div className={styles.popHint}>Writes the new value back to Configurations.</div>
-          </div>
+          <div className={styles.popHint}>Which global variable this step updates.</div>
+          {GLOBALS.map((g) =>
+            item(
+              optLabel(g.name, 'global'),
+              t.name === g.name,
+              () => setTarget(step, 'global', g.name),
+              `gl-${g.name}`,
+            ),
+          )}
         </div>
       ) : (
         <div className={styles.targetPop}>
-          <div className={styles.popGroup}>
-            <div className={styles.popGroupHead}>Create</div>
-            {item(
-              <span className={styles.opt}>
-                <span className={`${styles.optIcon} ${styles.tintLightBlue}`}>
-                  <IconPlus size={12} />
-                </span>
-                <span className={styles.optName}>New local variable</span>
-              </span>,
-              t.kind === 'new',
-              () => setTarget(step, 'new'),
-              'new',
-            )}
-            <div className={styles.popHint}>
-              Lives on this step, available in the steps that follow.
-            </div>
-          </div>
-
-          {avail.length > 0 && (
-            <div className={styles.popGroup}>
-              <div className={styles.popGroupHead}>Local variables</div>
-              {avail.map((l) =>
-                item(
-                  optLabel(l.name, 'local', l.step),
-                  t.kind === 'local' && t.name === l.name,
-                  () => setTarget(step, 'local', l.name),
-                  `loc-${l.name}`,
-                ),
+          <div className={styles.popHint}>Reassign a local variable set earlier.</div>
+          {avail.map((l) =>
+            item(
+              optLabel(l.name, 'local', l.step),
+              t.kind === 'local' && t.name === l.name,
+              () => setTarget(step, 'local', l.name),
+              `loc-${l.name}`,
+            ),
+          )}
+          {t.kind === 'local' && (
+            <>
+              <div className={styles.popSep} />
+              {item(
+                <span className={styles.opt}>
+                  <span className={`${styles.optIcon} ${styles.tintLightBlue}`}>
+                    <IconPlus size={12} />
+                  </span>
+                  <span className={styles.optName}>Create a new variable instead</span>
+                </span>,
+                false,
+                () => setTarget(step, 'new'),
+                'new',
               )}
-              <div className={styles.popHint}>Reassigns a local variable set earlier.</div>
-            </div>
+            </>
           )}
         </div>
       )
+
+    /** Rien à choisir : le champ se suffit à lui-même, on masque le chevron. */
+    const hasChoice = t.kind === 'global' || t.kind === 'local' || avail.length > 0
     /**
      * Une seule commande pour la cible, pour tenir sur la ligne du step :
      * nouvelle locale → champ { nom } éditable, cible existante → pastille.
@@ -423,19 +417,21 @@ const VariablesProto = () => {
           </span>
         )}
         <span className={styles.brace}>{'}'}</span>
-        <Popover
-          trigger="click"
-          placement="bottomLeft"
-          noPadding
-          arrow={false}
-          open={targetOpen === step.id}
-          setOpen={(o) => setTargetOpen(o ? step.id : null)}
-          content={content}
-        >
-          <button type="button" className={styles.slotChevron} aria-label="Target variable">
-            <IconChevronDown size={13} />
-          </button>
-        </Popover>
+        {hasChoice && (
+          <Popover
+            trigger="click"
+            placement="bottomLeft"
+            noPadding
+            arrow={false}
+            open={targetOpen === step.id}
+            setOpen={(o) => setTargetOpen(o ? step.id : null)}
+            content={content}
+          >
+            <button type="button" className={styles.slotChevron} aria-label="Target variable">
+              <IconChevronDown size={13} />
+            </button>
+          </Popover>
+        )}
       </span>
     )
   }
