@@ -18,6 +18,7 @@ import {
   IconBot,
   IconBraces,
   IconCheck,
+  IconCheckCircle2,
   IconChevronDown,
   IconChromium,
   IconCode,
@@ -120,6 +121,50 @@ const RAIL_SECTIONS = [
 ]
 
 type LocalVar = { name: string; step: number }
+
+/**
+ * Champ de valeur avec pastilles.
+ *
+ * Le composant Slate du produit resynchronise sa prop `value` dans un effet
+ * gardé par un drapeau à usage unique. Sous StrictMode l'effet est joué deux
+ * fois : le 2e passage vide l'éditeur et replace le curseur au début, donc on
+ * ne peut plus taper. Et comme les segments sont reconstruits à chaque render,
+ * le moindre re-render provoquait la même remise à zéro.
+ *
+ * D'où ce wrapper : les segments vivent ICI, le champ n'est plus piloté de
+ * l'extérieur après le montage, et le parent ne reçoit que la chaîne.
+ */
+const VarField = ({
+  initial,
+  onValue,
+  toText,
+  suggestions,
+  placeholder,
+  borderless,
+}: {
+  initial: TagInputValue[]
+  onValue: (next: string) => void
+  toText: (segs: TagInputValue[]) => string
+  suggestions: Suggestions[]
+  placeholder: string
+  borderless?: boolean
+}) => {
+  const [segs, setSegs] = useState<TagInputValue[]>(initial)
+  return (
+    <SlateInputTag
+      fullWidth
+      borderless={borderless}
+      value={segs}
+      onChange={(next) => {
+        const v = typeof next === 'function' ? next(segs) : next
+        setSegs(v)
+        onValue(toText(v))
+      }}
+      suggestions={suggestions}
+      placeholder={placeholder}
+    />
+  )
+}
 
 const VariablesProto = () => {
   const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS)
@@ -246,12 +291,10 @@ const VariablesProto = () => {
     placeholder: string,
   ) => (
     <span className={chrome.canvasField} onClick={(e) => e.stopPropagation()}>
-      <SlateInputTag
-        fullWidth
-        value={toSegments(value)}
-        onChange={(segs) =>
-          onValue(fromSegments(typeof segs === 'function' ? segs(toSegments(value)) : segs))
-        }
+      <VarField
+        initial={toSegments(value)}
+        onValue={onValue}
+        toText={fromSegments}
         suggestions={suggestionsFor(stepNumber)}
         placeholder={placeholder}
       />
@@ -687,34 +730,43 @@ const VariablesProto = () => {
       </>,
     )
 
-  /** Step d'interface : action, locator, et la valeur quand l'action en prend une. */
+  /**
+   * Step d'interface. L'élément visé prend toute la largeur de la ligne, avec
+   * la coche de résolution et le picker {} (comme dans l'éditeur), et la valeur
+   * passe sur sa propre ligne quand l'action en prend une.
+   */
   const uiCard = (step: Step & { kind: 'ui' }) =>
     stepShell(
       step.n,
-      <div className={`${chrome.stepTop} ${styles.setRow}`} onClick={(e) => e.stopPropagation()}>
-        <span className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}>{step.n}</span>
-        {actionMenu(step, step.action)}
-        <span className={styles.locator} onClick={(e) => e.stopPropagation()}>
-          <Input
-            size="s"
-            mono
-            fullWidth
-            placeholder="Element"
-            value={step.locator}
-            onChange={(e) => patchUi(step.id, { locator: e.target.value })}
-          />
-        </span>
+      <>
+        <div className={chrome.stepTop} onClick={(e) => e.stopPropagation()}>
+          <span className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}>{step.n}</span>
+          {actionMenu(step, step.action)}
+          <span className={styles.elBox}>
+            <span className={styles.elCheck}>
+              <IconCheckCircle2 size={14} />
+            </span>
+            <VarField
+              borderless
+              initial={toSegments(step.locator)}
+              onValue={(v) => patchUi(step.id, { locator: v })}
+              toText={fromSegments}
+              suggestions={suggestionsFor(step.n)}
+              placeholder="Describe the element"
+            />
+          </span>
+        </div>
         {step.value !== undefined && (
-          <div className={styles.setField}>
+          <div className={styles.urlRow} onClick={(e) => e.stopPropagation()}>
             {varInput(step.value, (v) => patchUi(step.id, { value: v }), step.n, 'Value')}
           </div>
         )}
-      </div>,
+      </>,
     )
 
   const setCard = (step: SetStep) => {
     const label = setStepLabel(step.target)
-    // Tout tient sur la ligne du step : action, cible, = , source, valeur.
+    // Ligne 1 : l'action et la cible. Ligne 2 : la valeur, en lecture seule.
     return stepShell(
       step.n,
       <>
@@ -722,10 +774,18 @@ const VariablesProto = () => {
           <span className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}>{step.n}</span>
           {actionMenu(step, label)}
           {targetSelector(step)}
-          {/* la carte reste lisible d'un coup d'œil : la valeur est un résumé,
-              elle s'édite dans le panneau du step (qui EST le step). */}
-          <span className={styles.summary}>
-            <span className={styles.eq}>=</span>
+        </div>
+        {/* la valeur prend sa propre ligne, comme celle d'un Fill input : en
+            lecture seule ici, elle s'édite dans le panneau du step. */}
+        <div className={styles.urlRow} onClick={(e) => e.stopPropagation()}>
+          <span
+            className={styles.summary}
+            onClick={() => {
+              setSel(step.n)
+              setStepTab('general')
+            }}
+            title="Edit the value in the step panel"
+          >
             {stepValue(step) ? (
               <>
                 <span className={styles.sumChip}>{sourceLabel(step.source)}</span>

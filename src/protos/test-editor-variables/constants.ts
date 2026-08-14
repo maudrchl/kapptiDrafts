@@ -301,10 +301,10 @@ export const GLOBALS: GlobalVar[] = [
  * dans les steps qui suivent leur affectation (step 8 et 10).
  */
 export const INITIAL_STEPS: Step[] = [
-  { id: 's1', n: 1, group: 1, kind: 'ui', action: 'Click', locator: 'Log in' },
-  { id: 's2', n: 2, group: 1, kind: 'ui', action: 'Fill input', locator: '#email', value: '{{email}}' },
-  { id: 's3', n: 3, group: 1, kind: 'ui', action: 'Fill input', locator: '#password', value: '{{password}}' },
-  { id: 's4', n: 4, group: 1, kind: 'ui', action: 'Click', locator: 'Sign in' },
+  { id: 's1', n: 1, group: 1, kind: 'ui', action: 'Click', locator: 'The "Log in" button in the header' },
+  { id: 's2', n: 2, group: 1, kind: 'ui', action: 'Fill input', locator: 'The email field of the login form', value: '{{email}}' },
+  { id: 's3', n: 3, group: 1, kind: 'ui', action: 'Fill input', locator: 'The password field of the login form', value: '{{password}}' },
+  { id: 's4', n: 4, group: 1, kind: 'ui', action: 'Click', locator: 'The "Sign in" submit button' },
   // Extraction au runtime : la valeur se définit ICI, sur le step.
   {
     id: 's5',
@@ -318,8 +318,8 @@ export const INITIAL_STEPS: Step[] = [
     headerName: '',
     script: "return window.localStorage.getItem('access_token')",
   },
-  { id: 's6', n: 6, group: 2, kind: 'ui', action: 'Click', locator: 'Add to cart' },
-  { id: 's7', n: 7, group: 2, kind: 'ui', action: 'Click', locator: 'Checkout' },
+  { id: 's6', n: 6, group: 2, kind: 'ui', action: 'Click', locator: 'The "Add to cart" button on the product card' },
+  { id: 's7', n: 7, group: 2, kind: 'ui', action: 'Click', locator: 'The "Checkout" button of the cart summary' },
   // Confirmation côté serveur, pour extraire la référence de commande.
   { id: 's8', n: 8, group: 2, kind: 'api', action: 'API Call', method: 'POST', url: '{{URL}}/orders' },
   {
@@ -353,7 +353,7 @@ export const INITIAL_STEPS: Step[] = [
     n: 11, group: 2,
     kind: 'ui',
     action: 'Assert displayed',
-    locator: '.order-confirmation',
+    locator: 'The order confirmation banner',
     value: 'Order {{orderRef}} confirmed',
   },
 ]
