@@ -16,10 +16,12 @@ import {
   Tooltip,
   IconBell,
   IconBot,
+  IconBox,
   IconBraces,
   IconCheck,
   IconCheckCircle2,
   IconChevronDown,
+  IconChevronRight,
   IconChromium,
   IconCode,
   IconColouredLogo,
@@ -50,6 +52,7 @@ import styles from './variables.module.scss'
 import {
   ACTION_GROUPS,
   GLOBALS,
+  GLOBAL_GROUPS,
   INITIAL_STEPS,
   INPUTS,
   NATURE_TINT,
@@ -391,8 +394,10 @@ const VariablesProto = () => {
      */
     const content =
       t.kind === 'global' ? (
+        /* Le picker de variables du produit : pastilles {} pour les globales,
+           groupes de Configurations avec leur contenu en sous-popover, et la
+           création en pied. */
         <div className={styles.targetPop}>
-          <div className={styles.popHint}>Which global variable this step updates.</div>
           {GLOBALS.map((g) =>
             item(
               optLabel(g.name, 'global'),
@@ -401,6 +406,44 @@ const VariablesProto = () => {
               `gl-${g.name}`,
             ),
           )}
+          {GLOBAL_GROUPS.map((grp) => (
+            <Popover
+              key={grp.name}
+              trigger="hover"
+              placement="rightTop"
+              noPadding
+              arrow={false}
+              content={
+                <div className={styles.targetPop}>
+                  {grp.vars.map((v) =>
+                    item(
+                      optLabel(v, 'global'),
+                      t.name === v,
+                      () => setTarget(step, 'global', v),
+                      `${grp.name}-${v}`,
+                    ),
+                  )}
+                </div>
+              }
+            >
+              <div className={styles.popItem}>
+                <span className={styles.opt}>
+                  <span className={`${styles.optIcon} ${styles.optIconPlain}`}>
+                    <IconBox size={12} />
+                  </span>
+                  <span className={styles.optName}>{grp.name}</span>
+                </span>
+                <span className={styles.popMore}>
+                  <IconChevronRight size={14} />
+                </span>
+              </div>
+            </Popover>
+          ))}
+          <div className={styles.popFoot}>
+            <Button color="secondary" size="s" fullWidth icon={IconPlus}>
+              Create global variable
+            </Button>
+          </div>
         </div>
       ) : (
         <div className={styles.targetPop}>
@@ -1138,15 +1181,19 @@ const VariablesProto = () => {
                           <div className={chrome.stepGroupTitle}>{g.title}</div>
                           <div className={chrome.stepGroupSub}>{groupSteps.length} steps</div>
                         </div>
-                        <span className={`${styles.groupCaret} ${open ? styles.groupCaretOpen : ''}`}>
-                          <IconChevronDown size={18} />
+                        <span className={styles.groupActions}>
+                          <span
+                            className={`${styles.groupCaret} ${open ? styles.groupCaretOpen : ''}`}
+                          >
+                            <IconChevronDown size={18} />
+                          </span>
+                          <button
+                            className={chrome.stepGroupMore}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <IconMoreHorizontal size={18} />
+                          </button>
                         </span>
-                        <button
-                          className={chrome.stepGroupMore}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <IconMoreHorizontal size={18} />
-                        </button>
                       </div>
 
                       {open && (

@@ -294,6 +294,17 @@ export const GLOBALS: GlobalVar[] = [
   { name: 'sessionId', value: 'sess_8c21f0' },
 ]
 
+/**
+ * Groupes de variables de Configurations : dans le picker du produit ils se
+ * présentent sous les globales, avec un chevron qui ouvre leur contenu.
+ */
+export type GlobalGroup = { name: string; vars: string[] }
+
+export const GLOBAL_GROUPS: GlobalGroup[] = [
+  { name: 'Default', vars: ['baseUrl', 'apiKey', 'timeout'] },
+  { name: 'Rocket Corp', vars: ['tenantId', 'plan'] },
+]
+
 /* ---------------- scénario ----------------
  * Un vrai test v2 est un scénario navigateur : on se connecte, on passe
  * commande, et les steps de variable se glissent entre les interactions.

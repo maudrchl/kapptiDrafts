@@ -121,10 +121,21 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   flex-direction: column;
   align-items: center;
 }
-/* accordéon : le chevron pivote quand le groupe est déplié */
-.groupCaret {
+/* chevron + kebab collés à droite (les deux avaient un margin-left:auto et se
+   repoussaient l'un l'autre) */
+.groupActions {
   margin-left: auto;
   display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  button {
+    margin-left: 0;
+  }
+}
+/* accordéon : le chevron pivote quand le groupe est déplié */
+.groupCaret {
+  display: inline-flex;
+  padding: 4px;
   color: $muted;
   transform: rotate(-90deg);
   transition: transform 0.15s ease;
@@ -300,7 +311,7 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   display: flex;
   align-items: center;
   gap: 5px;
-  min-width: 0;
+  min-width: 96px;
   padding: 0 7px;
   font-size: 13px;
   font-weight: 500;
@@ -470,6 +481,22 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   margin-left: auto;
   color: $light-blue;
   flex: none;
+}
+/* pastille neutre (groupe de variables) */
+.optIconPlain {
+  background: rgba(102, 112, 133, 0.08);
+  color: $ink-2;
+}
+.popMore {
+  margin-left: auto;
+  display: inline-flex;
+  color: $faint;
+}
+/* pied du picker : la création, comme dans le produit */
+.popFoot {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid $border;
 }
 .popHint {
   padding: 4px 8px 6px;
