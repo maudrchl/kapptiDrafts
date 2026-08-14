@@ -53,15 +53,6 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
 }
 
 /* teinte sur la seule pastille {} (pas de fond, pas de texte coloré) */
-.markOrange {
-  color: $orange;
-}
-.markLightBlue {
-  color: $light-blue;
-}
-.markDarkBlue {
-  color: $dark-blue;
-}
 
 /* ===================== pastille de variable ===================== */
 .pill {
@@ -134,6 +125,19 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   font-family: $mono;
   font-size: 13px;
   color: $faint;
+}
+
+/* un groupe de steps + son connecteur, empilés verticalement */
+.groupWrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* locator d'un step d'interface : mono, largeur souple */
+.locator {
+  flex: 0 1 190px;
+  min-width: 120px;
 }
 
 /* API call : l'URL prend sa propre ligne sous l'action et la méthode */
@@ -211,27 +215,20 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
     color: $faint;
   }
 }
-.info {
-  flex: none;
-  display: inline-grid;
-  place-items: center;
-  color: $faint;
-  cursor: default;
-}
 
 /**
  * Slot de cible : UNE seule commande pour « quoi j'affecte ».
  * Nouvelle locale → champ { nom } éditable ; cible existante → pastille.
  * Le chevron ouvre le sélecteur de cible dans les deux cas.
  */
-/* 26px + Geist 13px = exactement les Select/Input `size="s"` du DS */
+/* 26px + Geist 13px = exactement les Select/Input `size="s"` du DS.
+   Encadrement { } en gris, façon champ « Pre / Post tab » du DS. */
 .targetSlot {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   flex: none;
   height: 26px;
-  max-width: 184px;
-  padding-left: 7px;
+  max-width: 196px;
   font-size: 13px;
   border: 1px solid $border;
   border-radius: $radius-sm;
@@ -241,13 +238,15 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
     border-color: $border-focus;
   }
 }
-/* petite pastille {} : dit « variable », sans peindre le texte */
-.slotMark {
+.brace {
   flex: none;
   display: grid;
   place-items: center;
-  color: $light-blue;
-  margin-right: 5px;
+  width: 22px;
+  background: var(--color-grey-200, #f5f5f8);
+  color: $ink-2;
+  font-family: $mono;
+  font-size: 13px;
 }
 .nameInput {
   flex: 1 1 auto;
@@ -255,7 +254,7 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   width: 96px;
   border: 0;
   outline: none;
-  padding: 0;
+  padding: 0 7px;
   font: inherit;
   font-weight: 500;
   color: $ink;
@@ -264,13 +263,14 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
     color: $faint;
   }
 }
-/* cible existante : même poids visuel que le champ, seule la pastille est teintée */
+/* cible existante : le nom se lit comme la saisie, entre les mêmes { } */
 .slotName {
   flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: 5px;
   min-width: 0;
+  padding: 0 7px;
   font-size: 13px;
   font-weight: 500;
   color: $ink;
@@ -460,6 +460,10 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   flex: 1 1 auto;
   min-width: 0;
 }
+.pickWrap {
+  flex: none;
+  display: inline-flex;
+}
 .pickBox {
   width: 320px;
   max-height: 300px;
@@ -593,13 +597,6 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
     filter: brightness(0.97);
   }
 }
-.envFoot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-top: 1px solid rgba(228, 231, 236, 0.7);
-}
 
 /* note calme : ce que le panneau ne contient PAS, et pourquoi */
 .note {
@@ -617,21 +614,6 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
     flex: none;
     margin-top: 2px;
     color: $faint;
-  }
-}
-.noteWhy {
-  align-self: flex-start;
-  margin-left: auto;
-  flex: none;
-  border: 0;
-  background: transparent;
-  color: $light-blue;
-  font-size: 12.5px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0;
-  &:hover {
-    text-decoration: underline;
   }
 }
 
@@ -699,53 +681,6 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
 }
 
 /* ===================== modale « what changed » ===================== */
-.rules {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.rule {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
-  gap: 10px;
-}
-.ruleNum {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: $light-blue-soft;
-  color: $light-blue;
-  font-size: 11.5px;
-  font-weight: 700;
-  display: grid;
-  place-items: center;
-}
-.ruleTitle {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: $ink;
-  margin-bottom: 2px;
-}
-.ruleBody {
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: $ink-2;
-}
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  margin-top: 6px;
-  padding-top: 14px;
-  border-top: 1px solid $border;
-}
-.legendItem {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12px;
-  color: $ink-2;
-}
 
 /* flash du step d'origine quand on clique un badge « Step N » */
 .flash {

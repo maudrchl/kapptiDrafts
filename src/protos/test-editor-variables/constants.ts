@@ -208,15 +208,35 @@ export const iconOfAction = (label: string): IconComp =>
 export type ApiStep = {
   id: string
   n: number
+  /** step group d'appartenance (cf. STEP_GROUPS) */
+  group: number
   kind: 'api'
   action: string
   method: string
   url: string
 }
 
+/**
+ * Step d'interface (clic, saisie, assertion) : un locator, et une valeur pour
+ * les actions qui en prennent une. C'est là qu'on consomme les variables.
+ */
+export type UiStep = {
+  id: string
+  n: number
+  /** step group d'appartenance (cf. STEP_GROUPS) */
+  group: number
+  kind: 'ui'
+  action: string
+  locator: string
+  /** absent = l'action ne prend pas de valeur (ex. Click) */
+  value?: string
+}
+
 export type SetStep = {
   id: string
   n: number
+  /** step group d'appartenance (cf. STEP_GROUPS) */
+  group: number
   kind: 'set'
   target: Target
   /** nom de la variable créée (cible `new` uniquement) */
@@ -229,7 +249,15 @@ export type SetStep = {
   script: string
 }
 
-export type Step = ApiStep | SetStep
+export type Step = ApiStep | UiStep | SetStep
+
+/** Le scénario est découpé en groupes, comme dans l'éditeur. */
+export type StepGroup = { n: number; title: string }
+
+export const STEP_GROUPS: StepGroup[] = [
+  { n: 1, title: 'Log in' },
+  { n: 2, title: 'Place the order' },
+]
 
 /** Valeur affichée pour la source courante. */
 export const stepValue = (s: SetStep): string =>
@@ -266,41 +294,37 @@ export const GLOBALS: GlobalVar[] = [
   { name: 'sessionId', value: 'sess_8c21f0' },
 ]
 
-/* ---------------- scénario ---------------- */
+/* ---------------- scénario ----------------
+ * Un vrai test v2 est un scénario navigateur : on se connecte, on passe
+ * commande, et les steps de variable se glissent entre les interactions.
+ * Les in-test inputs se consomment dans les saisies (step 2 et 3), les locales
+ * dans les steps qui suivent leur affectation (step 8 et 10).
+ */
 export const INITIAL_STEPS: Step[] = [
+  { id: 's1', n: 1, group: 1, kind: 'ui', action: 'Click', locator: 'Log in' },
+  { id: 's2', n: 2, group: 1, kind: 'ui', action: 'Fill input', locator: '#email', value: '{{email}}' },
+  { id: 's3', n: 3, group: 1, kind: 'ui', action: 'Fill input', locator: '#password', value: '{{password}}' },
+  { id: 's4', n: 4, group: 1, kind: 'ui', action: 'Click', locator: 'Sign in' },
+  // Extraction au runtime : la valeur se définit ICI, sur le step.
   {
-    id: 's1',
-    n: 1,
-    kind: 'api',
-    action: 'API Call',
-    method: 'POST',
-    url: '{{URL}}/auth/login',
-  },
-  // Le cas d'école : une extraction. La valeur se définit ICI, sur le step.
-  {
-    id: 's2',
-    n: 2,
+    id: 's5',
+    n: 5, group: 1,
     kind: 'set',
     target: { kind: 'new', name: '' },
     name: 'authToken',
-    source: 'json',
+    source: 'script',
     staticValue: '',
-    jsonPath: '$.access_token',
+    jsonPath: '',
     headerName: '',
-    script: '',
+    script: "return window.localStorage.getItem('access_token')",
   },
+  { id: 's6', n: 6, group: 2, kind: 'ui', action: 'Click', locator: 'Add to cart' },
+  { id: 's7', n: 7, group: 2, kind: 'ui', action: 'Click', locator: 'Checkout' },
+  // Confirmation côté serveur, pour extraire la référence de commande.
+  { id: 's8', n: 8, group: 2, kind: 'api', action: 'API Call', method: 'POST', url: '{{URL}}/orders' },
   {
-    id: 's3',
-    n: 3,
-    kind: 'api',
-    action: 'API Call',
-    method: 'POST',
-    url: '{{URL}}/orders',
-  },
-  // Une 2e locale, produite par le step 3.
-  {
-    id: 's4',
-    n: 4,
+    id: 's9',
+    n: 9, group: 2,
     kind: 'set',
     target: { kind: 'new', name: '' },
     name: 'orderRef',
@@ -312,8 +336,8 @@ export const INITIAL_STEPS: Step[] = [
   },
   // Variant « Update global variable » : la cible est une globale.
   {
-    id: 's5',
-    n: 5,
+    id: 's10',
+    n: 10, group: 2,
     kind: 'set',
     target: { kind: 'global', name: 'sessionId' },
     name: '',
@@ -323,15 +347,14 @@ export const INITIAL_STEPS: Step[] = [
     headerName: 'x-session-id',
     script: '',
   },
-  // Consomme les locales en aval : le picker {} de l'URL les propose,
-  // badgées du step qui les affecte.
+  // Consomme une locale en aval : le picker {} la propose, badgée « Step 9 ».
   {
-    id: 's6',
-    n: 6,
-    kind: 'api',
-    action: 'API Call',
-    method: 'GET',
-    url: '{{URL}}/orders/{{orderRef}}',
+    id: 's11',
+    n: 11, group: 2,
+    kind: 'ui',
+    action: 'Assert displayed',
+    locator: '.order-confirmation',
+    value: 'Order {{orderRef}} confirmed',
   },
 ]
 

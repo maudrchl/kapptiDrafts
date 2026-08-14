@@ -9,7 +9,6 @@ import {
   EmptyState,
   Input,
   SearchInput,
-  Modal,
   Popover,
   Select,
   Tabs,
@@ -54,8 +53,8 @@ import {
   INPUTS,
   NATURE_TINT,
   RESPONSE_HEADERS,
+  STEP_GROUPS,
   RESPONSE_ROWS,
-  RULES,
   SET_LOCAL,
   SOURCES,
   UPDATE_GLOBAL,
@@ -107,13 +106,6 @@ const TINT_CLASS: Record<Tint, string> = {
   'dark-blue': styles.tintDarkBlue,
 }
 
-/* Teinte portée par la seule pastille {} (texte laissé neutre). */
-const TINT_MARK: Record<Tint, string> = {
-  orange: styles.markOrange,
-  'light-blue': styles.markLightBlue,
-  'dark-blue': styles.markDarkBlue,
-}
-
 /* Teinte d'une nature → couleur de tag dans l'input Slate du produit. */
 const TAG_COLOR: Record<Tint, TagColor> = {
   orange: 'primary',
@@ -138,7 +130,6 @@ const VariablesProto = () => {
   /** onglet du panneau d'un step (General / Variables / Checks / Advanced) */
   const [stepTab, setStepTab] = useState('general')
   const [flash, setFlash] = useState<number | null>(null)
-  const [whyOpen, setWhyOpen] = useState(false)
   const [targetOpen, setTargetOpen] = useState<string | null>(null)
   const [pathOpen, setPathOpen] = useState<string | null>(null)
   /** menu d'actions : step ouvert, recherche, catégories dépliées */
@@ -154,6 +145,8 @@ const VariablesProto = () => {
     )
   const patchApi = (id: string, next: { url?: string; action?: string }) =>
     setSteps((cur) => cur.map((s) => (s.id === id && s.kind === 'api' ? { ...s, ...next } : s)))
+  const patchUi = (id: string, next: { locator?: string; value?: string; action?: string }) =>
+    setSteps((cur) => cur.map((s) => (s.id === id && s.kind === 'ui' ? { ...s, ...next } : s)))
 
   /**
    * Variables locales du test : celles qu'un Set variable crée (cible « new »).
@@ -406,10 +399,8 @@ const VariablesProto = () => {
      */
     return (
       <span className={styles.targetSlot} onClick={(e) => e.stopPropagation()}>
-        {/* la pastille {} porte la teinte de la nature, le texte reste neutre */}
-        <span className={`${styles.slotMark} ${TINT_MARK[NATURE_TINT[targetNature(t.kind)]]}`}>
-          <IconBraces size={12} />
-        </span>
+        {/* champ « Pre / Post tab » : { } en boîtes grises, nom en texte normal */}
+        <span className={styles.brace}>{'{'}</span>
         {t.kind === 'new' ? (
           <input
             className={styles.nameInput}
@@ -426,6 +417,7 @@ const VariablesProto = () => {
             )}
           </span>
         )}
+        <span className={styles.brace}>{'}'}</span>
         <Popover
           trigger="click"
           placement="bottomLeft"
@@ -483,11 +475,14 @@ const VariablesProto = () => {
         </div>
       }
     >
-      <Tooltip content="Pick from the last response">
-        <span>
+      {/* Le Popover doit s'accrocher à un élément simple : si on lui donne un
+          Tooltip comme enfant, le clic n'atteint jamais le trigger. Le Tooltip
+          se met donc À L'INTÉRIEUR, sur le bouton. */}
+      <span className={styles.pickWrap}>
+        <Tooltip content="Pick from the last response">
           <Button color="secondary" size="s" icon={IconCode} />
-        </span>
-      </Tooltip>
+        </Tooltip>
+      </span>
     </Popover>
   )
 
@@ -573,6 +568,8 @@ const VariablesProto = () => {
       patchStep(step.id, { target: { kind: 'global', name: GLOBALS[0].name } })
     } else if (step.kind === 'api') {
       patchApi(step.id, { action: label })
+    } else if (step.kind === 'ui') {
+      patchUi(step.id, { action: label })
     }
     setActionOpen(null)
     setActionQuery('')
@@ -689,6 +686,31 @@ const VariablesProto = () => {
       </>,
     )
 
+  /** Step d'interface : action, locator, et la valeur quand l'action en prend une. */
+  const uiCard = (step: Step & { kind: 'ui' }) =>
+    stepShell(
+      step.n,
+      <div className={`${chrome.stepTop} ${styles.setRow}`} onClick={(e) => e.stopPropagation()}>
+        <span className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}>{step.n}</span>
+        {actionMenu(step, step.action)}
+        <span className={styles.locator} onClick={(e) => e.stopPropagation()}>
+          <Input
+            size="s"
+            mono
+            fullWidth
+            placeholder="Element"
+            value={step.locator}
+            onChange={(e) => patchUi(step.id, { locator: e.target.value })}
+          />
+        </span>
+        {step.value !== undefined && (
+          <div className={styles.setField}>
+            {varInput(step.value, (v) => patchUi(step.id, { value: v }), step.n, 'Value')}
+          </div>
+        )}
+      </div>,
+    )
+
   const setCard = (step: SetStep) => {
     const label = setStepLabel(step.target)
     // Tout tient sur la ligne du step : action, cible, = , source, valeur.
@@ -793,17 +815,6 @@ const VariablesProto = () => {
         })}
       </div>
 
-      {/* Ce que le panneau ne contient PAS, et pourquoi. */}
-      <div className={styles.note}>
-        <IconInfo size={15} />
-        <span>
-          <b>No local variables here.</b> They are assigned on their step and show up in the value
-          picker of the steps that follow.
-        </span>
-        <button type="button" className={styles.noteWhy} onClick={() => setWhyOpen(true)}>
-          Why?
-        </button>
-      </div>
     </div>
   )
 
@@ -812,7 +823,11 @@ const VariablesProto = () => {
     const step = steps.find((s) => s.n === n)
     if (!step) return null
     const title =
-      step.kind === 'set' ? setStepLabel(step.target) : `${step.action} · ${step.method}`
+      step.kind === 'set'
+        ? setStepLabel(step.target)
+        : step.kind === 'api'
+          ? `${step.action} · ${step.method}`
+          : step.action
     return (
       <>
         <div className={chrome.panelHeader}>
@@ -1034,38 +1049,45 @@ const VariablesProto = () => {
                 </div>
               </div>
 
-              <span className={chrome.connector} />
+              {/* deux groupes : la connexion, puis la commande */}
+              {STEP_GROUPS.map((g) => {
+                const groupSteps = steps.filter((s) => s.group === g.n)
+                return (
+                  <div key={g.n} className={styles.groupWrap}>
+                    <span className={chrome.connector} />
+                    <div className={chrome.stepGroup}>
+                      <div className={chrome.stepGroupHead}>
+                        <span className={chrome.stepGroupMark}>
+                          <IconColouredLogo size={32} />
+                        </span>
+                        <div>
+                          <div className={chrome.stepGroupTitle}>{g.title}</div>
+                          <div className={chrome.stepGroupSub}>{groupSteps.length} steps</div>
+                        </div>
+                        <button className={chrome.stepGroupMore}>
+                          <IconMoreHorizontal size={18} />
+                        </button>
+                      </div>
 
-              <div className={chrome.stepGroup}>
-                <div className={chrome.stepGroupHead}>
-                  <span className={chrome.stepGroupMark}>
-                    <IconColouredLogo size={32} />
-                  </span>
-                  <div>
-                    <div className={chrome.stepGroupTitle}>Login and place an order</div>
-                    <div className={chrome.stepGroupSub}>{steps.length} steps</div>
+                      {groupSteps.map((s, i) => (
+                        <div key={s.id}>
+                          {i > 0 && <div className={chrome.stepSep} />}
+                          {s.kind === 'api' ? apiCard(s) : s.kind === 'ui' ? uiCard(s) : setCard(s)}
+                        </div>
+                      ))}
+
+                      <div className={chrome.stepFooter}>
+                        <Button color="invisible" size="s" icon={IconPlus}>
+                          Add step…
+                        </Button>
+                        <Button color="secondary" size="s" icon={IconPlay}>
+                          Use recorder
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <button className={chrome.stepGroupMore}>
-                    <IconMoreHorizontal size={18} />
-                  </button>
-                </div>
-
-                {steps.map((s, i) => (
-                  <div key={s.id}>
-                    {i > 0 && <div className={chrome.stepSep} />}
-                    {s.kind === 'api' ? apiCard(s) : setCard(s)}
-                  </div>
-                ))}
-
-                <div className={chrome.stepFooter}>
-                  <Button color="invisible" size="s" icon={IconPlus}>
-                    Add step…
-                  </Button>
-                  <Button color="secondary" size="s" icon={IconPlay}>
-                    Use recorder
-                  </Button>
-                </div>
-              </div>
+                )
+              })}
 
               <span className={chrome.connector} />
               <button className={chrome.plusNode}>
@@ -1096,34 +1118,6 @@ const VariablesProto = () => {
         </div>
       </div>
 
-      {whyOpen && (
-        <Modal open width={560} title="What changed" onCancel={() => setWhyOpen(false)}>
-          <Modal.Content>
-            <div className={styles.rules}>
-              {RULES.map((r, i) => (
-                <div key={r.title} className={styles.rule}>
-                  <span className={styles.ruleNum}>{i + 1}</span>
-                  <div>
-                    <div className={styles.ruleTitle}>{r.title}</div>
-                    <div className={styles.ruleBody}>{r.body}</div>
-                  </div>
-                </div>
-              ))}
-              <div className={styles.legend}>
-                <span className={styles.legendItem}>
-                  {pill('email')} in-test input
-                </span>
-                <span className={styles.legendItem}>
-                  {pill('authToken', { step: 2, clickable: false })} local variable
-                </span>
-                <span className={styles.legendItem}>
-                  {pill('URL')} global variable
-                </span>
-              </div>
-            </div>
-          </Modal.Content>
-        </Modal>
-      )}
     </div>
   )
 }
