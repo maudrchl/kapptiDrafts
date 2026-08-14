@@ -287,6 +287,12 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   &:focus-within {
     border-color: $border-focus;
   }
+  /* le focus se voit sur le champ entier, pas en encadrant le seul chevron :
+     sinon le chevron se lit comme une commande séparée collée au champ. */
+  &:has(:focus-visible) {
+    outline: 2px solid var(--color-accent-blue, #0577ff);
+    outline-offset: 1px;
+  }
 }
 .brace {
   flex: none;
@@ -340,6 +346,9 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   cursor: pointer;
   &:hover {
     color: $ink-2;
+  }
+  &:focus-visible {
+    outline: none;
   }
 }
 
