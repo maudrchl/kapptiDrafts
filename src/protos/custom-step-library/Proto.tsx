@@ -590,15 +590,11 @@ const Proto = () => {
                 </div>
 
                 <div className={styles.stepFooter}>
-                  <Button
-                    color="invisible" size="s"
-                  >
+                  <Button color="invisible" size="s">
                     <Button.Icon icon={IconPlus} />
                     Add step…
                   </Button>
-                  <Button
-                    color="secondary" size="s"
-                  >
+                  <Button color="secondary" size="s">
                     <Button.Icon icon={IconPlay} />
                     Use recorder
                   </Button>
@@ -633,9 +629,7 @@ const Proto = () => {
                         ],
                       }}
                     >
-                      <Button
-                        color="secondary" size="s"
-                      >
+                      <Button color="secondary" size="s">
                         <Button.Icon icon={IconMoreHorizontal} />
                       </Button>
                     </Dropdown>
@@ -742,9 +736,7 @@ const Proto = () => {
                                       ],
                                     }}
                                   >
-                                    <Button
-                                      color="secondary" size="s"
-                                    >
+                                    <Button color="secondary" size="s">
                                       <Button.Icon icon={IconMoreHorizontal} />
                                     </Button>
                                   </Dropdown>

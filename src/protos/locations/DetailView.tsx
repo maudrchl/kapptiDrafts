@@ -25,44 +25,32 @@ const DetailView = ({ loc }: Props) => {
   const [active, setActive] = useState('General')
 
   const actions = isPublic ? (
-    <Button
-      color="secondary"
-    >
+    <Button color="secondary">
       <Button.Icon icon={Check} />
       Set as default
     </Button>
   ) : kind === 'appliance' ? (
     <>
-      <Button
-        color="danger-s"
-      >
+      <Button color="danger-s">
         <Button.Icon icon={RotateCcw} />
         Reboot robot
       </Button>
-      <Button
-        color="secondary"
-      >
+      <Button color="secondary">
         <Button.Icon icon={Zap} />
         Test-only mode
       </Button>
-      <Button
-        color="secondary"
-      >
+      <Button color="secondary">
         <Button.Icon icon={Wrench} />
         Set in maintenance
       </Button>
     </>
   ) : (
     <>
-      <Button
-        color="danger-s"
-      >
+      <Button color="danger-s">
         <Button.Icon icon={RotateCcw} />
         Reboot runner
       </Button>
-      <Button
-        color="secondary"
-      >
+      <Button color="secondary">
         <Button.Icon icon={Wrench} />
         Set in maintenance
       </Button>

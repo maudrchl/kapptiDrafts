@@ -327,9 +327,7 @@ const ChecksProto = () => {
 
   const addBtn = (
     <div className={styles.addWrap}>
-      <Button
-        color="secondary" size="s" onClick={add}
-      >
+      <Button color="secondary" size="s" onClick={add}>
         <Button.Icon icon={IconPlus} />
         Add condition
       </Button>
@@ -640,15 +638,11 @@ const ChecksProto = () => {
                 </div>
 
                 <div className={styles.stepFooter}>
-                  <Button
-                    color="invisible" size="s"
-                  >
+                  <Button color="invisible" size="s">
                     <Button.Icon icon={IconPlus} />
                     Add step…
                   </Button>
-                  <Button
-                    color="secondary" size="s"
-                  >
+                  <Button color="secondary" size="s">
                     <Button.Icon icon={IconPlay} />
                     Use recorder
                   </Button>
@@ -668,9 +662,7 @@ const ChecksProto = () => {
               <span className={styles.panelTitleNum}>1</span>
               <span className={styles.panelTitle}>API Call</span>
               <div className={styles.panelHeaderActions}>
-                <Button
-                  color="secondary" size="s"
-                >
+                <Button color="secondary" size="s">
                   <Button.Icon icon={IconSquareArrowOutUpRight} />
                 </Button>
                 <Button color="secondary" size="s"><Button.Icon icon={IconCopy} /></Button>

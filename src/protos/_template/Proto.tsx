@@ -31,9 +31,7 @@ const Proto = () => {
         </Text>
       </div>
 
-      <Banner
-        variant="primary"
-      >
+      <Banner variant="primary">
         <Banner.Description>Tout ui-kit est dispo — voir /gallery pour la liste.</Banner.Description>
       </Banner>
 

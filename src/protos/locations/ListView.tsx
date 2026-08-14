@@ -144,9 +144,7 @@ const ListView = ({
             </span>
           </div>
           <div className={styles.bannerActions}>
-            <Button
-              color="secondary" onClick={onAddLocation}
-            >
+            <Button color="secondary" onClick={onAddLocation}>
               <Button.Icon icon={IconDownload} />
               Download app
             </Button>
@@ -190,15 +188,11 @@ const ListView = ({
       <div className={styles.pageHead}>
         <h1 className={styles.title}>Locations</h1>
         <div className={styles.headActions}>
-          <Button
-            color="secondary"
-          >
+          <Button color="secondary">
             <Button.Icon icon={IconExternalLink} />
             Help
           </Button>
-          <Button
-            color="primary" onClick={onAddLocation}
-          >
+          <Button color="primary" onClick={onAddLocation}>
             <Button.Icon icon={IconPlus} />
             Add location
           </Button>

@@ -63,9 +63,7 @@ export const Overview = () => (
         Data display, Feedback and Navigation.
       </Text>
       <div className="dsBannerBottom">
-        <Banner
-          variant="primary"
-        >
+        <Banner variant="primary">
           <Banner.Description>Tip: the 'Copy' button on each import block gives you the exact line to paste.</Banner.Description>
         </Banner>
       </div>

@@ -150,9 +150,7 @@ const AiAssistant = ({ open, onClose }: { open: boolean; onClose: () => void }) 
               placeholder="Describe a panel… e.g. error rate by service"
               onChange={(e) => setInput(e.target.value)}
             />
-            <Button
-              type="submit" color="primary" disabled={!input.trim() || thinking}
-            >
+            <Button type="submit" color="primary" disabled={!input.trim() || thinking}>
               <Button.Icon icon={Send} />
             </Button>
           </form>

@@ -207,9 +207,7 @@ const ManageIntegrationDrawer = ({
               </div>
 
               <div className={styles.drawerAction}>
-                <Button
-                  color="primary"
-                >
+                <Button color="primary">
                   View documentation
                   <Button.Icon icon={IconExternalLink} />
                 </Button>

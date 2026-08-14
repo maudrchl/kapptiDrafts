@@ -6,6 +6,8 @@ import {
   ButtonGroupPage,
   DropdownPage,
   ButtonDropdownPage,
+  ActionMenuPage,
+  ContextMenuPage,
 } from './pages/actions'
 import {
   InputPage,
@@ -25,6 +27,7 @@ import {
   ProgressBarPage,
   CollapsePage,
   CardPage,
+  PanelPage,
   TimelinePage,
   TablePage,
 } from './pages/datadisplay'
@@ -62,6 +65,8 @@ export const GROUPS: DsGroup[] = [
       { slug: 'button-group', name: 'ButtonGroup', Component: ButtonGroupPage },
       { slug: 'dropdown', name: 'Dropdown', Component: DropdownPage },
       { slug: 'button-dropdown', name: 'ButtonDropdown', Component: ButtonDropdownPage },
+      { slug: 'action-menu', name: 'ActionMenu', Component: ActionMenuPage },
+      { slug: 'context-menu', name: 'ContextMenu', Component: ContextMenuPage },
     ],
   },
   {
@@ -87,6 +92,7 @@ export const GROUPS: DsGroup[] = [
       { slug: 'progress-bar', name: 'ProgressBar', Component: ProgressBarPage },
       { slug: 'collapse', name: 'Collapse', Component: CollapsePage },
       { slug: 'card', name: 'Card', Component: CardPage },
+      { slug: 'panel', name: 'Panel', Component: PanelPage },
       { slug: 'timeline', name: 'Timeline', Component: TimelinePage },
       { slug: 'table', name: 'Table', Component: TablePage },
     ],

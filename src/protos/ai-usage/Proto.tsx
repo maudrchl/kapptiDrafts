@@ -49,9 +49,7 @@ const AIUsagePage = () => {
               </div>
             </div>
             <div className={styles.contentActions}>
-              <Button
-                color="secondary"
-              >
+              <Button color="secondary">
                 <Button.Icon icon={IconDownload} />
                 Export
               </Button>
@@ -65,9 +63,7 @@ const AIUsagePage = () => {
             {/* Banners */}
             <div className={styles.banners}>
             {budgetState === 'warn' && (
-              <Banner
-                variant="warning"
-              >
+              <Banner variant="warning">
                 <Banner.Icon><IconAlertTriangle size={18} /></Banner.Icon>
                 <Banner.Description>85% of your monthly tokens used</Banner.Description>
                 <Banner.SubDescription>
@@ -81,9 +77,7 @@ const AIUsagePage = () => {
             )}
 
             {budgetState === 'over' && policyMode === 'post' && (
-              <Banner
-                variant="warning"
-              >
+              <Banner variant="warning">
                 <Banner.Icon><IconAlertTriangle size={18} /></Banner.Icon>
                 <Banner.Description>Monthly allowance used up — overage billing active</Banner.Description>
                 <Banner.SubDescription>
@@ -98,9 +92,7 @@ const AIUsagePage = () => {
             )}
 
             {budgetState === 'over' && policyMode === 'ant' && (
-              <Banner
-                variant="error"
-              >
+              <Banner variant="error">
                 <Banner.Icon><IconBan size={18} /></Banner.Icon>
                 <Banner.Description>Monthly allowance used up — new AI actions blocked</Banner.Description>
                 <Banner.SubDescription>
@@ -118,9 +110,7 @@ const AIUsagePage = () => {
             )}
 
             {policyMode === 'ant' && budgetState !== 'over' && (
-              <Banner
-                variant="primary"
-              >
+              <Banner variant="primary">
                 <Banner.Icon><ShieldCheck size={18} /></Banner.Icon>
                 <Banner.Description>Hard limit active</Banner.Description>
                 <Banner.SubDescription>

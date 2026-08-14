@@ -173,9 +173,7 @@ const PublicRegions = ({
         <span className={styles.footCount}>
           {count} region{count > 1 ? 's' : ''} enabled
         </span>
-        <Button
-          color="secondary" onClick={onBack}
-        >
+        <Button color="secondary" onClick={onBack}>
           <Button.Icon icon={IconArrowLeft} />
           Back
         </Button>
@@ -278,9 +276,7 @@ const DesktopWizard = ({
                 </button>
               ))}
             </div>
-            <Button
-              color="secondary" fullWidth
-            >
+            <Button color="secondary" fullWidth>
               <Button.Icon icon={IconDownload} />
               Download for {OS[os]}
             </Button>

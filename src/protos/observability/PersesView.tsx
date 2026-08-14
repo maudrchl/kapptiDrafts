@@ -166,9 +166,7 @@ const EditPanelDrawer = ({
               placeholder="Describe the data instead of writing SQL… e.g. p95 duration by service"
               onChange={(e) => setAiText(e.target.value)}
             />
-            <Button
-              type="submit" color="secondary" disabled={!aiText.trim()}
-            >
+            <Button type="submit" color="secondary" disabled={!aiText.trim()}>
               <Button.Icon icon={Wand2} />
               Generate
             </Button>
@@ -176,9 +174,7 @@ const EditPanelDrawer = ({
 
           <div className={styles.queryHead}>
             <span className={styles.queryHeadLeft}><ChevronDown size={16} /> Query #1</span>
-            <Button
-              color="secondary" onClick={() => toast.success('Query executed successfully')}
-            >
+            <Button color="secondary" onClick={() => toast.success('Query executed successfully')}>
               <Button.Icon icon={RotateCw} />
               Run query
             </Button>
@@ -481,9 +477,7 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
   {/* Seuls Save/Cancel remontent dans le bandeau du haut (alignés comme les autres tabs). */}
   const headerActions = (
     <>
-      <Button
-        color="primary" disabled={!dirty} onClick={save}
-      >
+      <Button color="primary" disabled={!dirty} onClick={save}>
         <Button.Icon icon={Save} />
         Save
       </Button>
@@ -502,9 +496,7 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
           <Tag color="orange" textColor="orange" weight="semibold">beta</Tag>
         </div>
         <div className={styles.toolbarActions}>
-          <Button
-            color="secondary" onClick={() => setAiOpen(true)}
-          >
+          <Button color="secondary" onClick={() => setAiOpen(true)}>
             <Button.Icon icon={Sparkles} />
             Ask AI
           </Button>
@@ -516,9 +508,7 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
               <Button.Icon icon={PlusSquare} />
               Panel
             </Button>
-            <Button
-              color="secondary" onClick={addGroup}
-            >
+            <Button color="secondary" onClick={addGroup}>
               <Button.Icon icon={LayoutGrid} />
               Panel group
             </Button>
@@ -568,21 +558,15 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
                   <div className={styles.emptyGroup}>
                     <p className={styles.emptyTitle}>This group is empty. How do you want to start?</p>
                     <div className={styles.emptyActions}>
-                      <Button
-                        color="primary" onClick={askAiFor}
-                      >
+                      <Button color="primary" onClick={askAiFor}>
                         <Button.Icon icon={Sparkles} />
                         Describe with AI
                       </Button>
-                      <Button
-                        color="secondary" onClick={() => setIntentGroup(group.id)}
-                      >
+                      <Button color="secondary" onClick={() => setIntentGroup(group.id)}>
                         <Button.Icon icon={BarChart3} />
                         Pick a metric
                       </Button>
-                      <Button
-                        color="invisible" onClick={() => addBlankPanel(group.id)}
-                      >
+                      <Button color="invisible" onClick={() => addBlankPanel(group.id)}>
                         <Button.Icon icon={FileCode} />
                         Blank SQL panel
                       </Button>

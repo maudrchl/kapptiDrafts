@@ -960,9 +960,7 @@ const ChecksProto = () => {
         {/* Ajout direct dans CE groupe (accès direct, pas de menu) : les checks
             les plus courants sont des success conditions. */}
         <div className={styles.grpAdd}>
-          <Button
-            color="secondary" size="s" onClick={() => add(sev)}
-          >
+          <Button color="secondary" size="s" onClick={() => add(sev)}>
             <Button.Icon icon={IconPlus} />
             {sev === 'fail' ? 'Add condition' : 'Add warning'}
           </Button>
@@ -1231,9 +1229,7 @@ const ChecksProto = () => {
           ))}
         </div>
         <div className={styles.addWrap}>
-          <Button
-            color="secondary" size="s" onClick={openAddOut}
-          >
+          <Button color="secondary" size="s" onClick={openAddOut}>
             <Button.Icon icon={IconPlus} />
             Add variable
           </Button>
@@ -1352,9 +1348,7 @@ const ChecksProto = () => {
       <div className={styles.previewEmpty}>
         <div className={styles.previewHint}>
           <span>Click</span>
-          <Button
-            color="secondary" size="s"
-          >
+          <Button color="secondary" size="s">
             <Button.Icon icon={IconZap} />
             Run
           </Button>
@@ -1619,15 +1613,11 @@ const ChecksProto = () => {
                   </div>
 
                 <div className={styles.stepFooter}>
-                  <Button
-                    color="invisible" size="s"
-                  >
+                  <Button color="invisible" size="s">
                     <Button.Icon icon={IconPlus} />
                     Add step…
                   </Button>
-                  <Button
-                    color="secondary" size="s"
-                  >
+                  <Button color="secondary" size="s">
                     <Button.Icon icon={IconPlay} />
                     Use recorder
                   </Button>
@@ -1667,9 +1657,7 @@ const ChecksProto = () => {
                     ],
                   }}
                 >
-                  <Button
-                    color="secondary" size="s"
-                  >
+                  <Button color="secondary" size="s">
                     <Button.Icon icon={IconMoreHorizontal} />
                   </Button>
                 </Dropdown>

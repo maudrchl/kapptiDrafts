@@ -126,15 +126,11 @@ const VariableScreen = () => {
           {/* Tools bar */}
           <div className={styles.vtoolbar}>
             <span className={styles.vtitle}>Variables</span>
-            <Button
-              color="secondary" size="m"
-            >
+            <Button color="secondary" size="m">
               <Button.Icon icon={Plus} />
               Create variable group
             </Button>
-            <Button
-              color="primary" size="m"
-            >
+            <Button color="primary" size="m">
               <Button.Icon icon={Plus} />
               Create variable
             </Button>
@@ -338,9 +334,7 @@ const VariableScreen = () => {
           </div>
 
           <div className={styles.msBanner}>
-            <Banner
-              variant="secondary"
-            >
+            <Banner variant="secondary">
               <Banner.Description>
                 <div>
                   <div className={styles.bannerDesc}>

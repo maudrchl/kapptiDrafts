@@ -10,13 +10,16 @@ import {
   IconChevronDown,
   IconCopy,
   IconSettings,
+  ActionMenu,
+  ContextMenu,
+  Text,
 } from '@kapptivate/ui-kit'
 import { Page, Demo, PropsTable } from '../primitives'
 
 export const ButtonPage = () => (
   <Page
     title="Button"
-    description="The action button. Five colors, three sizes, an optional icon and loading / disabled states."
+    description="The action button. Five colors, three sizes, icon and counter as slots, loading / disabled states."
     importCode={"import { Button } from '@kapptivate/ui-kit'"}
   >
     <Demo title="Colors">
@@ -40,27 +43,19 @@ export const ButtonPage = () => (
     </Demo>
 
     <Demo title="With icon">
-      <Button
-        color="primary"
-      >
+      <Button color="primary">
         <Button.Icon icon={IconPlus} />
         Create
       </Button>
-      <Button
-        color="secondary"
-      >
+      <Button color="secondary">
         <Button.Icon icon={IconDownload} />
         Export
       </Button>
-      <Button
-        color="secondary"
-      >
+      <Button color="secondary">
         Options
         <Button.Icon icon={IconChevronDown} />
       </Button>
-      <Button
-        color="danger-s"
-      >
+      <Button color="danger-s">
         <Button.Icon icon={IconTrash} />
         Delete
       </Button>
@@ -73,9 +68,7 @@ export const ButtonPage = () => (
       <Button color="primary" disabled>
         Disabled
       </Button>
-      <Button
-        color="secondary"
-      >
+      <Button color="secondary">
         Filters
         <Button.Counter>{4}</Button.Counter>
       </Button>
@@ -85,11 +78,10 @@ export const ButtonPage = () => (
       rows={[
         { name: 'color', type: "'primary' | 'secondary' | 'invisible' | 'danger-p' | 'danger-s'", default: 'invisible', description: 'Visual style. danger-p is solid, danger-s is soft' },
         { name: 'size', type: "'s' | 'm' | 'l'", default: 'm', description: 'Button size' },
-        { name: 'icon', type: 'IconComponent', description: 'Icon component rendered before the label' },
-        { name: 'iconRight', type: 'boolean', default: 'false', description: 'Render the icon after the label' },
-        { name: 'counter', type: 'number', description: 'Badge counter shown next to the label' },
+        { name: 'Button.Icon', type: 'slot: icon={IconComponent}', description: 'Icon slot. Place it before the label, or after it to get the old iconRight' },
+        { name: 'Button.Counter', type: 'slot: children', description: 'Badge counter slot, rendered after the label' },
         { name: 'isLoading', type: 'boolean', default: 'false', description: 'Shows a spinner and disables the button' },
-        { name: 'isLoadingChildren', type: 'ReactNode', description: 'Content shown while loading' },
+        { name: 'loadingChildren', type: 'ReactNode', description: 'Content shown while loading' },
         { name: 'fullWidth', type: 'boolean', default: 'false', description: 'Stretch to the container width' },
         { name: 'noBorder', type: 'boolean', default: 'false', description: 'Remove the border' },
         { name: 'disabled', type: 'boolean', default: 'false', description: 'Disable interactions' },
@@ -107,21 +99,15 @@ export const ButtonGroupPage = () => (
   >
     <Demo title="Action group">
       <ButtonGroup>
-        <Button
-          color="secondary"
-        >
+        <Button color="secondary">
           <Button.Icon icon={IconPencil} />
           Edit
         </Button>
-        <Button
-          color="secondary"
-        >
+        <Button color="secondary">
           <Button.Icon icon={IconCopy} />
           Duplicate
         </Button>
-        <Button
-          color="secondary"
-        >
+        <Button color="secondary">
           <Button.Icon icon={IconSettings} />
           Settings
         </Button>
@@ -160,9 +146,7 @@ export const DropdownPage = () => (
   >
     <Demo title="Menu on a button">
       <Dropdown menu={MENU}>
-        <Button
-          color="secondary"
-        >
+        <Button color="secondary">
           Actions
           <Button.Icon icon={IconChevronDown} />
         </Button>
@@ -190,9 +174,7 @@ export const ButtonDropdownPage = () => (
     importCode={"import { ButtonDropdown } from '@kapptivate/ui-kit'"}
   >
     <Demo title="Button + menu">
-      <ButtonDropdown
-        color="primary" menu={MENU}
-      >
+      <ButtonDropdown color="primary" menu={MENU}>
         <Button.Icon icon={IconPlus} />
         Create
       </ButtonDropdown>
@@ -202,6 +184,73 @@ export const ButtonDropdownPage = () => (
       rows={[
         { name: 'menu', type: '{ items: MenuItem[] }', required: true, description: 'Menu config, same shape as Dropdown' },
         { name: '…Button props', type: 'ButtonProps', description: 'Accepts every Button prop (color, size, icon, counter, disabled, isLoading…)' },
+      ]}
+    />
+  </Page>
+)
+
+const MENU_OPTIONS = [
+  { key: 'open', label: 'Open in new tab' },
+  { key: 'duplicate', label: 'Duplicate' },
+  { type: 'divider' as const },
+  { key: 'delete', label: 'Delete', danger: true },
+]
+
+export const ActionMenuPage = () => (
+  <Page
+    title="ActionMenu"
+    description="An icon that opens a dropdown menu. Use it for the row or card kebab, when the actions do not deserve their own buttons."
+    importCode={"import { ActionMenu } from '@kapptivate/ui-kit'"}
+  >
+    <Demo title="Default (kebab)">
+      <ActionMenu options={MENU_OPTIONS} onClick={() => undefined} />
+    </Demo>
+
+    <Demo title="Custom trigger icon">
+      <ActionMenu icon={IconSettings} options={MENU_OPTIONS} onClick={() => undefined} />
+    </Demo>
+
+    <PropsTable
+      rows={[
+        { name: 'options', type: 'MenuItem[]', required: true, description: "Menu entries. Add { type: 'divider' } for a separator, danger: true for a destructive one" },
+        { name: 'onClick', type: '(key: string) => void', description: 'Called with the key of the chosen entry' },
+        { name: 'icon', type: 'IconComponent', description: 'Trigger icon (defaults to the horizontal kebab)' },
+        { name: 'trigger', type: "'click' | 'hover'", default: 'click', description: 'How the menu opens' },
+        { name: 'open', type: 'boolean', description: 'Controlled visibility' },
+        { name: 'onOpenChange', type: '(open: boolean) => void', description: 'Called when visibility changes' },
+      ]}
+    />
+  </Page>
+)
+
+export const ContextMenuPage = () => (
+  <Page
+    title="ContextMenu"
+    description="The same menu, opened by a right click on any content. Keep it as a shortcut: every action must also be reachable elsewhere."
+    importCode={"import { ContextMenu } from '@kapptivate/ui-kit'"}
+  >
+    <Demo title="Right click the surface" column>
+      <ContextMenu options={MENU_OPTIONS}>
+        <div
+          style={{
+            display: 'grid',
+            placeItems: 'center',
+            width: '100%',
+            minHeight: 88,
+            border: '1px dashed var(--color-border)',
+            borderRadius: 8,
+          }}
+        >
+          <Text color="secondary">Right click here</Text>
+        </div>
+      </ContextMenu>
+    </Demo>
+
+    <PropsTable
+      rows={[
+        { name: 'children', type: 'ReactNode', required: true, description: 'The area that reacts to the right click' },
+        { name: 'options', type: 'MenuItem[]', required: true, description: 'Same entries as ActionMenu' },
+        { name: 'active', type: 'boolean', default: 'true', description: 'Set to false to disable the menu' },
       ]}
     />
   </Page>

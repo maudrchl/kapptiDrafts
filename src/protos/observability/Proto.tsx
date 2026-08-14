@@ -1489,9 +1489,7 @@ const ServiceMapInner = ({ onGoToLogs, onGoToTraces }: ServiceMapProps) => {
               ],
             }}
           >
-            <Button
-              color="secondary" onClick={() => setDisplayOpen(true)}
-            >
+            <Button color="secondary" onClick={() => setDisplayOpen(true)}>
               <Button.Icon icon={IconSlidersHorizontal} />
               Display
             </Button>
@@ -1685,15 +1683,11 @@ const ServiceMapInner = ({ onGoToLogs, onGoToTraces }: ServiceMapProps) => {
                     On ne refait pas de moteur de filtre dans le drawer : on
                     envoie vers Logs / Traces qui savent déjà filtrer. */}
                 <div className={styles.svcGoToRow}>
-                  <Button
-                    color="secondary" size="s" onClick={() => onGoToLogs(s.label)}
-                  >
+                  <Button color="secondary" size="s" onClick={() => onGoToLogs(s.label)}>
                     View logs
                     <Button.Icon icon={ArrowUpRight} />
                   </Button>
-                  <Button
-                    color="secondary" size="s" onClick={() => onGoToTraces(s.label)}
-                  >
+                  <Button color="secondary" size="s" onClick={() => onGoToTraces(s.label)}>
                     View traces
                     <Button.Icon icon={ArrowUpRight} />
                   </Button>
@@ -1878,9 +1872,7 @@ const KubernetesView = () => {
     <div className={styles.usageStack}>
       {/* Lecture cluster en clair + saut vers les pods à problème (esprit kubeli) */}
       {elevated.length > 0 && (
-        <Banner
-          variant="warning"
-        >
+        <Banner variant="warning">
           <Banner.Icon><IconAlertTriangle size={18} /></Banner.Icon>
           <Banner.Description>{`${elevated.length} pods are restarting repeatedly`}</Banner.Description>
           <Banner.SubDescription>
@@ -2064,9 +2056,7 @@ const UsageView = ({
     <div className={styles.usageStack}>
       {/* State banner: aligné sur l'expérience AI Usage */}
       {pct >= 80 && (
-        <Banner
-          variant={pct >= 95 ? 'error' : 'warning'}
-        >
+        <Banner variant={pct >= 95 ? 'error' : 'warning'}>
           <Banner.Icon><IconAlertTriangle size={18} /></Banner.Icon>
           <Banner.Description>{pct >= 95 ? 'Monthly ingestion quota nearly exhausted' : `${pct.toFixed(0)}% of your monthly ingestion quota used`}</Banner.Description>
           <Banner.SubDescription>
@@ -2230,9 +2220,7 @@ const UsageView = ({
             <Input value={revoked ? '' : OTLP_KEY_MASKED} canCopy={!revoked} mono disabled fullWidth size="m" />
           </div>
           <div className={styles.cardFooter}>
-            <Button
-              color="primary" onClick={() => setKeyStep('issue')}
-            >
+            <Button color="primary" onClick={() => setKeyStep('issue')}>
               <Button.Icon icon={KeyRound} />
               Issue key
             </Button>
@@ -3311,9 +3299,7 @@ helm install kapp-agent kapptivate/agent \\
                     <Button.Icon icon={IconEye} />
                     Test result details
                   </Button>
-                  <Button
-                    color="secondary" onClick={() => toast.info('Opening resource metrics')}
-                  >
+                  <Button color="secondary" onClick={() => toast.info('Opening resource metrics')}>
                     <Button.Icon icon={IconActivity} />
                     Resource metrics
                   </Button>

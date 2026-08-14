@@ -766,9 +766,7 @@ const VariablesProto = () => {
           ))}
         </div>
         <div className={chrome.addWrap}>
-          <Button
-            color="secondary" size="s"
-          >
+          <Button color="secondary" size="s">
             <Button.Icon icon={IconPlus} />
             Add input
           </Button>
@@ -1011,15 +1009,11 @@ const VariablesProto = () => {
               <Button color="secondary" size="m"><Button.Icon icon={IconStar} /></Button>
               <Button color="danger-s" size="m"><Button.Icon icon={IconTrash} /></Button>
             </ButtonGroup>
-            <Button
-              color="secondary" size="m"
-            >
+            <Button color="secondary" size="m">
               <Button.Icon icon={IconSave} />
               Save
             </Button>
-            <Button
-              color="primary" size="m"
-            >
+            <Button color="primary" size="m">
               <Button.Icon icon={IconZap} />
               Run
             </Button>
@@ -1073,15 +1067,11 @@ const VariablesProto = () => {
                 ))}
 
                 <div className={chrome.stepFooter}>
-                  <Button
-                    color="invisible" size="s"
-                  >
+                  <Button color="invisible" size="s">
                     <Button.Icon icon={IconPlus} />
                     Add step…
                   </Button>
-                  <Button
-                    color="secondary" size="s"
-                  >
+                  <Button color="secondary" size="s">
                     <Button.Icon icon={IconPlay} />
                     Use recorder
                   </Button>

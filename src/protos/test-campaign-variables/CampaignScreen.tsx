@@ -197,9 +197,7 @@ const CampaignScreen = () => {
                 {/* Variable-change banner, between the title and Campaign start */}
                 {changedCount > 0 && (
                   <div className={styles.bannerWrap}>
-                    <Banner
-                      variant="primary"
-                    >
+                    <Banner variant="primary">
                       <Banner.Description>
                         <div>
                           <div className={styles.bannerDesc}>
@@ -273,9 +271,7 @@ const CampaignScreen = () => {
               </div>
 
               <div>
-                <Button
-                  color="primary"
-                >
+                <Button color="primary">
                   <Button.Icon icon={Plus} />
                   Add test(s)
                 </Button>
