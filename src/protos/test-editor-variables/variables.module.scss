@@ -148,13 +148,15 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
 .stepCardPad.stepCardPad {
   padding: 4px 6px;
 }
-/* élément visé d'un step d'interface : pleine largeur, coche + picker {} */
+/* élément visé d'un step d'interface : coche + picker {}. L'élément et la
+   valeur se partagent la ligne, comme dans l'éditeur. */
 .elBox {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: 1 1 auto;
-  min-width: 0;
+  /* base 0 : sinon flex-wrap renvoie la valeur à la ligne avant de rétrécir */
+  flex: 3 1 0;
+  min-width: 150px;
   height: 26px;
   padding-left: 8px;
   border: 1px solid $border;
@@ -169,6 +171,12 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   flex: none;
   display: inline-flex;
   color: var(--color-success, #1fae7e);
+}
+.valBox {
+  flex: 2 1 0;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
 }
 
 /* API call : l'URL prend sa propre ligne sous l'action et la méthode */

@@ -781,30 +781,29 @@ const VariablesProto = () => {
   const uiCard = (step: Step & { kind: 'ui' }) =>
     stepShell(
       step.n,
-      <>
-        <div className={chrome.stepTop} onClick={(e) => e.stopPropagation()}>
-          <span className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}>{step.n}</span>
-          {actionMenu(step, step.action)}
-          <span className={styles.elBox}>
-            <span className={styles.elCheck}>
-              <IconCheckCircle2 size={14} />
-            </span>
-            <VarField
-              borderless
-              initial={toSegments(step.locator)}
-              onValue={(v) => patchUi(step.id, { locator: v })}
-              toText={fromSegments}
-              suggestions={suggestionsFor(step.n)}
-              placeholder="Describe the element"
-            />
+      <div className={`${chrome.stepTop} ${styles.setRow}`} onClick={(e) => e.stopPropagation()}>
+        <span className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}>{step.n}</span>
+        {actionMenu(step, step.action)}
+        <span className={styles.elBox}>
+          <span className={styles.elCheck}>
+            <IconCheckCircle2 size={14} />
           </span>
-        </div>
+          <VarField
+            borderless
+            initial={toSegments(step.locator)}
+            onValue={(v) => patchUi(step.id, { locator: v })}
+            toText={fromSegments}
+            suggestions={suggestionsFor(step.n)}
+            placeholder="Describe the element"
+          />
+        </span>
+        {/* la valeur reste sur la ligne, à côté de l'élément */}
         {step.value !== undefined && (
-          <div className={styles.urlRow} onClick={(e) => e.stopPropagation()}>
+          <span className={styles.valBox}>
             {varInput(step.value, (v) => patchUi(step.id, { value: v }), step.n, 'Value')}
-          </div>
+          </span>
         )}
-      </>,
+      </div>,
     )
 
   const setCard = (step: SetStep) => {
