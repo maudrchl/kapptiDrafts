@@ -1,0 +1,764 @@
+/* ============================================================
+ *  Test editor v2 — natures de variables
+ *  Le chrome de l'éditeur (rail, topbar, canvas, cartes de step,
+ *  panneau) est réutilisé depuis le proto `checks`. Ce fichier ne
+ *  porte QUE ce qui est propre aux variables.
+ * ============================================================ */
+
+$ink: var(--color-text-primary, #24292f);
+$ink-2: var(--color-text-secondary, #667085);
+$muted: #7c8593;
+$faint: #98a2b3;
+$border: var(--color-border, #e4e7ec);
+$border-focus: #d0d5dd;
+$surface: #fff;
+$mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+$radius: 8px;
+$radius-sm: 6px;
+
+/* Les 3 teintes du système. */
+$orange: var(--color-primary, #ed7846);
+$orange-soft: rgba(237, 120, 70, 0.06);
+$dark-blue: var(--color-accent-dark-blue, #1916d0);
+$dark-blue-soft: var(--color-accent-light-dark-blue, #e7e7fb);
+$light-blue: var(--color-accent-blue, #0577ff);
+$light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
+
+/* ===================== typo des select =====================
+   Tous les Select du DS en weight medium, dans tout le proto. Les deux
+   commandes maison qui se lisent comme des select (menu d'action, cible)
+   suivent la même règle. */
+.app {
+  :global(.ant-select-selection-item),
+  :global(.ant-select-selection-placeholder) {
+    font-weight: 500;
+  }
+}
+
+/* ===================== teintes ===================== */
+.tintOrange {
+  background: $orange-soft;
+  border-color: $orange-soft;
+  color: $orange;
+}
+.tintLightBlue {
+  background: $light-blue-soft;
+  border-color: $light-blue-soft;
+  color: $light-blue;
+}
+.tintDarkBlue {
+  background: $dark-blue-soft;
+  border-color: $dark-blue-soft;
+  color: $dark-blue;
+}
+
+/* teinte sur la seule pastille {} (pas de fond, pas de texte coloré) */
+.markOrange {
+  color: $orange;
+}
+.markLightBlue {
+  color: $light-blue;
+}
+.markDarkBlue {
+  color: $dark-blue;
+}
+
+/* ===================== pastille de variable ===================== */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  max-width: 100%;
+  min-width: 0;
+}
+.pillName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* badge « Step N » : porte la distinction local vs output, pas une 4e couleur. */
+.pillStep {
+  flex: none;
+  border: 0;
+  background: rgba(102, 112, 133, 0.1);
+  color: $ink-2;
+  border-radius: 4px;
+  padding: 0 4px;
+  height: 16px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  &:hover {
+    background: rgba(102, 112, 133, 0.18);
+    color: $ink;
+  }
+}
+.pillStepStatic {
+  @extend .pillStep;
+  cursor: default;
+  &:hover {
+    background: rgba(102, 112, 133, 0.1);
+    color: $ink-2;
+  }
+}
+
+/* Les lignes de step sont plus denses ici (action + cible + source + valeur) :
+   on élargit le canvas repris de `checks` pour que tout tienne sur une ligne. */
+.canvasWide.canvasWide {
+  max-width: 860px;
+}
+
+/* ===================== step Set variable : une seule ligne ===================== */
+/* si la largeur manque, la valeur passe à la ligne plutôt que d'écraser le reste */
+.setRow {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+.setField {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+/** signe d'affectation entre la cible et la valeur */
+.eq {
+  flex: none;
+  font-family: $mono;
+  font-size: 13px;
+  color: $faint;
+}
+
+/* API call : l'URL prend sa propre ligne sous l'action et la méthode */
+.urlRow {
+  width: 100%;
+  min-width: 0;
+}
+
+/* résumé de la valeur sur la carte : lecture seule, l'édition est dans le panneau */
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 26px;
+}
+.sumChip {
+  flex: none;
+  font-size: 11.5px;
+  color: $ink-2;
+  background: rgba(102, 112, 133, 0.08);
+  border-radius: 5px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+.sumVal {
+  min-width: 0;
+  font-family: $mono;
+  font-size: 12.5px;
+  color: $ink-2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sumEmpty {
+  font-size: 13px;
+  color: $faint;
+}
+
+/* ===================== définition de la variable (panneau du step) ===================== */
+.defBlock {
+  padding: 14px 18px 16px;
+  border-bottom: 1px solid $border;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.defRow {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+.defLabel {
+  font-size: 13px;
+  color: $ink-2;
+}
+.defField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.defNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: $muted;
+  svg {
+    flex: none;
+    margin-top: 2px;
+    color: $faint;
+  }
+}
+.info {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  color: $faint;
+  cursor: default;
+}
+
+/**
+ * Slot de cible : UNE seule commande pour « quoi j'affecte ».
+ * Nouvelle locale → champ { nom } éditable ; cible existante → pastille.
+ * Le chevron ouvre le sélecteur de cible dans les deux cas.
+ */
+/* 26px + Geist 13px = exactement les Select/Input `size="s"` du DS */
+.targetSlot {
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: 26px;
+  max-width: 184px;
+  padding-left: 7px;
+  font-size: 13px;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  background: $surface;
+  overflow: hidden;
+  &:focus-within {
+    border-color: $border-focus;
+  }
+}
+/* petite pastille {} : dit « variable », sans peindre le texte */
+.slotMark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: $light-blue;
+  margin-right: 5px;
+}
+.nameInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 96px;
+  border: 0;
+  outline: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  color: $ink;
+  background: transparent;
+  &::placeholder {
+    color: $faint;
+  }
+}
+/* cible existante : même poids visuel que le champ, seule la pastille est teintée */
+.slotName {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.slotChevron {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: $faint;
+  cursor: pointer;
+  &:hover {
+    color: $ink-2;
+  }
+}
+
+/* ===================== menu d'actions du step =====================
+   Calqué sur le popover produit : search + catégories repliables (Collapse DS),
+   items = icône 12px + libellé. Le bouton reprend la métrique d'un Select `s`. */
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 26px;
+  max-width: 196px;
+  padding: 0 6px 0 8px;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  background: $surface;
+  color: $ink;
+  font-size: 13px;
+  cursor: pointer;
+  &:hover {
+    border-color: $border-focus;
+  }
+  svg {
+    flex: none;
+    color: $ink-2;
+  }
+}
+.actionBtnLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.actionPop {
+  width: 400px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* la liste est une carte bordée : en-têtes de catégorie sur fond gris,
+   filet entre chaque catégorie, items sur fond blanc (cf. produit) */
+.actionCollapse {
+  border: 1px solid $border;
+  border-radius: $radius;
+  overflow: hidden;
+
+  :global(.ant-collapse-item) + :global(.ant-collapse-item) {
+    border-top: 1px solid $border;
+  }
+  :global(.ant-collapse-header) {
+    padding: 9px 12px !important;
+    background: #f7f8f9;
+    align-items: center !important;
+  }
+  :global(.ant-collapse-content-box) {
+    padding: 0 !important;
+  }
+}
+.grpHead {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+  svg {
+    flex: none;
+    color: $ink;
+  }
+}
+.actionList {
+  display: flex;
+  flex-direction: column;
+  background: $surface;
+}
+/* même gouttière que l'en-tête : les libellés s'alignent, pas d'indentation */
+.actionItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  color: $ink;
+  cursor: pointer;
+  svg {
+    flex: none;
+  }
+  &:hover {
+    background: rgba(102, 112, 133, 0.06);
+  }
+}
+/* état sélectionné = orange (primary du DS), jamais bleu */
+.actionItemOn {
+  @extend .actionItem;
+  color: $orange;
+  font-weight: 500;
+  svg {
+    color: $orange;
+  }
+}
+
+/* ===================== cible du Set variable ===================== */
+.targetPop {
+  width: 316px;
+  padding: 6px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+.popGroup + .popGroup {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid $border;
+}
+.popGroupHead {
+  padding: 6px 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: $faint;
+}
+.popItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: $radius-sm;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  color: $ink;
+  cursor: pointer;
+  &:hover {
+    background: rgba(102, 112, 133, 0.07);
+  }
+}
+.popItemOn {
+  @extend .popItem;
+  background: rgba(102, 112, 133, 0.09);
+}
+.popCheck {
+  margin-left: auto;
+  color: $light-blue;
+  flex: none;
+}
+.popHint {
+  padding: 2px 8px 6px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: $muted;
+}
+
+/* ===================== picker de valeur ===================== */
+.pathInput {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.pickBox {
+  width: 320px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.pickRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-family: $mono;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  &:hover {
+    background: rgba(102, 112, 133, 0.07);
+  }
+}
+.pickNode {
+  @extend .pickRow;
+  cursor: default;
+  &:hover {
+    background: transparent;
+  }
+}
+.pickKey {
+  color: $ink;
+}
+.pickVal {
+  margin-left: auto;
+  color: $muted;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pickMuted {
+  margin-left: auto;
+  color: $faint;
+}
+.scriptBox {
+  width: 100%;
+  min-height: 66px;
+  resize: vertical;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  padding: 8px 10px;
+  font-family: $mono;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: $ink;
+  outline: none;
+  &:focus {
+    border-color: $light-blue;
+  }
+}
+
+/* ===================== option du picker {} ===================== */
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 6px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+  &:hover {
+    background: rgba(102, 112, 133, 0.07);
+  }
+}
+.optIcon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+.optName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.optBadge {
+  margin-left: auto;
+  flex: none;
+  background: rgba(102, 112, 133, 0.1);
+  color: $ink-2;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+/* ===================== panneau Environment =====================
+   Les tables viennent du proto `checks` (outTable / outHeadRow / outDataRow) ;
+   ici on n'ajoute que la cellule de valeur (input + chip d'origine à droite). */
+.valCell {
+  gap: 8px;
+}
+.envChip {
+  flex: none;
+  font-size: 11px;
+  color: $ink-2;
+  background: rgba(102, 112, 133, 0.08);
+  border-radius: 5px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+.envLink {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: $light-blue-soft;
+  color: $light-blue;
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  &:hover {
+    filter: brightness(0.97);
+  }
+}
+.envFoot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid rgba(228, 231, 236, 0.7);
+}
+
+/* note calme : ce que le panneau ne contient PAS, et pourquoi */
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 9px 12px;
+  border: 1px solid $border;
+  border-radius: $radius;
+  background: #fbfbfc;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: $ink-2;
+  svg {
+    flex: none;
+    margin-top: 2px;
+    color: $faint;
+  }
+}
+.noteWhy {
+  align-self: flex-start;
+  margin-left: auto;
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: $light-blue;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* ===================== panneau d'un step : onglet General ===================== */
+/* capture de référence : libellé en haut à gauche, vide centré, filet en bas */
+.refBlock {
+  padding: 14px 18px 0;
+  border-bottom: 1px solid $border;
+}
+.refLabel {
+  font-size: 13px;
+  color: $ink-2;
+}
+.refEmpty {
+  display: grid;
+  place-items: center;
+  min-height: 132px;
+}
+
+/* ===================== panneau d'un step ===================== */
+.stepPane {
+  padding: 16px 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.recap {
+  border: 1px solid $border;
+  border-radius: $radius;
+  overflow: hidden;
+}
+.recapRow {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 9px 12px;
+  font-size: 13px;
+  & + & {
+    border-top: 1px solid rgba(228, 231, 236, 0.7);
+  }
+}
+.recapLabel {
+  font-size: 12px;
+  color: $muted;
+}
+.recapValue {
+  font-family: $mono;
+  font-size: 12.5px;
+  color: $ink;
+  overflow-wrap: anywhere;
+}
+.advGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.advTitle {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: $faint;
+  margin-bottom: 4px;
+}
+
+/* ===================== modale « what changed » ===================== */
+.rules {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.rule {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+}
+.ruleNum {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: $light-blue-soft;
+  color: $light-blue;
+  font-size: 11.5px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.ruleTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: $ink;
+  margin-bottom: 2px;
+}
+.ruleBody {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: $ink-2;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid $border;
+}
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: $ink-2;
+}
+
+/* flash du step d'origine quand on clique un badge « Step N » */
+.flash {
+  animation: flashStep 1.1s ease-out 1;
+}
+@keyframes flashStep {
+  0% {
+    box-shadow: 0 0 0 0 rgba(5, 119, 255, 0.35);
+  }
+  30% {
+    box-shadow: 0 0 0 4px rgba(5, 119, 255, 0.22);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(5, 119, 255, 0);
+  }
+}
