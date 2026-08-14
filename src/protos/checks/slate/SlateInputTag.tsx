@@ -45,7 +45,18 @@ const parseVariableGroupId = (technicalName?: string): number | undefined => {
 
 let tagIdCounter = 0
 
-export type Color = 'primary' | 'secondary' | 'tertiary' | 'success' | 'warning' | 'danger' | 'blue'
+// 'light-blue' : ajout local au port (proto test-editor-variables) pour la 3e
+// teinte du système de variables — bleu clair = valeur produite au fil du run
+// (output déclaré ou variable locale). Non utilisé par le proto checks.
+export type Color =
+  | 'primary'
+  | 'secondary'
+  | 'tertiary'
+  | 'success'
+  | 'warning'
+  | 'danger'
+  | 'blue'
+  | 'light-blue'
 
 export type TagInputValue = {
   value: string

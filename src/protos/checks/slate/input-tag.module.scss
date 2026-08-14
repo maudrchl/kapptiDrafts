@@ -130,6 +130,14 @@
       color: #1916D0;
       border-color: var(--color-accent-light-dark-blue);
     }
+
+    /* Ajout local au port : 3e teinte du système de variables (valeur produite
+       au fil du run → output déclaré ou variable locale). */
+    &.tag--light-blue {
+      background-color: var(--color-accent-light-blue);
+      color: var(--color-accent-blue);
+      border-color: var(--color-accent-light-blue);
+    }
   }
   
   .clickableTag {
