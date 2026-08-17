@@ -974,7 +974,7 @@ const VariablesProto = () => {
    */
   const environmentTab = () => (
     <div className={chrome.varsPane}>
-      <div className={chrome.varsSection}>
+      <div className={chrome.varsSection} data-tour="env-inputs">
         <div className={chrome.outTable}>
           <div className={chrome.outHeadRow}>
             <div className={chrome.outHeadCell}>In-test inputs ({inputs.length})</div>
@@ -1033,7 +1033,7 @@ const VariablesProto = () => {
         </div>
       </div>
 
-      <div className={chrome.outTable}>
+      <div className={chrome.outTable} data-tour="env-globals">
         <div className={chrome.gvHeadRow}>Global variables ({globals.length})</div>
         {globals.map((g, i) => {
           const n = writerStep(g.name)
@@ -1438,7 +1438,7 @@ const VariablesProto = () => {
         </header>
 
         <div className={chrome.body}>
-          <div className={chrome.canvas} onClick={() => setSel(null)}>
+          <div className={chrome.canvas} data-tour="canvas" onClick={() => setSel(null)}>
             <div className={`${chrome.canvasInner} ${styles.canvasWide}`}>
               <div className={chrome.startRow}>
                 <span className={chrome.startFlag}>
@@ -1545,7 +1545,7 @@ const VariablesProto = () => {
           </div>
 
           {/* right panel : step sélectionné → réglages du step ; sinon → panneau du test */}
-          <aside className={chrome.panel}>
+          <aside className={chrome.panel} data-tour="panel">
             {sel !== null ? (
               stepPanel(sel)
             ) : (
