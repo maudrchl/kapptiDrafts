@@ -196,6 +196,18 @@ export const ACTION_GROUPS: ActionGroup[] = [
   },
 ]
 
+/** Actions d'interface qui prennent une valeur en plus de l'élément visé. */
+export const VALUE_ACTIONS = new Set([
+  'Fill input',
+  'Select option',
+  'Assert displayed',
+  'Assert not displayed',
+  'Verify with AI',
+  'Wait for delay',
+  'Get text or value',
+  'Create metric',
+])
+
 /** Groupe qui contient une action (pour ouvrir la bonne catégorie à l'ouverture). */
 export const groupOfAction = (label: string) =>
   ACTION_GROUPS.find((g) => g.items.some((i) => i.label === label))?.key ?? 'popular'
@@ -370,6 +382,40 @@ export const INITIAL_STEPS: Step[] = [
     value: 'Order {{orderRef}} confirmed',
   },
 ]
+
+/* ---------------- changer l'action d'un step ----------------
+ * Choisir une action dans le menu ne renomme pas le step : ça le CONVERTIT.
+ * On garde son identité (id, numéro, groupe) et on repart des valeurs vides.
+ */
+const base = (s: Step) => ({ id: s.id, n: s.n, group: s.group })
+
+export const toSetStep = (s: Step, target: Target): SetStep => ({
+  ...base(s),
+  kind: 'set',
+  target,
+  name: '',
+  source: 'static',
+  staticValue: '',
+  jsonPath: '',
+  headerName: '',
+  script: '',
+})
+
+export const toUiStep = (s: Step, action: string): UiStep => ({
+  ...base(s),
+  kind: 'ui',
+  action,
+  locator: s.kind === 'ui' ? s.locator : '',
+  value: VALUE_ACTIONS.has(action) ? (s.kind === 'ui' ? (s.value ?? '') : '') : undefined,
+})
+
+export const toApiStep = (s: Step): ApiStep => ({
+  ...base(s),
+  kind: 'api',
+  action: 'API Call',
+  method: s.kind === 'api' ? s.method : 'GET',
+  url: s.kind === 'api' ? s.url : '{{URL}}/',
+})
 
 /* ---------------- dernière réponse (picker JSON attribute) ---------------- */
 const SAMPLE_RESPONSE = {

@@ -62,6 +62,9 @@ import {
   SET_LOCAL,
   SOURCES,
   UPDATE_GLOBAL,
+  toApiStep,
+  toSetStep,
+  toUiStep,
   groupOfAction,
   iconOfAction,
   setStepLabel,
@@ -661,15 +664,19 @@ const VariablesProto = () => {
    * variable → globale. Le sélecteur de cible s'ajuste ensuite.
    */
   const chooseAction = (step: Step, label: string) => {
-    if (step.kind === 'set' && label === SET_LOCAL) {
-      patchStep(step.id, { target: { kind: 'new', name: '' } })
-    } else if (step.kind === 'set' && label === UPDATE_GLOBAL) {
-      patchStep(step.id, { target: { kind: 'global', name: GLOBALS[0].name } })
-    } else if (step.kind === 'api') {
-      patchApi(step.id, { action: label })
-    } else if (step.kind === 'ui') {
-      patchUi(step.id, { action: label })
-    }
+    // Changer d'action CONVERTIT le step : un Click qui devient Set local
+    // variable doit gagner sa cible et sa valeur, pas juste un autre libellé.
+    const next: Step =
+      label === SET_LOCAL
+        ? step.kind === 'set' && step.target.kind !== 'global'
+          ? step
+          : toSetStep(step, { kind: 'new', name: '' })
+        : label === UPDATE_GLOBAL
+          ? toSetStep(step, { kind: 'global', name: GLOBALS[0].name })
+          : label === 'API Call'
+            ? toApiStep(step)
+            : toUiStep(step, label)
+    setSteps((cur) => cur.map((s) => (s.id === step.id ? next : s)))
     setActionOpen(null)
     setActionQuery('')
   }
