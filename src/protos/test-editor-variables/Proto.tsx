@@ -59,6 +59,7 @@ import {
   INITIAL_STEPS,
   INPUTS,
   NATURE_TINT,
+  RANDOM_VALUES,
   RESPONSE_HEADERS,
   STEP_GROUPS,
   RESPONSE_ROWS,
@@ -364,20 +365,21 @@ const VariablesProto = () => {
    */
   const randomGroup = (): Suggestions => ({
     name: 'Random',
-    key: 'random',
-    suggestions: ['Random text', 'Random number', 'Random date'].map((label, i) => ({
+    key: 'built_in',
+    suggestions: [...RANDOM_VALUES, 'Custom'].map((label, i) => ({
       id: `rnd${i}`,
       label: optLabel(label, 'generated'),
-      color: 'tertiary' as TagColor,
-      value: label,
+      color: TAG_COLOR.neutral,
+      // `custom` déclenche le séparateur et la modale de personnalisation du portage
+      value: label === 'Custom' ? 'custom' : label,
       technicalName: label,
     })),
   })
 
   const inputSuggestions = (skip?: string): Suggestions[] => [
     {
-      name: 'In-test inputs',
-      key: 'built_in' as const,
+      name: 'Test variables',
+      key: 'test',
       suggestions: inputs
         .filter((v) => v.name && v.name !== skip)
         .map((v, i) => ({
@@ -402,49 +404,18 @@ const VariablesProto = () => {
     },
   ]
 
-  const suggestionsFor = (n: number): Suggestions[] => {
-    const avail = localsBefore(n)
-    return [
-      ...(avail.length
-        ? [
-            {
-              name: 'Local variables',
-              key: 'previous_steps' as const,
-              suggestions: avail.map((l, i) => ({
-                id: `loc${i}`,
-                label: optLabel(l.name, 'local', l.step),
-                color: TAG_COLOR['light-blue'],
-                value: l.name,
-                technicalName: l.name,
-              })),
-            },
-          ]
-        : []),
-      {
-        name: 'In-test inputs',
-        key: 'built_in' as const,
-        // l'onglet des globales a son bouton de création : celui des in-test aussi.
-        // La création se fait là où le besoin naît, et insère la variable.
-        footer: (insert, selectedText) => (
-          <Button
-            fullWidth
-            size="s"
-            color="secondary"
-            icon={IconPlus}
-            onClick={() =>
-              setNewInput({
-                insert,
-                name: /^[\w.]+$/.test(selectedText ?? '') ? (selectedText as string) : '',
-                value: '',
-                secret: false,
-              })
-            }
-          >
-            Create in-test variable
-          </Button>
-        ),
-        // un input encore sans nom n'a rien à proposer
-        suggestions: inputs
+  const suggestionsFor = (n: number): Suggestions[] => [
+    {
+      /**
+       * Une seule liste pour les variables du test : les in-test, toujours
+       * disponibles, puis les locales déjà affectées. Au moment de consommer
+       * une variable, la question est « laquelle puis-je mettre ici », pas
+       * « de quelle nature est-elle » : la teinte et le badge Step N le disent.
+       */
+      name: 'Test variables',
+      key: 'test',
+      suggestions: [
+        ...inputs
           .filter((v) => v.name)
           .map((v, i) => ({
             id: `in${i}`,
@@ -453,21 +424,28 @@ const VariablesProto = () => {
             value: v.name,
             technicalName: v.name,
           })),
-      },
-      randomGroup(),
-      {
-        name: 'Global variables',
-        key: 'variables' as const,
-        suggestions: globals.map((v, i) => ({
-          id: `gl${i}`,
-          label: optLabel(v.name, 'global'),
-          color: TAG_COLOR['dark-blue'],
-          value: v.name,
-          technicalName: v.name,
+        ...localsBefore(n).map((l, i) => ({
+          id: `loc${i}`,
+          label: optLabel(l.name, 'local', l.step),
+          color: TAG_COLOR['light-blue'],
+          value: l.name,
+          technicalName: l.name,
         })),
-      },
-    ]
-  }
+      ],
+    },
+    randomGroup(),
+    {
+      name: 'Global variables',
+      key: 'variables' as const,
+      suggestions: globals.map((v, i) => ({
+        id: `gl${i}`,
+        label: optLabel(v.name, 'global'),
+        color: TAG_COLOR['dark-blue'],
+        value: v.name,
+        technicalName: v.name,
+      })),
+    },
+  ]
 
   /* ---------------- sélecteur de cible ---------------- */
   const setTarget = (step: SetStep, kind: TargetKind, name = '') => {

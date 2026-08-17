@@ -216,6 +216,9 @@ export const groupOfAction = (label: string) =>
 export const iconOfAction = (label: string): IconComp =>
   ACTION_GROUPS.flatMap((g) => g.items).find((i) => i.label === label)?.icon ?? IconBolt
 
+/** Générateurs de l'onglet Random du picker produit. */
+export const RANDOM_VALUES = ['First name', 'Last name', 'City', 'Street address']
+
 /* ---------------- steps du scénario ---------------- */
 export type ApiStep = {
   id: string

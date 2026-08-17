@@ -7,7 +7,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Button, IconBraces, IconList, IconLock, Input, Modal, Select } from '@kapptivate/ui-kit'
 import classnames from 'classnames/bind'
 import styles from './input-tag.module.scss'
-import type { BuiltInParams, BuiltInType } from './types'
+import type { BuiltInParams, BuiltInType, NumberBuiltInParams, TextBuiltInParams } from './types'
 
 const cx = classnames.bind(styles)
 
@@ -184,10 +184,137 @@ export const VariableModal = ({
   )
 }
 
-export const CustomBuiltInModal = (_props: {
+/**
+ * Personnalisation d'une valeur générée (item « Custom » de l'onglet Random).
+ * Le portage câble déjà l'enregistrement et la réédition d'un tag existant ;
+ * seul le formulaire manquait.
+ */
+export const CustomBuiltInModal = ({
+  open,
+  setOpen,
+  onSave,
+  initialValues,
+  initialType,
+}: {
   open: boolean
   setOpen: (open: boolean) => void
   onSave: (type: BuiltInType, params: BuiltInParams) => void
   initialValues?: BuiltInParams
   initialType?: BuiltInType
-}) => null
+}) => {
+  const [type, setType] = useState<BuiltInType>(initialType ?? 'random_text')
+  const [length, setLength] = useState(String((initialValues as TextBuiltInParams)?.length ?? 10))
+  const [min, setMin] = useState(String((initialValues as NumberBuiltInParams)?.min ?? 0))
+  const [max, setMax] = useState(String((initialValues as NumberBuiltInParams)?.max ?? 100))
+
+  useEffect(() => {
+    if (open) setType(initialType ?? 'random_text')
+  }, [open, initialType])
+
+  if (!open) return null
+
+  const save = () => {
+    if (type === 'random_text') {
+      onSave(type, {
+        length: Number(length) || 10,
+        include_uppercase: true,
+        include_lowercase: true,
+        include_numerical: true,
+        include_special: false,
+        min_numerical: 0,
+        min_special: 0,
+      })
+    } else if (type === 'random_number') {
+      onSave(type, { min: Number(min) || 0, max: Number(max) || 100 })
+    } else {
+      onSave(type, { format: 1 })
+    }
+    setOpen(false)
+  }
+
+  return (
+    <Modal open width={520} title="Custom random value" onCancel={() => setOpen(false)}>
+      <Modal.Content>
+        <div className={styles.cvBody}>
+          <div className={styles.cvField}>
+            <label className={styles.cvLabel}>Kind</label>
+            <Select
+              size="l"
+              fullWidth
+              value={type}
+              onChange={(a: any, b: any) =>
+                setType((typeof a === 'string' ? a : (b ?? 'random_text')) as BuiltInType)
+              }
+              options={[
+                { label: 'Text', value: 'random_text' },
+                { label: 'Number', value: 'random_number' },
+                { label: 'Date', value: 'random_date' },
+              ]}
+            />
+          </div>
+
+          {type === 'random_text' && (
+            <div className={styles.cvField}>
+              <label className={styles.cvLabel} htmlFor="cb-len">
+                Length
+              </label>
+              <Input
+                size="l"
+                fullWidth
+                name="cb-len"
+                type="number"
+                value={length}
+                onChange={(e) => setLength(e.target.value)}
+              />
+            </div>
+          )}
+
+          {type === 'random_number' && (
+            <div className={styles.cvRow}>
+              <div className={styles.cvField}>
+                <label className={styles.cvLabel} htmlFor="cb-min">
+                  Minimum
+                </label>
+                <Input
+                  size="l"
+                  fullWidth
+                  name="cb-min"
+                  type="number"
+                  value={min}
+                  onChange={(e) => setMin(e.target.value)}
+                />
+              </div>
+              <div className={styles.cvField}>
+                <label className={styles.cvLabel} htmlFor="cb-max">
+                  Maximum
+                </label>
+                <Input
+                  size="l"
+                  fullWidth
+                  name="cb-max"
+                  type="number"
+                  value={max}
+                  onChange={(e) => setMax(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {type === 'random_date' && (
+            <span className={styles.cvHint}>A date picked at random when the run starts.</span>
+          )}
+        </div>
+      </Modal.Content>
+      <Modal.Footer>
+        <div className={styles.cvFooter}>
+          <Button color="invisible" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button color="primary" onClick={save}>
+            Save
+          </Button>
+        </div>
+      </Modal.Footer>
+    </Modal>
+  )
+}
