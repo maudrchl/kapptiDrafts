@@ -61,40 +61,26 @@ export const NATURE_TINT: Record<VarNature, Tint> = {
   generated: 'neutral',
 }
 
-/* ---------------- sources de valeur d'un Set variable ---------------- */
-/** Mêmes sources que la modale de création : un Set variable est souvent une extraction. */
-export type Source = 'static' | 'json' | 'header' | 'script'
-
-export const SOURCES: { value: Source; label: string }[] = [
-  { value: 'static', label: 'Static value' },
-  { value: 'json', label: 'JSON attribute' },
-  { value: 'header', label: 'Response header' },
-  { value: 'script', label: 'Script result' },
-]
-
-export const sourceLabel = (s: Source) => SOURCES.find((o) => o.value === s)?.label ?? s
-
 /* ---------------- cibles d'un Set variable ---------------- */
 /**
- * Un seul verbe : ce qui change est la CIBLE, pas l'action.
- * `new` crée une variable locale, `local` réaffecte une locale existante,
- * `global` met à jour une globale de Configurations.
+ * Deux actions, une valeur toujours STATIQUE, et une seule différence : d'où
+ * vient le nom de la variable écrite.
+ *   `local`  → « Set local variable » : le nom se TAPE (la variable naît ici).
+ *   `update` → « Update variable » : le nom se CHOISIT parmi les variables qui
+ *              existent déjà, in-test comme globales. C'est la nature de la
+ *              variable choisie qui dit où la valeur atterrit.
+ *
+ * Il n'y a pas de source d'extraction sur ces steps (ni JSON, ni header, ni
+ * script) : extraire est le travail d'autres steps (Get text or value, API
+ * Call). La valeur peut en revanche composer avec d'autres variables.
  */
-export type TargetKind = 'new' | 'local' | 'global'
+export type TargetKind = 'local' | 'update'
 
-export type Target = { kind: TargetKind; name: string }
+export type Target = { kind: TargetKind }
 
-export const targetNature = (k: TargetKind): VarNature => (k === 'global' ? 'global' : 'local')
-
-/**
- * PAS d'action « Update variable » : c'est « Set local variable » qui couvre la
- * création ET la réaffectation d'une locale. Le libellé suit la FAMILLE de la
- * cible, pas le create-vs-update :
- *   - locale (nouvelle ou existante) → Set local variable
- *   - globale                        → Update global variable (variant maquetté)
- */
+/** Le libellé suit la famille de la variable écrite, et rien d'autre. */
 export const setStepLabel = (t: Target) =>
-  t.kind === 'global' ? 'Update global variable' : 'Set local variable'
+  t.kind === 'update' ? 'Update variable' : 'Set local variable'
 
 /* ---------------- catalogue d'actions (menu du step) ----------------
  * Repris du popover produit (search + catégories repliables, « Most popular »
@@ -106,7 +92,7 @@ export type ActionItem = { label: string; icon: IconComp }
 export type ActionGroup = { key: string; label: string; icon: IconComp; items: ActionItem[] }
 
 export const SET_LOCAL = 'Set local variable'
-export const UPDATE_GLOBAL = 'Update global variable'
+export const UPDATE_VAR = 'Update variable'
 
 export const ACTION_GROUPS: ActionGroup[] = [
   {
@@ -126,7 +112,7 @@ export const ACTION_GROUPS: ActionGroup[] = [
     icon: IconBraces,
     items: [
       { label: SET_LOCAL, icon: IconBraces },
-      { label: UPDATE_GLOBAL, icon: IconGlobe },
+      { label: UPDATE_VAR, icon: IconGlobe },
     ],
   },
   {
@@ -229,6 +215,12 @@ export type ApiStep = {
   action: string
   method: string
   url: string
+  /**
+   * Variables PRODUITES par le step (extraites de la réponse). Elles naissent
+   * au runtime, donc elles se lisent comme des locales : bleu ciel, badge
+   * « Step N », disponibles dans les steps qui suivent.
+   */
+  outputs?: string[]
 }
 
 /**
@@ -245,6 +237,8 @@ export type UiStep = {
   locator: string
   /** absent = l'action ne prend pas de valeur (ex. Click) */
   value?: string
+  /** variables produites par le step (ex. « Get text or value ») */
+  outputs?: string[]
 }
 
 export type SetStep = {
@@ -254,14 +248,10 @@ export type SetStep = {
   group: number
   kind: 'set'
   target: Target
-  /** nom de la variable créée (cible `new` uniquement) */
+  /** nom de la variable écrite, tapé sur le step (locale comme globale) */
   name: string
-  source: Source
-  /** valeurs par source, gardées séparément pour que le switch ne perde rien */
-  staticValue: string
-  jsonPath: string
-  headerName: string
-  script: string
+  /** valeur statique ; elle peut citer d'autres variables ({{email}}) */
+  value: string
 }
 
 export type Step = ApiStep | UiStep | SetStep
@@ -273,16 +263,6 @@ export const STEP_GROUPS: StepGroup[] = [
   { n: 1, title: 'Log in' },
   { n: 2, title: 'Place the order' },
 ]
-
-/** Valeur affichée pour la source courante. */
-export const stepValue = (s: SetStep): string =>
-  s.source === 'static'
-    ? s.staticValue
-    : s.source === 'json'
-      ? s.jsonPath
-      : s.source === 'header'
-        ? s.headerName
-        : s.script
 
 /* ---------------- interface du test (panneau Environment) ---------------- */
 export type InputVar = {
@@ -335,18 +315,15 @@ export const INITIAL_STEPS: Step[] = [
   { id: 's2', n: 2, group: 1, kind: 'ui', action: 'Fill input', locator: 'The email field of the login form', value: '{{email}}' },
   { id: 's3', n: 3, group: 1, kind: 'ui', action: 'Fill input', locator: 'The password field of the login form', value: '{{password}}' },
   { id: 's4', n: 4, group: 1, kind: 'ui', action: 'Click', locator: 'The "Sign in" submit button' },
-  // Extraction au runtime : la valeur se définit ICI, sur le step.
+  // Affectation au runtime : le nom ET la valeur se définissent ICI, sur le
+  // step. Valeur statique, qui compose avec une in-test.
   {
     id: 's5',
     n: 5, group: 1,
     kind: 'set',
-    target: { kind: 'new', name: '' },
-    name: 'authToken',
-    source: 'script',
-    staticValue: '',
-    jsonPath: '',
-    headerName: '',
-    script: "return window.localStorage.getItem('access_token')",
+    target: { kind: 'local' },
+    name: 'orderLabel',
+    value: 'Order for {{email}}',
   },
   {
     id: 's6',
@@ -367,36 +344,32 @@ export const INITIAL_STEPS: Step[] = [
   },
   { id: 's8', n: 8, group: 2, kind: 'ui', action: 'Click', locator: 'The "Checkout" button of the cart summary' },
   // Confirmation côté serveur, pour extraire la référence de commande.
-  { id: 's9', n: 9, group: 2, kind: 'api', action: 'API Call', method: 'POST', url: '{{URL}}/orders' },
+  // L'extraction vit sur le step qui PRODUIT la valeur : l'API Call range la
+  // référence de commande dans `orderRef` (tag bleu ciel sur la carte).
+  {
+    id: 's9',
+    n: 9,
+    group: 2,
+    kind: 'api',
+    action: 'API Call',
+    method: 'POST',
+    url: '{{URL}}/orders',
+    outputs: ['orderRef'],
+  },
+  // Variant « Update variable » : la variable écrite se choisit parmi celles
+  // qui existent déjà. Ici une globale, donc la valeur sort du test.
   {
     id: 's10',
     n: 10, group: 2,
     kind: 'set',
-    target: { kind: 'new', name: '' },
-    name: 'orderRef',
-    source: 'json',
-    staticValue: '',
-    jsonPath: '$.order.reference',
-    headerName: '',
-    script: '',
-  },
-  // Variant « Update global variable » : la cible est une globale.
-  {
-    id: 's11',
-    n: 11, group: 2,
-    kind: 'set',
-    target: { kind: 'global', name: 'sessionId' },
-    name: '',
-    source: 'header',
-    staticValue: '',
-    jsonPath: '',
-    headerName: 'x-session-id',
-    script: '',
+    target: { kind: 'update' },
+    name: 'sessionId',
+    value: '{{orderRef}}',
   },
   // Consomme une locale en aval : le picker {} la propose, badgée « Step 9 ».
   {
-    id: 's12',
-    n: 12, group: 2,
+    id: 's11',
+    n: 11, group: 2,
     kind: 'ui',
     action: 'Assert displayed',
     locator: 'Order {{orderRef}} confirmed',
@@ -414,11 +387,7 @@ export const toSetStep = (s: Step, target: Target): SetStep => ({
   kind: 'set',
   target,
   name: '',
-  source: 'static',
-  staticValue: '',
-  jsonPath: '',
-  headerName: '',
-  script: '',
+  value: '',
 })
 
 export const toUiStep = (s: Step, action: string): UiStep => ({
@@ -437,48 +406,11 @@ export const toApiStep = (s: Step): ApiStep => ({
   url: s.kind === 'api' ? s.url : '{{URL}}/',
 })
 
-/* ---------------- dernière réponse (picker JSON attribute) ---------------- */
-const SAMPLE_RESPONSE = {
-  access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MiJ9',
-  token_type: 'Bearer',
-  expires_in: 3600,
-  order: { reference: 'ORD-4417', total: 42.5, currency: 'EUR', status: 'paid' },
-  user: { id: 42, name: 'Ada Lovelace', email: 'ada@example.com' },
-}
-
-export type RespRow = { path: string; label: string; preview: string; depth: number; leaf: boolean }
-
-const fmt = (v: unknown): string => (typeof v === 'string' ? `"${v}"` : String(v))
-
-const buildRows = (obj: object, prefix = '$', depth = 0, out: RespRow[] = []): RespRow[] => {
-  Object.entries(obj).forEach(([k, v]) => {
-    const path = `${prefix}.${k}`
-    if (v && typeof v === 'object') {
-      out.push({ path, label: k, preview: '{ }', depth, leaf: false })
-      buildRows(v as object, path, depth + 1, out)
-    } else {
-      out.push({ path, label: k, preview: fmt(v), depth, leaf: true })
-    }
-  })
-  return out
-}
-
-export const RESPONSE_ROWS = buildRows(SAMPLE_RESPONSE)
-
-/** En-têtes de la dernière réponse (picker Response header). */
-export const RESPONSE_HEADERS = [
-  'x-session-id',
-  'content-type',
-  'set-cookie',
-  'x-request-id',
-  'etag',
-]
-
 /* ---------------- les 4 décisions, pour la note « Why? » ---------------- */
 export const RULES: { title: string; body: string }[] = [
   {
     title: 'The value lives on the step',
-    body: 'A Set local variable step carries its own name and value, from any source: static value, JSON attribute, response header or script result. Nothing to configure upstream.',
+    body: 'A variable step carries its own name and its own static value, right on its line. Nothing to declare upstream, and no extraction to configure here: that is the job of the steps that read the page or the response.',
   },
   {
     title: 'The panel holds what you set before the run',
@@ -489,7 +421,7 @@ export const RULES: { title: string; body: string }[] = [
     body: 'A local variable appears in the value picker of the steps that follow it, badged with the step that assigns it.',
   },
   {
-    title: 'No Update variable action',
-    body: 'Set local variable covers both creating and reassigning a local variable. What changes is the target, not the verb: a new local, an existing local, or a global to update through the Update global variable variant.',
+    title: 'Two actions, one shape',
+    body: 'Set local variable writes a variable that lives in the steps that follow. Update variable writes into a variable from Configurations, so the value leaves the test. Same line in both cases: the name, then the static value.',
   },
 ]
