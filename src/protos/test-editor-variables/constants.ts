@@ -341,13 +341,29 @@ export const INITIAL_STEPS: Step[] = [
     headerName: '',
     script: "return window.localStorage.getItem('access_token')",
   },
-  { id: 's6', n: 6, group: 2, kind: 'ui', action: 'Click', locator: 'The "Add to cart" button on the product card' },
-  { id: 's7', n: 7, group: 2, kind: 'ui', action: 'Click', locator: 'The "Checkout" button of the cart summary' },
-  // Confirmation côté serveur, pour extraire la référence de commande.
-  { id: 's8', n: 8, group: 2, kind: 'api', action: 'API Call', method: 'POST', url: '{{URL}}/orders' },
   {
-    id: 's9',
-    n: 9, group: 2,
+    id: 's6',
+    n: 6,
+    group: 2,
+    kind: 'ui',
+    action: 'Fill input',
+    locator: 'The quantity field of the product card',
+    value: '{{cartSize}}',
+  },
+  {
+    id: 's7',
+    n: 7,
+    group: 2,
+    kind: 'ui',
+    action: 'Click',
+    locator: 'The "Add to cart" button on the product card',
+  },
+  { id: 's8', n: 8, group: 2, kind: 'ui', action: 'Click', locator: 'The "Checkout" button of the cart summary' },
+  // Confirmation côté serveur, pour extraire la référence de commande.
+  { id: 's9', n: 9, group: 2, kind: 'api', action: 'API Call', method: 'POST', url: '{{URL}}/orders' },
+  {
+    id: 's10',
+    n: 10, group: 2,
     kind: 'set',
     target: { kind: 'new', name: '' },
     name: 'orderRef',
@@ -359,8 +375,8 @@ export const INITIAL_STEPS: Step[] = [
   },
   // Variant « Update global variable » : la cible est une globale.
   {
-    id: 's10',
-    n: 10, group: 2,
+    id: 's11',
+    n: 11, group: 2,
     kind: 'set',
     target: { kind: 'global', name: 'sessionId' },
     name: '',
@@ -372,11 +388,11 @@ export const INITIAL_STEPS: Step[] = [
   },
   // Consomme une locale en aval : le picker {} la propose, badgée « Step 9 ».
   {
-    id: 's11',
-    n: 11, group: 2,
+    id: 's12',
+    n: 12, group: 2,
     kind: 'ui',
     action: 'Assert displayed',
-    locator: 'The confirmation banner of order {{orderRef}}',
+    locator: 'Order {{orderRef}} confirmed',
   },
 ]
 

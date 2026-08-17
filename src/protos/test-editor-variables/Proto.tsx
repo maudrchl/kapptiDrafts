@@ -45,6 +45,7 @@ import {
   IconTrash,
   IconZap,
 } from '@kapptivate/ui-kit'
+import CodeEditor from '../../components/CodeEditor'
 import SlateInputTag from '../checks/slate/SlateInputTag'
 import type { Color as TagColor, Suggestions, TagInputValue } from '../checks/slate/SlateInputTag'
 import chrome from '../checks/checks.module.scss'
@@ -646,14 +647,16 @@ const VariablesProto = () => {
         )
       case 'script':
       default:
+        // un script mérite un éditeur : coloration, numéros de ligne, mono
         return (
-          <textarea
-            className={styles.scriptBox}
-            placeholder="return response.body.order.reference"
-            value={step.script}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => patchStep(step.id, { script: e.target.value })}
-          />
+          <div className={styles.scriptBox} onClick={(e) => e.stopPropagation()}>
+            <CodeEditor
+              minRows={3}
+              value={step.script}
+              onChange={(v) => patchStep(step.id, { script: v })}
+              placeholder="return window.localStorage.getItem('token')"
+            />
+          </div>
         )
     }
   }

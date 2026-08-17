@@ -1,5 +1,5 @@
+import CodeEditor from '../../components/CodeEditor'
 import { useMemo, useState } from 'react'
-import Prism from 'prismjs'
 import {
   Breadcrumb,
   ButtonGroup,
@@ -107,58 +107,6 @@ const generateCode = (prompt: string): string => {
 
   return "Check passed.";
 });`
-}
-
-/* -------------------------------------------------------------
- *  Éditeur de code : couche colorée (Prism) + textarea transparente.
- *  Deux thèmes via `dark` (inline light / plein écran dark).
- * ----------------------------------------------------------- */
-const CodeEditor = ({
-  value,
-  onChange,
-  dark,
-  minRows = 6,
-  placeholder,
-  fixed,
-}: {
-  value: string
-  onChange: (v: string) => void
-  dark?: boolean
-  minRows?: number
-  placeholder?: string
-  /** hauteur figée + scroll interne (panneau) pour que le footer ne bouge pas */
-  fixed?: boolean
-}) => {
-  const html = useMemo(
-    () => Prism.highlight(value, Prism.languages.javascript, 'javascript'),
-    [value],
-  )
-  const rows = Math.max(minRows, value.split('\n').length)
-  const gutter = Array.from({ length: rows }, (_, i) => i + 1).join('\n')
-  return (
-    <div
-      className={`${styles.editor} ${dark ? styles.editorDark : styles.editorLight} ${
-        fixed ? styles.editorScroll : ''
-      }`}
-    >
-      <div className={styles.editorGutter}>{gutter}</div>
-      <div className={styles.editorMain}>
-        <pre
-          aria-hidden
-          className={styles.editorHl}
-          dangerouslySetInnerHTML={{ __html: html + '\n' }}
-        />
-        <textarea
-          className={styles.editorInput}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          spellCheck={false}
-          rows={rows}
-          placeholder={placeholder}
-        />
-      </div>
-    </div>
-  )
 }
 
 type EditorTarget = { open: boolean; item: LibStep | null }

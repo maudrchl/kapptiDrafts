@@ -587,20 +587,15 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   margin-left: auto;
   color: $faint;
 }
+/* l'éditeur de code partagé, encadré comme un champ */
 .scriptBox {
   width: 100%;
-  min-height: 66px;
-  resize: vertical;
+  min-width: 0;
   border: 1px solid $border;
   border-radius: $radius-sm;
-  padding: 8px 10px;
-  font-family: $mono;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: $ink;
-  outline: none;
-  &:focus {
-    border-color: $light-blue;
+  overflow: hidden;
+  &:focus-within {
+    border-color: $border-focus;
   }
 }
 
