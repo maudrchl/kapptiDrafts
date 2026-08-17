@@ -36,7 +36,6 @@ import {
   IconLock,
   IconMonitor,
   IconMonitorCheck,
-  IconMinusCircle,
   IconMonitorSmartphone,
   IconMoreHorizontal,
   IconPlay,
@@ -115,6 +114,7 @@ const TINT_CLASS: Record<Tint, string> = {
   orange: styles.tintOrange,
   'light-blue': styles.tintLightBlue,
   'dark-blue': styles.tintDarkBlue,
+  neutral: styles.tintNeutral,
 }
 
 /* Teinte d'une nature → couleur de tag dans l'input Slate du produit. */
@@ -122,6 +122,7 @@ const TAG_COLOR: Record<Tint, TagColor> = {
   orange: 'primary',
   'light-blue': 'light-blue',
   'dark-blue': 'blue',
+  neutral: 'tertiary',
 }
 
 const RAIL_SECTIONS = [
@@ -217,7 +218,7 @@ const VariablesProto = () => {
   const addInput = () =>
     setInputs((cur) => [
       ...cur,
-      { id: `in${cur.length + 1}-${cur.length}`, name: '', value: '', origin: 'Default value' },
+      { id: `in${cur.length + 1}-${cur.length}`, name: '', value: '' },
     ])
 
   const patchStep = (id: string, next: Partial<SetStep>) =>
@@ -356,6 +357,23 @@ const VariablesProto = () => {
    * seulement. Pas de locale : elle n'existe pas encore quand le run démarre,
    * c'est le rôle d'un step Set local variable.
    */
+  /**
+   * Générateurs du produit : ni input, ni locale, ni globale — une valeur
+   * calculée au démarrage du run. Neutres en gris, pour ne pas ajouter une
+   * 4e teinte au système de variables.
+   */
+  const randomGroup = (): Suggestions => ({
+    name: 'Random',
+    key: 'random',
+    suggestions: ['Random text', 'Random number', 'Random date'].map((label, i) => ({
+      id: `rnd${i}`,
+      label: optLabel(label, 'generated'),
+      color: 'tertiary' as TagColor,
+      value: label,
+      technicalName: label,
+    })),
+  })
+
   const inputSuggestions = (skip?: string): Suggestions[] => [
     {
       name: 'In-test inputs',
@@ -370,6 +388,7 @@ const VariablesProto = () => {
           technicalName: v.name,
         })),
     },
+    randomGroup(),
     {
       name: 'Global variables',
       key: 'variables' as const,
@@ -435,6 +454,7 @@ const VariablesProto = () => {
             technicalName: v.name,
           })),
       },
+      randomGroup(),
       {
         name: 'Global variables',
         key: 'variables' as const,
@@ -949,7 +969,7 @@ const VariablesProto = () => {
             <div className={chrome.outHeadCell}>Values</div>
           </div>
           {inputs.map((v, i) => (
-            <div key={v.id} className={chrome.outDataRow}>
+            <div key={v.id} className={`${chrome.outDataRow} ${styles.varRow}`}>
               <div className={`${chrome.outNameCell} ${styles.editable}`}>
                 <Tag color="orange" size="sm" icon={IconBraces} />
                 {/* le nom s'édite : c'est ce qui rend « Add input » utile */}
@@ -987,15 +1007,7 @@ const VariablesProto = () => {
                     onVariableCreated={addGlobal}
                   />
                 )}
-                <span className={styles.envChip}>{v.origin}</span>
               </div>
-              <button
-                className={chrome.outDelCell}
-                aria-label="Remove input"
-                onClick={() => setInputs((cur) => cur.filter((_, j) => j !== i))}
-              >
-                <IconMinusCircle size={12} />
-              </button>
             </div>
           ))}
         </div>
@@ -1011,7 +1023,7 @@ const VariablesProto = () => {
         {globals.map((g, i) => {
           const n = writerStep(g.name)
           return (
-            <div key={g.name} className={chrome.outDataRow}>
+            <div key={g.name} className={`${chrome.outDataRow} ${styles.varRow}`}>
               <div className={chrome.outNameCell}>
                 <Tag color="dark-blue" size="sm" icon={IconBraces} />
                 <span className={chrome.outName}>{g.name}</span>
@@ -1036,7 +1048,6 @@ const VariablesProto = () => {
                   </button>
                 )}
               </div>
-              <span className={chrome.outDelCell} />
             </div>
           )
         })}
@@ -1183,7 +1194,6 @@ const VariablesProto = () => {
           id: `in-${name}-${curr.length}`,
           name,
           value: newInput.value,
-          origin: 'Default value',
           secret: newInput.secret,
         },
       ])

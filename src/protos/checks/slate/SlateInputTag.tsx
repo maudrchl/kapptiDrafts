@@ -86,7 +86,8 @@ export type SuggestionItem = {
 
 export type Suggestions = {
   name: string
-  key: 'previous_steps' | 'built_in' | 'variables'
+  /** les 3 clés du produit, ouvertes pour permettre un onglet de plus (ajout du port) */
+  key: 'previous_steps' | 'built_in' | 'variables' | (string & {})
   suggestions: SuggestionItem[]
   emptyState?: JSX.Element
   /**

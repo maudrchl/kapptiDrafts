@@ -48,15 +48,17 @@ import {
 /** Composant d'icône ui-kit (même signature que `ProtoIcon` du registry). */
 export type IconComp = ComponentType<{ size?: number; color?: string }>
 
-/** Teinte d'une variable — une par nature. */
-export type Tint = 'orange' | 'light-blue' | 'dark-blue'
+/** Teinte d'une variable — une par nature, plus le gris des générateurs. */
+export type Tint = 'orange' | 'light-blue' | 'dark-blue' | 'neutral'
 
-export type VarNature = 'input' | 'global' | 'local'
+/** `generated` n'est pas une variable : c'est un générateur, d'où le gris. */
+export type VarNature = 'input' | 'global' | 'local' | 'generated'
 
 export const NATURE_TINT: Record<VarNature, Tint> = {
   input: 'orange',
   local: 'light-blue',
   global: 'dark-blue',
+  generated: 'neutral',
 }
 
 /* ---------------- sources de valeur d'un Set variable ---------------- */
@@ -284,9 +286,11 @@ export type InputVar = {
   /** clé stable : le nom est éditable, il ne peut pas servir de clé */
   id: string
   name: string
+  /**
+   * La valeur par défaut, la seule qui se déclare ici. Les surcharges et les
+   * jeux de données se jouent à la confirmation du run, pas à l'édition.
+   */
   value: string
-  /** d'où vient la valeur avant le run */
-  origin: 'Default value' | 'Override' | 'From CSV'
   secret?: boolean
 }
 
@@ -296,9 +300,9 @@ export type GlobalVar = {
 }
 
 export const INPUTS: InputVar[] = [
-  { id: 'in1', name: 'email', value: 'guest@rocketcorp.io', origin: 'Default value' },
-  { id: 'in2', name: 'password', value: '••••••••••••', origin: 'Override', secret: true },
-  { id: 'in3', name: 'cartSize', value: '3', origin: 'From CSV' },
+  { id: 'in1', name: 'email', value: 'guest@rocketcorp.io' },
+  { id: 'in2', name: 'password', value: '••••••••••••', secret: true },
+  { id: 'in3', name: 'cartSize', value: '3' },
 ]
 
 export const GLOBALS: GlobalVar[] = [

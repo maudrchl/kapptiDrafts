@@ -46,6 +46,11 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   border-color: $light-blue-soft;
   color: $light-blue;
 }
+.tintNeutral {
+  background: rgba(102, 112, 133, 0.08);
+  border-color: rgba(102, 112, 133, 0.08);
+  color: $ink-2;
+}
 .tintDarkBlue {
   background: $dark-blue-soft;
   border-color: $dark-blue-soft;
@@ -471,11 +476,6 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   max-height: 380px;
   overflow-y: auto;
 }
-.popSep {
-  height: 1px;
-  margin: 4px 0;
-  background: $border;
-}
 .popItem {
   display: flex;
   align-items: center;
@@ -637,20 +637,16 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   color: $ink;
 }
 
+/* sans bouton de suppression, la ligne s'aligne sur l'en-tête (220px + reste) */
+.varRow.varRow {
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+
 /* ===================== panneau Environment =====================
    Les tables viennent du proto `checks` (outTable / outHeadRow / outDataRow) ;
    ici on n'ajoute que la cellule de valeur (input + chip d'origine à droite). */
 .valCell {
   gap: 8px;
-}
-.envChip {
-  flex: none;
-  font-size: 11px;
-  color: $ink-2;
-  background: rgba(102, 112, 133, 0.08);
-  border-radius: 5px;
-  padding: 2px 7px;
-  white-space: nowrap;
 }
 .envLink {
   flex: none;
