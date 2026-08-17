@@ -271,6 +271,8 @@ export const stepValue = (s: SetStep): string =>
 
 /* ---------------- interface du test (panneau Environment) ---------------- */
 export type InputVar = {
+  /** clé stable : le nom est éditable, il ne peut pas servir de clé */
+  id: string
   name: string
   value: string
   /** d'où vient la valeur avant le run */
@@ -284,9 +286,9 @@ export type GlobalVar = {
 }
 
 export const INPUTS: InputVar[] = [
-  { name: 'email', value: 'guest@rocketcorp.io', origin: 'Default value' },
-  { name: 'password', value: '••••••••••••', origin: 'Override', secret: true },
-  { name: 'cartSize', value: '3', origin: 'From CSV' },
+  { id: 'in1', name: 'email', value: 'guest@rocketcorp.io', origin: 'Default value' },
+  { id: 'in2', name: 'password', value: '••••••••••••', origin: 'Override', secret: true },
+  { id: 'in3', name: 'cartSize', value: '3', origin: 'From CSV' },
 ]
 
 export const GLOBALS: GlobalVar[] = [

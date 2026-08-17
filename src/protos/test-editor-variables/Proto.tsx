@@ -189,6 +189,15 @@ const VariablesProto = () => {
   const [ignoreError, setIgnoreError] = useState(false)
   const [skipRun, setSkipRun] = useState(false)
 
+  /** Un in-test input : renommage, valeur, ajout, suppression. */
+  const patchInput = (i: number, next: Partial<(typeof INPUTS)[number]>) =>
+    setInputs((cur) => cur.map((x, j) => (j === i ? { ...x, ...next } : x)))
+  const addInput = () =>
+    setInputs((cur) => [
+      ...cur,
+      { id: `in${cur.length + 1}-${cur.length}`, name: '', value: '', origin: 'Default value' },
+    ])
+
   const patchStep = (id: string, next: Partial<SetStep>) =>
     setSteps((cur) =>
       cur.map((s) => (s.id === id && s.kind === 'set' ? ({ ...s, ...next } as SetStep) : s)),
@@ -340,13 +349,16 @@ const VariablesProto = () => {
       {
         name: 'In-test inputs',
         key: 'built_in' as const,
-        suggestions: inputs.map((v, i) => ({
-          id: `in${i}`,
-          label: optLabel(v.name, 'input'),
-          color: TAG_COLOR.orange,
-          value: v.name,
-          technicalName: v.name,
-        })),
+        // un input encore sans nom n'a rien à proposer
+        suggestions: inputs
+          .filter((v) => v.name)
+          .map((v, i) => ({
+            id: `in${i}`,
+            label: optLabel(v.name, 'input'),
+            color: TAG_COLOR.orange,
+            value: v.name,
+            technicalName: v.name,
+          })),
       },
       {
         name: 'Global variables',
@@ -859,11 +871,20 @@ const VariablesProto = () => {
             <div className={chrome.outHeadCell}>In-test inputs ({inputs.length})</div>
             <div className={chrome.outHeadCell}>Values</div>
           </div>
-          {inputs.map((v) => (
-            <div key={v.name} className={chrome.outDataRow}>
+          {inputs.map((v, i) => (
+            <div key={v.id} className={chrome.outDataRow}>
               <div className={chrome.outNameCell}>
                 <Tag color="orange" size="sm" icon={IconBraces} />
-                <span className={chrome.outName}>{v.name}</span>
+                {/* le nom s'édite : c'est ce qui rend « Add input » utile */}
+                <Input
+                  size="s"
+                  mono
+                  fullWidth
+                  borderless
+                  placeholder="variableName"
+                  value={v.name}
+                  onChange={(e) => patchInput(i, { name: e.target.value })}
+                />
               </div>
               <div className={`${chrome.outValCell} ${styles.valCell}`}>
                 <Input
@@ -871,24 +892,25 @@ const VariablesProto = () => {
                   mono
                   fullWidth
                   borderless
+                  placeholder="Enter value…"
                   type={v.secret ? 'password' : 'text'}
                   value={v.value}
-                  onChange={(e) =>
-                    setInputs((cur) =>
-                      cur.map((x) => (x.name === v.name ? { ...x, value: e.target.value } : x)),
-                    )
-                  }
+                  onChange={(e) => patchInput(i, { value: e.target.value })}
                 />
                 <span className={styles.envChip}>{v.origin}</span>
               </div>
-              <button className={chrome.outDelCell} aria-label="Remove input">
+              <button
+                className={chrome.outDelCell}
+                aria-label="Remove input"
+                onClick={() => setInputs((cur) => cur.filter((_, j) => j !== i))}
+              >
                 <IconMinusCircle size={12} />
               </button>
             </div>
           ))}
         </div>
         <div className={chrome.addWrap}>
-          <Button color="secondary" size="s" icon={IconPlus}>
+          <Button color="secondary" size="s" icon={IconPlus} onClick={addInput}>
             Add input
           </Button>
         </div>
@@ -931,6 +953,18 @@ const VariablesProto = () => {
         : step.kind === 'api'
           ? `${step.action} · ${step.method}`
           : step.action
+    /**
+     * Un step de variable n'a pas d'onglet Variables : ce qu'il affecte est déjà
+     * tout l'objet du step, et General le porte.
+     */
+    const tabs = [
+      { key: 'general', label: 'General', children: stepGeneralTab(step) },
+      ...(step.kind === 'set'
+        ? []
+        : [{ key: 'variables', label: 'Variables', children: stepVariablesTab(step) }]),
+      { key: 'checks', label: 'Checks', children: <div className={chrome.tabPlaceholder}>Checks</div> },
+      { key: 'advanced', label: 'Advanced settings', children: stepAdvancedTab() },
+    ]
     return (
       <>
         <div className={chrome.panelHeader}>
@@ -943,14 +977,9 @@ const VariablesProto = () => {
         <Tabs
           className={chrome.panelTabs}
           type="card"
-          activeKey={stepTab}
+          activeKey={tabs.some((t) => t.key === stepTab) ? stepTab : 'general'}
           onChange={setStepTab}
-          tabs={[
-            { key: 'general', label: 'General', children: stepGeneralTab(step) },
-            { key: 'variables', label: 'Variables', children: stepVariablesTab(step) },
-            { key: 'checks', label: 'Checks', children: <div className={chrome.tabPlaceholder}>Checks</div> },
-            { key: 'advanced', label: 'Advanced settings', children: stepAdvancedTab() },
-          ]}
+          tabs={tabs}
         />
       </>
     )
@@ -987,13 +1016,17 @@ const VariablesProto = () => {
           </div>
         </div>
       )}
-      <div className={styles.refBlock}>
-        <div className={styles.refLabel}>Reference screenshot</div>
-        {/* EmptyState du DS */}
-        <div className={styles.refEmpty}>
-          <EmptyState text="No reference screenshot available for this step" />
+      {/* pas de capture de référence pour un step de variable : il ne touche
+          pas la page, il n'y a rien à montrer. */}
+      {step.kind !== 'set' && (
+        <div className={styles.refBlock}>
+          <div className={styles.refLabel}>Reference screenshot</div>
+          {/* EmptyState du DS */}
+          <div className={styles.refEmpty}>
+            <EmptyState text="No reference screenshot available for this step" />
+          </div>
         </div>
-      </div>
+      )}
     </>
   )
 
