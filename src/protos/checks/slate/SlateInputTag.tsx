@@ -92,9 +92,13 @@ export type Suggestions = {
   /**
    * Pied de liste propre à l'onglet (ex. « Create in-test variable »), en plus
    * du bouton de création de globale câblé sur l'onglet `variables`.
+   * En fonction, il reçoit de quoi insérer la variable créée dans le champ et
+   * le texte actuellement sélectionné (pour pré-remplir un nom).
    * Ajout local au port.
    */
-  footer?: React.ReactNode
+  footer?:
+    | React.ReactNode
+    | ((insert: (value: string, color: Color) => void, selectedText?: string) => React.ReactNode)
 }
 
 type SlateInputTagProps = {
@@ -769,7 +773,21 @@ const SlateInputTag = ({
             })}
             {currentSuggestions.length === 0 && current?.emptyState ? current.emptyState : null}
           </Flex>
-          {current?.footer && <div className={styles.createVariableButton}>{current.footer}</div>}
+          {current?.footer && (
+            <div className={styles.createVariableButton}>
+              {typeof current.footer === 'function'
+                ? current.footer(
+                    (value, color) => {
+                      addTag(value, color, undefined, undefined, value)
+                      setOpenSuggestions(false)
+                    },
+                    savedSelection && Range.isExpanded(savedSelection)
+                      ? Editor.string(editor, savedSelection)
+                      : undefined,
+                  )
+                : current.footer}
+            </div>
+          )}
           {tab === 'variables' && (
             <div className={styles.createVariableButton}>
               <Button

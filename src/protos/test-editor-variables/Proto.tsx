@@ -9,6 +9,7 @@ import {
   Collapse,
   EmptyState,
   Input,
+  Modal,
   SearchInput,
   Popover,
   Select,
@@ -50,6 +51,7 @@ import CodeEditor from '../../components/CodeEditor'
 import SlateInputTag from '../checks/slate/SlateInputTag'
 import type { Color as TagColor, Suggestions, TagInputValue } from '../checks/slate/SlateInputTag'
 import chrome from '../checks/checks.module.scss'
+import cv from '../checks/slate/input-tag.module.scss'
 import styles from './variables.module.scss'
 import {
   ACTION_GROUPS,
@@ -196,6 +198,13 @@ const VariablesProto = () => {
   const [actionOpen, setActionOpen] = useState<string | null>(null)
   const [actionQuery, setActionQuery] = useState('')
   const [openGroups, setOpenGroups] = useState<string[]>(['popular'])
+  /** modale « Create in-test variable » : ouverte depuis le picker, elle insère */
+  const [newInput, setNewInput] = useState<{
+    insert: (value: string, color: TagColor) => void
+    name: string
+    value: string
+    secret: boolean
+  } | null>(null)
   const [ignoreError, setIgnoreError] = useState(false)
   const [skipRun, setSkipRun] = useState(false)
 
@@ -363,18 +372,22 @@ const VariablesProto = () => {
       {
         name: 'In-test inputs',
         key: 'built_in' as const,
-        // l'onglet des globales a son bouton de création : celui des in-test aussi
-        footer: (
+        // l'onglet des globales a son bouton de création : celui des in-test aussi.
+        // La création se fait là où le besoin naît, et insère la variable.
+        footer: (insert, selectedText) => (
           <Button
             fullWidth
             size="s"
             color="secondary"
             icon={IconPlus}
-            onClick={() => {
-              addInput()
-              setSel(null)
-              setTestTab('environment')
-            }}
+            onClick={() =>
+              setNewInput({
+                insert,
+                name: /^[\w.]+$/.test(selectedText ?? '') ? (selectedText as string) : '',
+                value: '',
+                secret: false,
+              })
+            }
           >
             Create in-test variable
           </Button>
@@ -1108,6 +1121,94 @@ const VariablesProto = () => {
     </div>
   )
 
+  /**
+   * Création d'une in-test depuis le picker : jumelle de la modale des globales
+   * (même gabarit, mêmes styles), en plus légère. Pas d'origine de valeur ici :
+   * les surcharges et le CSV se jouent à la confirmation du run.
+   */
+  const createInputModal = () => {
+    if (!newInput) return null
+    const close = () => setNewInput(null)
+    const create = () => {
+      const name = newInput.name.trim()
+      if (!name) return
+      setInputs((curr) => [
+        ...curr,
+        {
+          id: `in-${name}-${curr.length}`,
+          name,
+          value: newInput.value,
+          origin: 'Default value',
+          secret: newInput.secret,
+        },
+      ])
+      newInput.insert(name, TAG_COLOR.orange)
+      close()
+    }
+    return (
+      <Modal open width={620} title="Create in-test variable" onCancel={close}>
+        <Modal.Content>
+          <div className={cv.cvBody}>
+            <div className={styles.noteBanner}>
+              <Banner variant="invisible" description="Available in this test only." />
+            </div>
+            <div className={cv.cvField}>
+              <label className={cv.cvLabel} htmlFor="ci-name">
+                Name
+              </label>
+              <span className={cv.cvName}>
+                <span className={cv.cvBrace}>{'{'}</span>
+                <input
+                  id="ci-name"
+                  className={cv.cvNameInput}
+                  placeholder="e.g. user_email"
+                  autoFocus
+                  value={newInput.name}
+                  onChange={(e) =>
+                    setNewInput({ ...newInput, name: e.target.value.replace(/\s/g, '') })
+                  }
+                />
+                <span className={cv.cvBrace}>{'}'}</span>
+              </span>
+              <span className={cv.cvHint}>No spaces or other special characters allowed.</span>
+            </div>
+            <div className={cv.cvField}>
+              <label className={cv.cvLabel} htmlFor="ci-value">
+                Value
+              </label>
+              <Input
+                size="l"
+                fullWidth
+                name="ci-value"
+                placeholder="Enter value"
+                type={newInput.secret ? 'password' : 'text'}
+                value={newInput.value}
+                onChange={(e) => setNewInput({ ...newInput, value: e.target.value })}
+              />
+            </div>
+            <Checkbox
+              identifier="ci-secret"
+              border={false}
+              label="Hide this value"
+              checked={newInput.secret}
+              onChange={(e) => setNewInput({ ...newInput, secret: e.target.checked })}
+            />
+          </div>
+        </Modal.Content>
+        <Modal.Footer>
+          <div className={cv.cvFooter}>
+            <Button color="invisible" onClick={close}>
+              Cancel
+            </Button>
+            <Button color="primary" disabled={!newInput.name.trim()} onClick={create}>
+              Create
+            </Button>
+          </div>
+        </Modal.Footer>
+      </Modal>
+    )
+  }
+
   /* ---------------- rendu ---------------- */
   return (
     <div className={`${chrome.app} ${styles.app}`}>
@@ -1286,6 +1387,7 @@ const VariablesProto = () => {
         </div>
       </div>
 
+      {createInputModal()}
     </div>
   )
 }
