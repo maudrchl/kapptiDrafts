@@ -630,6 +630,12 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   font-weight: 600;
 }
 
+/* un texte éditable se lit en primary ; ce qui est en lecture seule reste en
+   secondary (les valeurs des globales, définies dans Configurations) */
+.editable input {
+  color: $ink;
+}
+
 /* ===================== panneau Environment =====================
    Les tables viennent du proto `checks` (outTable / outHeadRow / outDataRow) ;
    ici on n'ajoute que la cellule de valeur (input + chip d'origine à droite). */

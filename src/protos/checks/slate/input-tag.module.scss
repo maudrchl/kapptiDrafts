@@ -150,7 +150,8 @@
     border-top-right-radius: var(--spacing-2);
     border-bottom-right-radius: var(--spacing-2);
     border: 1px solid var(--color-border-grey);
-    border-left: none;
+    /* filet de séparation avec le champ (il n'y en avait pas) */
+    border-left: 1px solid var(--color-border-grey);
     height: 26px;
     display: flex;
     align-items: center;
@@ -159,6 +160,7 @@
 
     &.borderless {
       border: none;
+      border-left: 1px solid var(--color-border-grey);
       border-radius: 0;
       height: 26px;
     }
@@ -285,4 +287,80 @@
 .createVariableButton {
   width: 100%;
   padding: var(--spacing-1) var(--spacing-2) var(--spacing-2);
+}
+
+/* ===================== modale de création d'une variable ===================== */
+.cvBody {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.cvRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.cvField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.cvLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+/* nom encadré de { } : l'Input du DS ne rend pas sa boîte suffixe */
+.cvName {
+  display: flex;
+  align-items: stretch;
+  height: 40px;
+  border: 1px solid var(--color-border-grey);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+
+  &:focus-within {
+    border-color: var(--color-text-primary);
+  }
+}
+.cvBrace {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  background: var(--color-grey-200);
+  color: var(--color-text-primary);
+  font-weight: var(--font-medium);
+}
+.cvNameInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  padding: 0 12px;
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  background: transparent;
+
+  &::placeholder {
+    color: var(--color-text-third);
+  }
+}
+.cvHint {
+  font-size: 12px;
+  color: var(--color-text-third);
+}
+.cvType {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cvFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
 }

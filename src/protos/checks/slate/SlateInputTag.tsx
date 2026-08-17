@@ -110,6 +110,11 @@ type SlateInputTagProps = {
   onBlur?: React.FocusEventHandler<HTMLDivElement>
   onFocus?: React.FocusEventHandler<HTMLDivElement>
   borderless?: boolean
+  /**
+   * Appelé quand la modale « Create global variable » aboutit, pour que le
+   * consommateur enregistre la variable de son côté. Ajout local au port.
+   */
+  onVariableCreated?: (variable: { name: string; value: string }) => void
 }
 
 type CustomElement =
@@ -150,6 +155,7 @@ const SlateInputTag = ({
   onBlur,
   onFocus,
   borderless,
+  onVariableCreated,
 }: SlateInputTagProps) => {
   const [t] = useTranslation('variables')
   const [openSuggestions, setOpenSuggestions] = useState(false)
@@ -836,6 +842,7 @@ const SlateInputTag = ({
 
   const handleVariableSuccess = (variable: Variable) => {
     addTag(variable.name, 'blue', variable.name, undefined, variable.name)
+    onVariableCreated?.({ name: variable.name, value: String(variable.default_value ?? '') })
   }
 
   return (

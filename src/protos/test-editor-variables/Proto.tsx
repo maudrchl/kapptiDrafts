@@ -149,6 +149,7 @@ const VarField = ({
   suggestions,
   placeholder,
   borderless,
+  onVariableCreated,
 }: {
   initial: TagInputValue[]
   onValue: (next: string) => void
@@ -156,6 +157,7 @@ const VarField = ({
   suggestions: Suggestions[]
   placeholder: string
   borderless?: boolean
+  onVariableCreated?: (v: { name: string; value: string }) => void
 }) => {
   const [segs, setSegs] = useState<TagInputValue[]>(initial)
   return (
@@ -170,6 +172,7 @@ const VarField = ({
       }}
       suggestions={suggestions}
       placeholder={placeholder}
+      onVariableCreated={onVariableCreated}
     />
   )
 }
@@ -177,6 +180,8 @@ const VarField = ({
 const VariablesProto = () => {
   const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS)
   const [inputs, setInputs] = useState(INPUTS)
+  /** les globales s'éditent dans le panneau, et la modale du picker en crée */
+  const [globals, setGlobals] = useState(GLOBALS)
   /** step sélectionné (null = panneau du test) */
   const [sel, setSel] = useState<number | null>(null)
   const [testTab, setTestTab] = useState('environment')
@@ -197,6 +202,9 @@ const VariablesProto = () => {
   /** Un in-test input : renommage, valeur, ajout, suppression. */
   const patchInput = (i: number, next: Partial<(typeof INPUTS)[number]>) =>
     setInputs((cur) => cur.map((x, j) => (j === i ? { ...x, ...next } : x)))
+  /** Une globale créée depuis la modale du picker rejoint Configurations. */
+  const addGlobal = (v: { name: string; value: string }) =>
+    setGlobals((cur) => (cur.some((g) => g.name === v.name) ? cur : [...cur, v]))
   const addInput = () =>
     setInputs((cur) => [
       ...cur,
@@ -230,7 +238,7 @@ const VariablesProto = () => {
   const localsBefore = (n: number) => locals.filter((l) => l.step < n)
 
   const natureOf = (name: string): VarNature =>
-    GLOBALS.some((g) => g.name === name)
+    globals.some((g) => g.name === name)
       ? 'global'
       : locals.some((l) => l.name === name)
         ? 'local'
@@ -314,6 +322,7 @@ const VariablesProto = () => {
         toText={fromSegments}
         suggestions={suggestionsFor(stepNumber)}
         placeholder={placeholder}
+        onVariableCreated={addGlobal}
       />
     </span>
   )
@@ -384,7 +393,7 @@ const VariablesProto = () => {
       {
         name: 'Global variables',
         key: 'variables' as const,
-        suggestions: GLOBALS.map((v, i) => ({
+        suggestions: globals.map((v, i) => ({
           id: `gl${i}`,
           label: optLabel(v.name, 'global'),
           color: TAG_COLOR['dark-blue'],
@@ -431,7 +440,7 @@ const VariablesProto = () => {
            groupes de Configurations avec leur contenu en sous-popover, et la
            création en pied. */
         <div className={styles.targetPop}>
-          {GLOBALS.map((g) =>
+          {globals.map((g) =>
             item(
               optLabel(g.name, 'global'),
               t.name === g.name,
@@ -689,7 +698,7 @@ const VariablesProto = () => {
           ? step
           : toSetStep(step, { kind: 'new', name: '' })
         : label === UPDATE_GLOBAL
-          ? toSetStep(step, { kind: 'global', name: GLOBALS[0].name })
+          ? toSetStep(step, { kind: 'global', name: globals[0].name })
           : label === 'API Call'
             ? toApiStep(step)
             : toUiStep(step, label)
@@ -896,7 +905,7 @@ const VariablesProto = () => {
           </div>
           {inputs.map((v, i) => (
             <div key={v.id} className={chrome.outDataRow}>
-              <div className={chrome.outNameCell}>
+              <div className={`${chrome.outNameCell} ${styles.editable}`}>
                 <Tag color="orange" size="sm" icon={IconBraces} />
                 {/* le nom s'édite : c'est ce qui rend « Add input » utile */}
                 <Input
@@ -909,7 +918,7 @@ const VariablesProto = () => {
                   onChange={(e) => patchInput(i, { name: e.target.value })}
                 />
               </div>
-              <div className={`${chrome.outValCell} ${styles.valCell}`}>
+              <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
                 <Input
                   size="s"
                   mono
@@ -940,8 +949,8 @@ const VariablesProto = () => {
       </div>
 
       <div className={chrome.outTable}>
-        <div className={chrome.gvHeadRow}>Global variables ({GLOBALS.length})</div>
-        {GLOBALS.map((g) => {
+        <div className={chrome.gvHeadRow}>Global variables ({globals.length})</div>
+        {globals.map((g, i) => {
           const n = writerStep(g.name)
           return (
             <div key={g.name} className={chrome.outDataRow}>
@@ -949,8 +958,20 @@ const VariablesProto = () => {
                 <Tag color="dark-blue" size="sm" icon={IconBraces} />
                 <span className={chrome.outName}>{g.name}</span>
               </div>
-              <div className={`${chrome.outValCell} ${styles.valCell}`}>
-                <Input size="s" mono fullWidth borderless value={g.value} onChange={() => undefined} />
+              <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
+                <Input
+                  size="s"
+                  mono
+                  fullWidth
+                  borderless
+                  placeholder="Enter value…"
+                  value={g.value}
+                  onChange={(e) =>
+                    setGlobals((cur) =>
+                      cur.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)),
+                    )
+                  }
+                />
                 {n != null && (
                   <button type="button" className={styles.envLink} onClick={() => gotoStep(n)}>
                     Updated at step {n}
