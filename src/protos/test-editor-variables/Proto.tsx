@@ -490,20 +490,17 @@ const VariablesProto = () => {
             ),
           )}
           {t.kind === 'local' && (
-            <>
-              <div className={styles.popSep} />
-              {item(
-                <span className={styles.opt}>
-                  <span className={`${styles.optIcon} ${styles.tintLightBlue}`}>
-                    <IconPlus size={12} />
-                  </span>
-                  <span className={styles.optName}>Create a new variable instead</span>
-                </span>,
-                false,
-                () => setTarget(step, 'new'),
-                'new',
-              )}
-            </>
+            <div className={styles.popFoot}>
+              <Button
+                fullWidth
+                size="s"
+                color="secondary"
+                icon={IconPlus}
+                onClick={() => setTarget(step, 'new')}
+              >
+                Create a new variable
+              </Button>
+            </div>
           )}
         </div>
       )
@@ -1037,7 +1034,10 @@ const VariablesProto = () => {
             <div className={styles.defField}>{valueControl(step)}</div>
           </div>
           {/* Banner neutre du DS plutôt qu'une note maison */}
-          <Banner variant="secondary" description={targetNote(step)} />
+          {/* `invisible` = le gris neutre du DS ; `secondary` tire sur le vert de marque */}
+          <div className={styles.noteBanner}>
+            <Banner variant="invisible" description={targetNote(step)} />
+          </div>
         </div>
       )}
       {/* pas de capture de référence pour un step de variable : il ne touche

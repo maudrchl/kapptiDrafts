@@ -22,7 +22,7 @@ export type Variable = {
 // --- i18n (react-i18next) : le proto n'a pas i18next → petit dictionnaire des
 // clés utilisées par SlateInputTag, avec repli sur la clé.
 const LABELS: Record<string, string> = {
-  'list.variable.createGlobal': 'Create variable',
+  'list.variable.createGlobal': 'Create global variable',
   'drawer.noVariables.title': 'No variables',
 }
 export const useTranslation = (_namespace?: string): [(key: string) => string] => [

@@ -238,6 +238,11 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   color: $faint;
 }
 
+/* le Banner du DS respire à 16px : trop pour une note de panneau */
+.noteBanner > div {
+  padding: 8px 12px;
+}
+
 /* ===================== définition de la variable (panneau du step) ===================== */
 .defBlock {
   padding: 14px 18px 16px;
