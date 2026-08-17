@@ -2,13 +2,14 @@
  *  Test editor v2 — natures de variables
  *  Modèle du proto : 3 natures, 3 teintes.
  *
- *   - input  (in-test input, ORANGE)      → interface du test, valeur donnée
+ *   - in-test variable (ORANGE)           → interface du test, valeur donnée
  *                                           AVANT le run (default / override / CSV).
  *                                           Vit dans le panneau Environment.
- *   - global (BLEU FONCÉ)                 → défini dans Configurations, partagé.
+ *   - global variable (VIOLET)            → défini dans Configurations, partagé.
  *                                           Un step peut le mettre à jour.
- *   - local  (BLEU CLAIR + badge Step N)  → affecté au runtime par un step
- *                                           « Set local variable ». NE vit PAS
+ *   - output variable (BLEU CIEL + badge  → produite au runtime : soit par un
+ *     Step N)                               step qui extrait une valeur, soit par
+ *                                           un « Set local variable ». NE vit PAS
  *                                           dans le panneau : seulement dans le
  *                                           picker des steps suivants.
  *
@@ -51,21 +52,57 @@ export type IconComp = ComponentType<{ size?: number; color?: string }>
 /** Teinte d'une variable — une par nature, plus le gris des générateurs. */
 export type Tint = 'orange' | 'light-blue' | 'dark-blue' | 'neutral'
 
-/** `generated` n'est pas une variable : c'est un générateur, d'où le gris. */
-export type VarNature = 'input' | 'global' | 'local' | 'generated'
+/**
+ * Les trois natures, avec leur teinte — c'est le vocabulaire de l'UI :
+ *   orange     = in-test variable (déclarée avant le run, valeur statique)
+ *   bleu ciel  = output variable  (produite au runtime par un step)
+ *   violet     = global variable  (Configurations, partagée)
+ * `generated` n'est pas une variable : c'est un générateur, d'où le gris.
+ */
+export type VarNature = 'input' | 'global' | 'output' | 'generated'
 
 export const NATURE_TINT: Record<VarNature, Tint> = {
   input: 'orange',
-  local: 'light-blue',
+  output: 'light-blue',
   global: 'dark-blue',
   generated: 'neutral',
 }
+
+/* ---------------- sources de valeur ----------------
+ * La source décrit COMMENT un step remplit la variable qu'il définit : attribut
+ * JSON de la réponse, en-tête, résultat d'un script, ou valeur statique.
+ *
+ * Elle n'existe QUE là. Une in-test déclarée en amont du test ne peut être que
+ * statique (sa valeur est donnée avant le run), et un step de variable (« Set
+ * local variable » / « Update variable ») ne prend qu'une valeur statique lui
+ * aussi.
+ */
+export type Source = 'static' | 'json' | 'header' | 'script'
+
+export const SOURCES: { value: Source; label: string }[] = [
+  { value: 'static', label: 'Static value' },
+  { value: 'json', label: 'JSON attribute' },
+  { value: 'header', label: 'Response header' },
+  { value: 'script', label: 'Script result' },
+]
+
+export const sourceLabel = (s: Source) => SOURCES.find((o) => o.value === s)?.label ?? s
+
+/** En-têtes proposés pour la source « Response header ». */
+export const RESPONSE_HEADERS = [
+  'x-session-id',
+  'content-type',
+  'set-cookie',
+  'x-request-id',
+  'etag',
+]
 
 /* ---------------- cibles d'un Set variable ---------------- */
 /**
  * Deux actions, une valeur toujours STATIQUE, et une seule différence : d'où
  * vient le nom de la variable écrite.
- *   `local`  → « Set local variable » : le nom se TAPE (la variable naît ici).
+ *   `output` → « Set local variable » : le nom se TAPE, la variable naît ici (une
+ *              output variable, bleu ciel, disponible dans les steps suivants).
  *   `update` → « Update variable » : le nom se CHOISIT parmi les variables qui
  *              existent déjà, in-test comme globales. C'est la nature de la
  *              variable choisie qui dit où la valeur atterrit.
@@ -74,7 +111,7 @@ export const NATURE_TINT: Record<VarNature, Tint> = {
  * script) : extraire est le travail d'autres steps (Get text or value, API
  * Call). La valeur peut en revanche composer avec d'autres variables.
  */
-export type TargetKind = 'local' | 'update'
+export type TargetKind = 'output' | 'update'
 
 export type Target = { kind: TargetKind }
 
@@ -206,6 +243,13 @@ export const iconOfAction = (label: string): IconComp =>
 export const RANDOM_VALUES = ['First name', 'Last name', 'City', 'Street address']
 
 /* ---------------- steps du scénario ---------------- */
+/**
+ * Une variable définie par un step : son nom, et COMMENT le step la remplit.
+ * `detail` porte ce que la source demande (chemin JSON, nom d'en-tête, script,
+ * ou valeur statique).
+ */
+export type StepOutput = { name: string; source: Source; detail: string }
+
 export type ApiStep = {
   id: string
   n: number
@@ -216,13 +260,13 @@ export type ApiStep = {
   method: string
   url: string
   /**
-   * Variables que le step DÉFINIT (extraites de la réponse). Elles naissent au
-   * runtime, donc elles se lisent comme des locales : bleu ciel, badge
-   * « Step N », disponibles dans les steps qui suivent. Dans l'UI on les
-   * appelle des in-test variables ; « output variable » ne se dit pas, même si
-   * le champ du produit s'appelle `output_variables`.
+   * Variables que le step DÉFINIT. Elles naissent au runtime, donc elles se
+   * lisent comme des locales : bleu ciel, badge « Step N », disponibles dans les
+   * steps qui suivent. Dans l'UI on les appelle des in-test variables ;
+   * « output variable » ne se dit pas, même si le champ du produit s'appelle
+   * `output_variables`.
    */
-  outputs?: string[]
+  outputs?: StepOutput[]
 }
 
 /**
@@ -240,7 +284,7 @@ export type UiStep = {
   /** absent = l'action ne prend pas de valeur (ex. Click) */
   value?: string
   /** variables définies par le step (ex. « Get text or value ») */
-  outputs?: string[]
+  outputs?: StepOutput[]
 }
 
 export type SetStep = {
@@ -332,7 +376,7 @@ export const INITIAL_STEPS: Step[] = [
     n: 5,
     group: 1,
     kind: 'set',
-    target: { kind: 'local' },
+    target: { kind: 'output' },
     name: 'orderNote',
     value: 'Order for {{email}}',
   },
@@ -374,7 +418,7 @@ export const INITIAL_STEPS: Step[] = [
     action: 'API Call',
     method: 'POST',
     url: '{{URL}}/orders',
-    outputs: ['orderRef'],
+    outputs: [{ name: 'orderRef', source: 'json', detail: '$.order.reference' }],
   },
   // Update variable : la variable écrite se choisit parmi celles qui existent.
   // Ici une globale, donc la référence sort du test et sert aux suivants.

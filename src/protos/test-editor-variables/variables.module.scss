@@ -312,9 +312,10 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  /* largeur FIXE : c'est ce qui aligne tous les champs des steps entre eux */
   flex: none;
+  width: 168px;
   height: 26px;
-  max-width: 196px;
   padding: 0 6px 0 8px;
   border: 1px solid $border;
   border-radius: $radius-sm;
@@ -474,6 +475,39 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   color: $faint;
 }
 
+/* Cellule Source d'une output variable : le select de source, puis ce que la
+   source demande (chemin JSON, en-tête, script). */
+.srcCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+.srcDetail {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+/* « Write a script » / « Edit script » : lien discret vers l'éditeur */
+.scriptLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: $light-blue;
+  cursor: pointer;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 /* Une table et son bouton forment un groupe : 8px entre les deux, pas les 22px
    qui séparent deux groupes du panneau. */
 .varsGroup {
@@ -504,6 +538,12 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
     height: auto;
     align-self: stretch;
   }
+}
+/* éditeur de script dans la modale : même gabarit que les autres champs */
+.cvScript {
+  border: 1px solid $border;
+  border-radius: $radius;
+  overflow: hidden;
 }
 .cvBodyPad {
   padding: 20px 24px 24px;
