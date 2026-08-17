@@ -292,6 +292,9 @@ export const INPUTS: InputVar[] = [
 
 export const GLOBALS: GlobalVar[] = [
   { name: 'URL', value: 'https://api.rocketcorp.io' },
+  /* Écrite par le test : c'est comme ça qu'une valeur sort d'un test pour servir
+     ailleurs (autre test, campagne). */
+  { name: 'lastOrderRef', value: 'ORD-4392' },
   { name: 'sessionId', value: 'sess_8c21f0' },
 ]
 
@@ -307,24 +310,30 @@ export const GLOBAL_GROUPS: GlobalGroup[] = [
 ]
 
 /* ---------------- scénario ----------------
- * Un vrai test v2 est un scénario navigateur : on se connecte, on passe
- * commande, et les steps de variable se glissent entre les interactions.
- * Les in-test inputs se consomment dans les saisies (step 2 et 3), les locales
- * dans les steps qui suivent leur affectation (step 8 et 10).
+ * Un vrai test v2 : on se connecte, on passe commande, et chaque variable sert
+ * à quelque chose.
+ *   - in-test  : `email` / `password` aux steps 2-3, `cartSize` au step 6 ;
+ *   - locale posée par un step de variable : `orderNote` (step 5), consommée au
+ *     step 9, où le picker la propose badgée « Step 5 » ;
+ *   - locale PRODUITE par un step : `orderRef`, extraite par l'API Call du step
+ *     10, consommée aux steps 11 et 12 ;
+ *   - globale lue : `URL` (step 10) ; globale ÉCRITE : `lastOrderRef` (step 11),
+ *     c'est comme ça qu'une valeur sort du test.
  */
 export const INITIAL_STEPS: Step[] = [
   { id: 's1', n: 1, group: 1, kind: 'ui', action: 'Click', locator: 'The "Log in" button in the header' },
   { id: 's2', n: 2, group: 1, kind: 'ui', action: 'Fill input', locator: 'The email field of the login form', value: '{{email}}' },
   { id: 's3', n: 3, group: 1, kind: 'ui', action: 'Fill input', locator: 'The password field of the login form', value: '{{password}}' },
   { id: 's4', n: 4, group: 1, kind: 'ui', action: 'Click', locator: 'The "Sign in" submit button' },
-  // Affectation au runtime : le nom ET la valeur se définissent ICI, sur le
-  // step. Valeur statique, qui compose avec une in-test.
+  // Set local variable : le nom ET la valeur se définissent ICI. Valeur statique,
+  // qui compose avec une in-test. Elle sert au step 9.
   {
     id: 's5',
-    n: 5, group: 1,
+    n: 5,
+    group: 1,
     kind: 'set',
     target: { kind: 'local' },
-    name: 'orderLabel',
+    name: 'orderNote',
     value: 'Order for {{email}}',
   },
   {
@@ -345,12 +354,21 @@ export const INITIAL_STEPS: Step[] = [
     locator: 'The "Add to cart" button on the product card',
   },
   { id: 's8', n: 8, group: 2, kind: 'ui', action: 'Click', locator: 'The "Checkout" button of the cart summary' },
-  // Confirmation côté serveur, pour extraire la référence de commande.
-  // L'extraction vit sur le step qui PRODUIT la valeur : l'API Call range la
-  // référence de commande dans `orderRef` (tag bleu ciel sur la carte).
+  // Consomme la locale du step 5 : le picker la propose, badgée « Step 5 ».
   {
     id: 's9',
     n: 9,
+    group: 2,
+    kind: 'ui',
+    action: 'Fill input',
+    locator: 'The order note field of the checkout form',
+    value: '{{orderNote}}',
+  },
+  // L'extraction vit sur le step qui PRODUIT la valeur : la commande part, et sa
+  // référence est rangée dans `orderRef` (tag bleu ciel sur la carte).
+  {
+    id: 's10',
+    n: 10,
     group: 2,
     kind: 'api',
     action: 'API Call',
@@ -358,20 +376,21 @@ export const INITIAL_STEPS: Step[] = [
     url: '{{URL}}/orders',
     outputs: ['orderRef'],
   },
-  // Variant « Update variable » : la variable écrite se choisit parmi celles
-  // qui existent déjà. Ici une globale, donc la valeur sort du test.
-  {
-    id: 's10',
-    n: 10, group: 2,
-    kind: 'set',
-    target: { kind: 'update' },
-    name: 'sessionId',
-    value: '{{orderRef}}',
-  },
-  // Consomme une locale en aval : le picker {} la propose, badgée « Step 9 ».
+  // Update variable : la variable écrite se choisit parmi celles qui existent.
+  // Ici une globale, donc la référence sort du test et sert aux suivants.
   {
     id: 's11',
-    n: 11, group: 2,
+    n: 11,
+    group: 2,
+    kind: 'set',
+    target: { kind: 'update' },
+    name: 'lastOrderRef',
+    value: '{{orderRef}}',
+  },
+  {
+    id: 's12',
+    n: 12,
+    group: 2,
     kind: 'ui',
     action: 'Assert displayed',
     locator: 'Order {{orderRef}} confirmed',

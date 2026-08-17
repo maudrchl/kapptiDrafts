@@ -198,7 +198,8 @@ const VariablesProto = () => {
    * locales comprises.
    */
   const [checks, setChecks] = useState<Record<string, Condition[]>>({
-    s9: INITIAL_CONDITIONS,
+    // l'API Call du scénario (step 10) : status attendu + garde-fou de latence
+    s10: INITIAL_CONDITIONS,
   })
   /** connecteur de chaque groupe (le 1er select pilote, les suivants héritent) */
   const [failLogic, setFailLogic] = useState<'and' | 'or'>('and')
@@ -902,12 +903,13 @@ const VariablesProto = () => {
           </div>
           {inputs.map((v, i) => (
             <div key={v.id} className={`${chrome.outDataRow} ${styles.varRow}`}>
-              <div className={`${chrome.outNameCell} ${styles.editable}`}>
+              <div
+                className={`${chrome.outNameCell} ${styles.editable} ${styles.nameCellTight}`}
+              >
                 <Tag color="orange" size="sm" icon={IconBraces} />
-                {/* le nom s'édite : c'est ce qui rend la création utile */}
+                {/* le nom s'édite ; en Geist, comme les globales au-dessus */}
                 <Input
                   size="s"
-                  mono
                   fullWidth
                   borderless
                   placeholder="variableName"
