@@ -780,13 +780,13 @@ const VariablesProto = () => {
     stepShell(
       step.n,
       <>
-        <div className={chrome.stepTop} onClick={(e) => e.stopPropagation()}>
+        <div className={chrome.stepTop}>
           <span className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}>{step.n}</span>
           {actionMenu(step, step.action)}
           <Select size="s" width="110px" options={toOptions(['GET', 'POST', 'PUT', 'DELETE'])} value={step.method} />
         </div>
         {/* l'URL est sur sa propre ligne, sous l'action et la méthode */}
-        <div className={styles.urlRow} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.urlRow}>
           {varInput(step.url, (v) => patchApi(step.id, { url: v }), step.n, 'URL')}
         </div>
       </>,
@@ -800,7 +800,7 @@ const VariablesProto = () => {
   const uiCard = (step: Step & { kind: 'ui' }) =>
     stepShell(
       step.n,
-      <div className={`${chrome.stepTop} ${styles.setRow}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`${chrome.stepTop} ${styles.setRow}`}>
         <span className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}>{step.n}</span>
         {actionMenu(step, step.action)}
         <span className={styles.elBox}>
@@ -831,17 +831,18 @@ const VariablesProto = () => {
     return stepShell(
       step.n,
       <>
-        <div className={`${chrome.stepTop} ${styles.setRow}`} onClick={(e) => e.stopPropagation()}>
+        <div className={`${chrome.stepTop} ${styles.setRow}`}>
           <span className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}>{step.n}</span>
           {actionMenu(step, label)}
           {targetSelector(step)}
         </div>
         {/* la valeur prend sa propre ligne, comme celle d'un Fill input : en
             lecture seule ici, elle s'édite dans le panneau du step. */}
-        <div className={styles.urlRow} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.urlRow}>
           <span
             className={styles.summary}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation()
               setSel(step.n)
               setStepTab('general')
             }}
