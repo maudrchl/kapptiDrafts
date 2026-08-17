@@ -487,6 +487,14 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
     padding-inline: 4px;
     font-size: 14px;
   }
+  /* le champ fait 40px : le bloc {} doit suivre, pas rester à 26px en haut */
+  [class*='inputContainer'] {
+    align-items: stretch;
+  }
+  [class*='suffix'] {
+    height: auto;
+    align-self: stretch;
+  }
 }
 .cvBodyPad {
   padding: 20px 24px 24px;
@@ -502,7 +510,9 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   align-items: center;
   gap: 6px;
   height: 26px;
-  padding: 0 6px 0 7px;
+  /* la pastille tombe exactement où tombe un tag dans un champ Slate
+     (gouttière 10px + marge 2px du tag). */
+  padding: 0 6px 0 12px;
   border: 1px solid $border;
   border-radius: $radius-sm;
   background: $surface;
@@ -517,13 +527,16 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   }
 }
 /* la variable choisie, lue comme une pastille de champ : fond teinté, nom coloré */
+/* exactement le tag d'un champ : 20px de haut, 4px de gouttière, radius 4 */
 .slotPick {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 5px;
+  display: inline-block;
+  height: 20px;
+  line-height: 18px;
+  padding-inline: 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
   min-width: 0;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
