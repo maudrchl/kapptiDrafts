@@ -550,7 +550,9 @@ const VariablesProto = () => {
     if (step.target.kind === 'local') {
       return (
         <span className={styles.targetSlot} onClick={(e) => e.stopPropagation()}>
-          <span className={styles.brace}>{'{'}</span>
+          {/* accolades en bleu ciel : la variable qui naît ici est une locale, et
+              c'est la teinte sous laquelle on la retrouvera partout ailleurs. */}
+          <span className={`${styles.brace} ${styles.braceLocal}`}>{'{'}</span>
           <input
             className={styles.nameInput}
             placeholder="localName"
@@ -558,7 +560,7 @@ const VariablesProto = () => {
             value={step.name}
             onChange={(e) => patchStep(step.id, { name: e.target.value })}
           />
-          <span className={styles.brace}>{'}'}</span>
+          <span className={`${styles.brace} ${styles.braceLocal}`}>{'}'}</span>
         </span>
       )
     }

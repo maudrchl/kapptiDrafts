@@ -280,6 +280,12 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   font-family: $mono;
   font-size: 13px;
 }
+/* Le champ qui CRÉE une locale porte la teinte des locales sur ses accolades :
+   c'est le rappel de « d'où vient cette variable ». */
+.braceLocal {
+  background: $light-blue-soft;
+  color: $light-blue;
+}
 .nameInput {
   flex: 1 1 auto;
   min-width: 0;
