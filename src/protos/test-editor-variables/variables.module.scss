@@ -519,9 +519,7 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   align-items: center;
   gap: 6px;
   height: 26px;
-  /* la pastille tombe exactement où tombe un tag dans un champ Slate
-     (gouttière 10px + marge 2px du tag). */
-  padding: 0 6px 0 12px;
+  padding: 0 6px 0 3px;
   border: 1px solid $border;
   border-radius: $radius-sm;
   background: $surface;
@@ -536,8 +534,21 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   }
 }
 /* la variable choisie, lue comme une pastille de champ : fond teinté, nom coloré */
-/* exactement le tag d'un champ : 20px de haut, 4px de gouttière, radius 4 */
+/* exactement le tag d'un champ : 20px de haut, 4px de gouttière, radius 4, avec
+   un filet de sa propre teinte pour qu'il se délimite comme les autres tags. */
 .slotPick {
+  &.tintOrange {
+    border-color: rgba(237, 120, 70, 0.12);
+  }
+  &.tintDarkBlue {
+    border-color: rgba(25, 22, 208, 0.1);
+  }
+  &.tintLightBlue {
+    border-color: rgba(5, 119, 255, 0.11);
+  }
+  &.tintNeutral {
+    border-color: rgba(102, 112, 133, 0.1);
+  }
   display: inline-block;
   height: 20px;
   line-height: 18px;
