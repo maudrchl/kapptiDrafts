@@ -351,6 +351,38 @@ const VariablesProto = () => {
    * Suggestions du picker pour le step `n`. Les locales n'apparaissent qu'ici,
    * jamais dans le panneau, et seulement si un step précédent les affecte.
    */
+  /**
+   * Suggestions pour la valeur d'une in-test : globales et autres in-test
+   * seulement. Pas de locale : elle n'existe pas encore quand le run démarre,
+   * c'est le rôle d'un step Set local variable.
+   */
+  const inputSuggestions = (skip?: string): Suggestions[] => [
+    {
+      name: 'In-test inputs',
+      key: 'built_in' as const,
+      suggestions: inputs
+        .filter((v) => v.name && v.name !== skip)
+        .map((v, i) => ({
+          id: `oin${i}`,
+          label: optLabel(v.name, 'input'),
+          color: TAG_COLOR.orange,
+          value: v.name,
+          technicalName: v.name,
+        })),
+    },
+    {
+      name: 'Global variables',
+      key: 'variables' as const,
+      suggestions: globals.map((v, i) => ({
+        id: `ogl${i}`,
+        label: optLabel(v.name, 'global'),
+        color: TAG_COLOR['dark-blue'],
+        value: v.name,
+        technicalName: v.name,
+      })),
+    },
+  ]
+
   const suggestionsFor = (n: number): Suggestions[] => {
     const avail = localsBefore(n)
     return [
@@ -932,16 +964,29 @@ const VariablesProto = () => {
                 />
               </div>
               <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
-                <Input
-                  size="s"
-                  mono
-                  fullWidth
-                  borderless
-                  placeholder="Enter value…"
-                  type={v.secret ? 'password' : 'text'}
-                  value={v.value}
-                  onChange={(e) => patchInput(i, { value: e.target.value })}
-                />
+                {/* une valeur peut composer avec d'autres variables : {{URL}}/checkout */}
+                {v.secret ? (
+                  <Input
+                    size="s"
+                    mono
+                    fullWidth
+                    borderless
+                    placeholder="Enter value…"
+                    type="password"
+                    value={v.value}
+                    onChange={(e) => patchInput(i, { value: e.target.value })}
+                  />
+                ) : (
+                  <VarField
+                    borderless
+                    initial={toSegments(v.value)}
+                    onValue={(val) => patchInput(i, { value: val })}
+                    toText={fromSegments}
+                    suggestions={inputSuggestions(v.name)}
+                    placeholder="Enter value…"
+                    onVariableCreated={addGlobal}
+                  />
+                )}
                 <span className={styles.envChip}>{v.origin}</span>
               </div>
               <button
