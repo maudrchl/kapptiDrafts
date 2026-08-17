@@ -23,15 +23,18 @@ const RowPresence = ({ users }: { users: PresentUser[] }) => {
             key={u.email}
             style={{ ...styles.slot, marginLeft: i === 0 ? 0 : -6, zIndex: 10 - i }}
           >
-            <Tooltip content={`${u.name} is viewing`}>
-              <span
-                style={{
-                  ...styles.avatarWrap,
-                  boxShadow: `0 0 0 2px var(--color-background, #fff), 0 0 0 3.5px ${u.color}`,
-                }}
-              >
-                <UserAvatar email={u.email} size="small" />
-              </span>
+            <Tooltip>
+              <Tooltip.Trigger>
+                <span
+                  style={{
+                    ...styles.avatarWrap,
+                    boxShadow: `0 0 0 2px var(--color-background, #fff), 0 0 0 3.5px ${u.color}`,
+                  }}
+                >
+                  <UserAvatar email={u.email} size="small" />
+                </span>
+              </Tooltip.Trigger>
+              <Tooltip.Content>{`${u.name} is viewing`}</Tooltip.Content>
             </Tooltip>
           </div>
         ))}

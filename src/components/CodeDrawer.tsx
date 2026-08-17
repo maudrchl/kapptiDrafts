@@ -151,9 +151,9 @@ const CodeDrawer = ({
             <Button
               color="secondary"
               size="m"
-              icon={copied ? IconCheck : IconCopy}
               onClick={copy}
             >
+              <Button.Icon icon={copied ? IconCheck : IconCopy} />
               {copied ? 'Copied' : 'Copy code'}
             </Button>
           </div>
@@ -164,9 +164,9 @@ const CodeDrawer = ({
             <Button
               color="invisible"
               size="s"
-              icon={copiedPath ? IconCheck : IconCopy}
               onClick={copyPath}
             >
+              <Button.Icon icon={copiedPath ? IconCheck : IconCopy} />
               {copiedPath ? 'Copied' : 'Copy path'}
             </Button>
           </div>

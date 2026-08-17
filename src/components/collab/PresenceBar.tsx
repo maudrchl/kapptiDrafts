@@ -25,19 +25,22 @@ const PresenceBar = ({
       <div style={styles.stack}>
         {others.slice(0, 5).map((u, i) => (
           <div key={u.email} style={{ ...styles.slot, zIndex: 10 - i }}>
-            <Tooltip content={onFollow ? `Jump to ${u.name}` : `${u.name} is viewing`}>
-              <button
-                type="button"
-                onClick={() => u.screen && onFollow?.(u.screen)}
-                aria-label={`Jump to ${u.name}`}
-                style={{
-                  ...styles.avatarWrap,
-                  // Halo « actif » façon Figma : anneau blanc + anneau couleur + glow.
-                  boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${u.color}, 0 0 0 7px ${u.color}33`,
-                }}
-              >
-                <UserAvatar email={u.email} size="small" />
-              </button>
+            <Tooltip>
+              <Tooltip.Trigger>
+                <button
+                  type="button"
+                  onClick={() => u.screen && onFollow?.(u.screen)}
+                  aria-label={`Jump to ${u.name}`}
+                  style={{
+                    ...styles.avatarWrap,
+                    // Halo « actif » façon Figma : anneau blanc + anneau couleur + glow.
+                    boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${u.color}, 0 0 0 7px ${u.color}33`,
+                  }}
+                >
+                  <UserAvatar email={u.email} size="small" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>{onFollow ? `Jump to ${u.name}` : `${u.name} is viewing`}</Tooltip.Content>
             </Tooltip>
           </div>
         ))}

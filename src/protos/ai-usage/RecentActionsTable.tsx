@@ -55,7 +55,9 @@ const RecentActionsTable = ({ policyMode }: Props) => {
 
   return (
     <Card className={styles.uiCardAuto}>
-      <Card.Content title="Recent AI actions" description={subtitle}>
+      <Card.Content>
+        <Card.Content.Title>Recent AI actions</Card.Content.Title>
+        <Card.Content.Description>{subtitle}</Card.Content.Description>
         <div className={styles.tableWrap}>
           <Table
             rowKey="key"

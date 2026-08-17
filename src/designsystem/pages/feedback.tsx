@@ -49,7 +49,7 @@ const GuidelineBlock = ({
         {tip}
       </Text>
     )}
-    <Banner variant={variant} description={example} />
+    <Banner variant={variant}><Banner.Description>{example}</Banner.Description></Banner>
   </div>
 )
 
@@ -76,19 +76,28 @@ export const BannerPage = () => (
   >
     <Demo title="Variants" column>
       <Stack>
-        <Banner variant="primary" description="Informational message." />
-        <Banner variant="success" description="Operation succeeded." />
-        <Banner variant="warning" description="Quota almost reached." />
-        <Banner variant="danger" description="Immediate action required." />
-        <Banner variant="error" description="Something went wrong." />
+        <Banner variant="primary">
+          <Banner.Description>Informational message.</Banner.Description>
+        </Banner>
+        <Banner variant="success">
+          <Banner.Description>Operation succeeded.</Banner.Description>
+        </Banner>
+        <Banner variant="warning">
+          <Banner.Description>Quota almost reached.</Banner.Description>
+        </Banner>
+        <Banner variant="danger">
+          <Banner.Description>Immediate action required.</Banner.Description>
+        </Banner>
+        <Banner variant="error">
+          <Banner.Description>Something went wrong.</Banner.Description>
+        </Banner>
       </Stack>
     </Demo>
     <Demo title="With sub-description" column>
-      <Banner
-        variant="warning"
-        description="SSL certificate expiring soon"
-        subDescription="Renew it before the 30th to avoid an outage."
-      />
+      <Banner variant="warning">
+        <Banner.Description>SSL certificate expiring soon</Banner.Description>
+        <Banner.SubDescription>Renew it before the 30th to avoid an outage.</Banner.SubDescription>
+      </Banner>
     </Demo>
 
     <Demo
@@ -196,10 +205,10 @@ export const BannerPage = () => (
     <PropsTable
       rows={[
         { name: 'variant', type: "'primary' | 'secondary' | 'success' | 'error' | 'danger' | 'warning' | 'invisible'", required: true, description: 'Semantic style' },
-        { name: 'description', type: 'ReactNode', required: true, description: 'Main message' },
-        { name: 'subDescription', type: 'ReactNode', description: 'Secondary line under the message' },
-        { name: 'icon', type: 'ReactNode', description: 'Leading icon' },
-        { name: 'aside', type: 'ReactNode', description: 'Content aligned to the right (e.g. an action)' },
+        { name: 'Banner.Description', type: 'slot: children', description: 'Main message, as medium text in the variant color' },
+        { name: 'Banner.SubDescription', type: 'slot: children', description: 'Secondary line below the message' },
+        { name: 'Banner.Icon', type: 'slot: children', description: 'Leading icon. Without it an info icon is rendered' },
+        { name: 'Banner.Aside', type: 'slot: children', description: 'Content pinned to the right (e.g. an action)' },
         { name: 'cross', type: "'top' | 'bottom'", description: 'Show a close cross, vertically aligned' },
       ]}
     />
@@ -243,39 +252,33 @@ export const AlertPage = () => {
         </Button>
         <Alert
           open={open}
-          title="Publish changes?"
-          okText="Publish"
-          cancelText="Cancel"
-          onOk={() => setOpen(false)}
           onCancel={() => setOpen(false)}
         >
-          Changes will be visible immediately.
+          <Alert.Title>Publish changes?</Alert.Title>
+          <Alert.Description>Changes will be visible immediately.</Alert.Description>
+          <Alert.Cancel>Cancel</Alert.Cancel>
+          <Alert.Action onClick={() => setOpen(false)}>Publish</Alert.Action>
         </Alert>
         <Alert
           open={danger}
-          danger
-          title="Delete this test?"
-          okText="Delete"
-          cancelText="Cancel"
-          onOk={() => setDanger(false)}
           onCancel={() => setDanger(false)}
         >
-          This action cannot be undone.
+          <Alert.Title>Delete this test?</Alert.Title>
+          <Alert.Description>This action cannot be undone.</Alert.Description>
+          <Alert.Cancel>Cancel</Alert.Cancel>
+          <Alert.Action danger onClick={() => setDanger(false)}>Delete</Alert.Action>
         </Alert>
       </Demo>
 
       <PropsTable
         rows={[
           { name: 'open', type: 'boolean', description: 'Controls visibility (keep it mounted for the animation)' },
-          { name: 'title', type: 'string', description: 'Alert title' },
-          { name: 'children', type: 'ReactNode', description: 'The message body' },
-          { name: 'okText', type: 'string', description: 'Confirm button label' },
-          { name: 'cancelText', type: 'string', description: 'Cancel button label' },
-          { name: 'onOk', type: '() => void', description: 'Confirm handler' },
-          { name: 'onCancel', type: '() => void', description: 'Cancel / close handler' },
-          { name: 'danger', type: 'boolean', default: 'false', description: 'Style the confirm button as destructive' },
-          { name: 'isLoading', type: 'boolean', description: 'Show a spinner on the confirm button' },
-          { name: 'okDisabled', type: 'boolean', description: 'Disable the confirm button' },
+          { name: 'onCancel', type: '() => void', description: 'Called on Escape and by Alert.Cancel' },
+          { name: 'Alert.Title', type: 'slot: children', description: 'The question, as a title' },
+          { name: 'Alert.Description', type: 'slot: children', description: 'The message body, as secondary text' },
+          { name: 'Alert.Cancel', type: 'slot: children, onClick', description: 'Dismiss button. Falls back to onCancel' },
+          { name: 'Alert.Action', type: 'slot: children, danger, color, isLoading, disabled, onClick', description: 'Confirm button' },
+          { name: 'Alert.Close', type: 'slot: onClick', description: 'Optional close cross in the corner' },
         ]}
       />
     </Page>
@@ -410,30 +413,43 @@ export const TooltipPage = () => (
     importCode={"import { Tooltip } from '@kapptivate/ui-kit'"}
   >
     <Demo title="Placements">
-      <Tooltip content="Top" placement="top">
-        <Button color="secondary">Top</Button>
+      <Tooltip>
+        <Tooltip.Trigger>
+          <Button color="secondary">Top</Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Top</Tooltip.Content>
       </Tooltip>
-      <Tooltip content="Right" placement="right">
-        <Button color="secondary">Right</Button>
+      <Tooltip>
+        <Tooltip.Trigger>
+          <Button color="secondary">Right</Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content side="right">Right</Tooltip.Content>
       </Tooltip>
-      <Tooltip content="Bottom" placement="bottom">
-        <Button color="secondary">Bottom</Button>
+      <Tooltip>
+        <Tooltip.Trigger>
+          <Button color="secondary">Bottom</Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content side="bottom">Bottom</Tooltip.Content>
       </Tooltip>
-      <Tooltip content="Left" placement="left">
-        <Button color="secondary">Left</Button>
+      <Tooltip>
+        <Tooltip.Trigger>
+          <Button color="secondary">Left</Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content side="left">Left</Tooltip.Content>
       </Tooltip>
     </Demo>
 
     <PropsTable
       rows={[
-        { name: 'content', type: 'ReactNode', required: true, description: 'Tooltip content' },
-        { name: 'children', type: 'ReactNode', required: true, description: 'The element the tooltip is attached to' },
-        { name: 'placement', type: "'top' | 'right' | 'bottom' | 'left' (+ start/end variants)", default: 'top', description: 'Position relative to the target' },
-        { name: 'color', type: 'TextColor', description: 'Background color of the tooltip' },
+        { name: 'Tooltip.Trigger', type: 'slot: children', required: true, description: 'The anchor. DOM children are used directly, components and text get wrapped in a span' },
+        { name: 'Tooltip.Content', type: 'slot: children', required: true, description: 'The bubble, rendered in a portal' },
+        { name: 'Tooltip.Content side', type: "'top' | 'right' | 'bottom' | 'left'", default: 'top', description: 'Replaces the old placement, together with align' },
+        { name: 'Tooltip.Content align', type: "'start' | 'center' | 'end'", description: 'bottomLeft becomes side="bottom" align="start"' },
+        { name: 'Tooltip.Content color', type: 'TextColor', default: 'secondary', description: 'Background color of the bubble' },
+        { name: 'Tooltip.Content maxWidth', type: 'string', description: 'Max width before wrapping' },
         { name: 'open', type: 'boolean', description: 'Controlled visibility' },
-        { name: 'active', type: 'boolean', description: 'Enable/disable the tooltip' },
-        { name: 'maxWidth', type: 'string', description: 'Max width before wrapping' },
-        { name: 'destroyTooltipOnHide', type: 'boolean', description: 'Unmount the content when hidden' },
+        { name: 'active', type: 'boolean', default: 'true', description: 'Set to false to disable the tooltip entirely' },
+        { name: 'onOpenChange', type: '(open: boolean) => void', description: 'Called when visibility changes' },
       ]}
     />
   </Page>
@@ -459,7 +475,8 @@ export const PopoverPage = () => (
           </div>
         }
       >
-        <Button color="secondary" icon={IconHelpCircle}>
+        <Button color="secondary">
+          <Button.Icon icon={IconHelpCircle} />
           Learn more
         </Button>
       </Popover>

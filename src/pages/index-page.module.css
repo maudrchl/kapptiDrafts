@@ -17,3 +17,11 @@
 .tableWrap :global(.ant-table-cell:last-child) {
   padding-right: 12px !important;
 }
+
+/* Menu selectable : le DS ne thème pas l'état sélectionné, on héritait du fond
+   sombre d'antd avec du texte noir. Sélection en orange, comme partout. */
+.filterMenu :global(.ant-dropdown-menu-item-selected) {
+  background: var(--color-accent-light-orange, rgba(237, 120, 70, 0.06)) !important;
+  color: var(--color-primary, #ed7846) !important;
+  font-weight: 500;
+}

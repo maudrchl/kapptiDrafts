@@ -794,12 +794,12 @@ const SlateInputTag = ({
               <Button
                 fullWidth
                 size="s"
-                icon={IconPlus}
                 onClick={() => {
                   setCreateVariableModalOpen(true)
                   setOpenSuggestions(false)
                 }}
               >
+                <Button.Icon icon={IconPlus} />
                 {t('list.variable.createGlobal')}
               </Button>
             </div>

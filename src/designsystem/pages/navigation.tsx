@@ -69,35 +69,32 @@ export const BreadcrumbPage = () => (
     importCode={"import { Breadcrumb } from '@kapptivate/ui-kit'"}
   >
     <Demo title="Default" column>
-      <Breadcrumb
-        items={[
-          { title: 'Products' },
-          { title: 'Monitoring' },
-          { title: 'checkout-api' },
-        ]}
-      />
+      <Breadcrumb>
+        <Breadcrumb.Item>Products</Breadcrumb.Item>
+        <Breadcrumb.Item>Monitoring</Breadcrumb.Item>
+        <Breadcrumb.Item>checkout-api</Breadcrumb.Item>
+      </Breadcrumb>
     </Demo>
     <Demo title="Single item" column>
-      <Breadcrumb items={[{ title: 'Products' }]} />
+      <Breadcrumb><Breadcrumb.Item>Products</Breadcrumb.Item></Breadcrumb>
     </Demo>
     <Demo title="Collapsed (long path)" column>
-      <Breadcrumb
-        maxLength={2}
-        items={[
-          { title: 'Products' },
-          { title: 'Monitoring' },
-          { title: 'Environments' },
-          { title: 'Production' },
-          { title: 'checkout-api' },
-          { title: 'Latency check' },
-        ]}
-      />
+      <Breadcrumb maxItems={2}>
+        <Breadcrumb.Item>Products</Breadcrumb.Item>
+        <Breadcrumb.Item>Monitoring</Breadcrumb.Item>
+        <Breadcrumb.Item>Environments</Breadcrumb.Item>
+        <Breadcrumb.Item>Production</Breadcrumb.Item>
+        <Breadcrumb.Item>checkout-api</Breadcrumb.Item>
+        <Breadcrumb.Item>Latency check</Breadcrumb.Item>
+      </Breadcrumb>
     </Demo>
 
     <PropsTable
       rows={[
-        { name: 'items', type: '{ title, onClick? }[]', required: true, description: 'Breadcrumb segments; onClick makes a segment a link' },
-        { name: 'maxLength', type: 'number', default: '3', description: 'Collapses the middle into a "…" menu when items.length > maxLength + 1' },
+        { name: 'Breadcrumb.Item', type: 'slot: children, asChild, onClick', required: true, description: 'One segment. Separators are rendered automatically' },
+        { name: 'Breadcrumb.Back', type: 'slot: children, asChild, onClick', description: 'First entry, with the back arrow. Never collapses' },
+        { name: 'maxItems', type: 'number', description: 'Middle items collapse into a "…" dropdown beyond this count' },
+        { name: 'asChild', type: 'boolean', description: 'On a slot: merge onto the child element (e.g. a router Link) to get a real link' },
         { name: 'icon', type: 'ReactNode', description: 'Icon shown before each segment' },
       ]}
     />

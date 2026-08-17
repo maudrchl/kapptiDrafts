@@ -301,17 +301,18 @@ const Proto = () => {
               <Button
                 color="secondary"
                 size="s"
-                icon={IconEye}
                 onClick={() => openEditor(libItem, libItem.code)}
               >
+                <Button.Icon icon={IconEye} />
                 View
               </Button>
               <Button
                 color="danger-s"
                 size="s"
-                icon={IconMinusCircle}
                 onClick={removeImported}
-              />
+              >
+                <Button.Icon icon={IconMinusCircle} />
+              </Button>
             </div>
           </div>
         </div>
@@ -327,18 +328,18 @@ const Proto = () => {
               <Button
                 color="secondary"
                 size="s"
-                icon={IconDownload}
                 onClick={() => setLibOpen(true)}
               >
+                <Button.Icon icon={IconDownload} />
                 Use from library
               </Button>
               <Button
                 color="secondary"
                 size="s"
-                icon={IconSave}
                 disabled={!code.trim()}
                 onClick={() => setAddLibOpen(true)}
               >
+                <Button.Icon icon={IconSave} />
                 Save as…
               </Button>
             </div>
@@ -355,9 +356,9 @@ const Proto = () => {
               color="secondary"
               size="s"
               fullWidth
-              icon={IconSquareArrowOutUpRight}
               onClick={() => openEditor(null, code)}
             >
+              <Button.Icon icon={IconSquareArrowOutUpRight} />
               Open in fullscreen editor
             </Button>
           </div>
@@ -372,7 +373,7 @@ const Proto = () => {
       <div className={styles.liveScreen}>
         <div className={styles.liveHint}>
           <span>Click</span>
-          <Button color="secondary" size="s" icon={IconPlay}>Run</Button>
+          <Button color="secondary" size="s"><Button.Icon icon={IconPlay} />Run</Button>
           <span>or press</span>
           <span className={styles.keycap}><IconCommand size={13} /></span>
           <span>+</span>
@@ -450,17 +451,20 @@ const Proto = () => {
       <div className={styles.workspace}>
         <header className={styles.topbar}>
           <div className={styles.crumb}>
-            <Breadcrumb items={[{ title: 'Tests' }, { title: 'Checkout flow' }]} />
+            <Breadcrumb>
+              <Breadcrumb.Item>Tests</Breadcrumb.Item>
+              <Breadcrumb.Item>Checkout flow</Breadcrumb.Item>
+            </Breadcrumb>
           </div>
           <div className={styles.topActions}>
             <ButtonGroup>
-              <Button color="secondary" size="m" icon={IconLock} />
-              <Button color="secondary" size="m" icon={IconMonitor} />
-              <Button color="secondary" size="m" icon={IconStar} />
-              <Button color="danger-s" size="m" icon={IconTrash} />
+              <Button color="secondary" size="m"><Button.Icon icon={IconLock} /></Button>
+              <Button color="secondary" size="m"><Button.Icon icon={IconMonitor} /></Button>
+              <Button color="secondary" size="m"><Button.Icon icon={IconStar} /></Button>
+              <Button color="danger-s" size="m"><Button.Icon icon={IconTrash} /></Button>
             </ButtonGroup>
-            <Button color="secondary" size="m" icon={IconSave}>Save</Button>
-            <Button color="primary" size="m" icon={IconZap}>Run</Button>
+            <Button color="secondary" size="m"><Button.Icon icon={IconSave} />Save</Button>
+            <Button color="primary" size="m"><Button.Icon icon={IconZap} />Run</Button>
           </div>
         </header>
 
@@ -534,8 +538,18 @@ const Proto = () => {
                 </div>
 
                 <div className={styles.stepFooter}>
-                  <Button color="invisible" size="s" icon={IconPlus}>Add step…</Button>
-                  <Button color="secondary" size="s" icon={IconPlay}>Use recorder</Button>
+                  <Button
+                    color="invisible" size="s"
+                  >
+                    <Button.Icon icon={IconPlus} />
+                    Add step…
+                  </Button>
+                  <Button
+                    color="secondary" size="s"
+                  >
+                    <Button.Icon icon={IconPlay} />
+                    Use recorder
+                  </Button>
                 </div>
               </div>
 
@@ -567,7 +581,11 @@ const Proto = () => {
                         ],
                       }}
                     >
-                      <Button color="secondary" size="s" icon={IconMoreHorizontal} />
+                      <Button
+                        color="secondary" size="s"
+                      >
+                        <Button.Icon icon={IconMoreHorizontal} />
+                      </Button>
                     </Dropdown>
                   </div>
                 </div>
@@ -614,12 +632,12 @@ const Proto = () => {
                           <Button
                             color="secondary"
                             size="m"
-                            icon={IconPlus}
                             onClick={() => {
                               setLibOpen(false)
                               openEditor(null, '')
                             }}
                           >
+                            <Button.Icon icon={IconPlus} />
                             Create custom step
                           </Button>
                         </div>
@@ -672,7 +690,11 @@ const Proto = () => {
                                       ],
                                     }}
                                   >
-                                    <Button color="secondary" size="s" icon={IconMoreHorizontal} />
+                                    <Button
+                                      color="secondary" size="s"
+                                    >
+                                      <Button.Icon icon={IconMoreHorizontal} />
+                                    </Button>
                                   </Dropdown>
                                 </span>
                               </div>
@@ -707,8 +729,9 @@ const Proto = () => {
               <Banner
                 className={styles.flushBanner}
                 variant="primary"
-                description="You are editing a library step. Any changes will automatically update this step in all other tests where it is used."
-              />
+              >
+                <Banner.Description>You are editing a library step. Any changes will automatically update this step in all other tests where it is used.</Banner.Description>
+              </Banner>
             )}
             <div className={styles.editorStage}>
               {/* colonne IA */}
@@ -830,34 +853,35 @@ const Proto = () => {
       {/* Confirmation de propagation avant de sauver une étape de bibliothèque */}
       <Alert
         open={confirmSave}
-        title="Save changes to this custom step?"
-        okText="Save changes"
-        cancelText="Cancel"
-        onOk={confirmSaveLibrary}
         onCancel={() => setConfirmSave(false)}
       >
+        <Alert.Title>Save changes to this custom step?</Alert.Title>
+        <Alert.Description>
         {editor.item
           ? `"${editor.item.name}" is used in ${editor.item.usedIn} ${
               editor.item.usedIn > 1 ? 'tests' : 'test'
             }. Saving will update this step in every test that uses it.`
           : ''}
+        </Alert.Description>
+        <Alert.Cancel>Cancel</Alert.Cancel>
+        <Alert.Action onClick={confirmSaveLibrary}>Save changes</Alert.Action>
       </Alert>
 
       {/* Confirmation de suppression d'une étape utilisée */}
       <Alert
         open={!!deleteTarget}
-        danger
-        title="Delete this custom step?"
-        okText="Delete"
-        cancelText="Cancel"
-        onOk={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       >
+        <Alert.Title>Delete this custom step?</Alert.Title>
+        <Alert.Description>
         {deleteTarget
           ? `"${deleteTarget.name}" is used in ${deleteTarget.usedIn} ${
               deleteTarget.usedIn > 1 ? 'tests' : 'test'
             }. Deleting it will remove this step from those tests.`
           : ''}
+        </Alert.Description>
+        <Alert.Cancel>Cancel</Alert.Cancel>
+        <Alert.Action danger onClick={confirmDelete}>Delete</Alert.Action>
       </Alert>
 
       {/* ===================== ADD TO LIBRARY MODAL ===================== */}
@@ -872,8 +896,9 @@ const Proto = () => {
           <Banner
             className={styles.flushBanner}
             variant="primary"
-            description="Add your custom coded steps to the library to easily reuse them later."
-          />
+          >
+            <Banner.Description>Add your custom coded steps to the library to easily reuse them later.</Banner.Description>
+          </Banner>
           <Modal.Content>
             <div className={styles.addLibForm}>
               <div className={styles.field}>

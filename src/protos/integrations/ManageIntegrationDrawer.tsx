@@ -207,8 +207,11 @@ const ManageIntegrationDrawer = ({
               </div>
 
               <div className={styles.drawerAction}>
-                <Button color="primary" icon={IconExternalLink} iconRight>
+                <Button
+                  color="primary"
+                >
                   View documentation
+                  <Button.Icon icon={IconExternalLink} />
                 </Button>
               </div>
             </>
@@ -249,11 +252,10 @@ const ManageIntegrationDrawer = ({
               <div className={styles.drawerAction}>
                 <Button
                   color="primary"
-                  icon={IconExternalLink}
-                  iconRight
                   onClick={() => onConnect(integration)}
                 >
                   Connect
+                  <Button.Icon icon={IconExternalLink} />
                 </Button>
               </div>
 
@@ -319,7 +321,6 @@ const ManageIntegrationDrawer = ({
                 <div className={styles.drawerAction}>
                   <Button
                     color="secondary"
-                    icon={IconPlay}
                     onClick={() =>
                       onTestAlert(
                         integration,
@@ -330,6 +331,7 @@ const ManageIntegrationDrawer = ({
                       )
                     }
                   >
+                    <Button.Icon icon={IconPlay} />
                     Send test alert
                   </Button>
                 </div>

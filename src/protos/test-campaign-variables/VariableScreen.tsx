@@ -126,10 +126,16 @@ const VariableScreen = () => {
           {/* Tools bar */}
           <div className={styles.vtoolbar}>
             <span className={styles.vtitle}>Variables</span>
-            <Button color="secondary" size="m" icon={Plus}>
+            <Button
+              color="secondary" size="m"
+            >
+              <Button.Icon icon={Plus} />
               Create variable group
             </Button>
-            <Button color="primary" size="m" icon={Plus}>
+            <Button
+              color="primary" size="m"
+            >
+              <Button.Icon icon={Plus} />
               Create variable
             </Button>
           </div>
@@ -334,7 +340,8 @@ const VariableScreen = () => {
           <div className={styles.msBanner}>
             <Banner
               variant="secondary"
-              description={
+            >
+              <Banner.Description>
                 <div>
                   <div className={styles.bannerDesc}>
                     This variable is used in {testCount} test{testCount > 1 ? 's' : ''} and{' '}
@@ -345,8 +352,8 @@ const VariableScreen = () => {
                     below.
                   </div>
                 </div>
-              }
-            />
+              </Banner.Description>
+            </Banner>
           </div>
 
           <ol className={styles.msList}>
@@ -381,10 +388,10 @@ const VariableScreen = () => {
             </Button>
             <Button
               color="primary"
-              icon={RefreshCw}
               disabled={selectedCount === 0}
               onClick={() => setPropOpen(false)}
             >
+              <Button.Icon icon={RefreshCw} />
               Update {selectedCount} usage{selectedCount > 1 ? 's' : ''}
             </Button>
           </div>

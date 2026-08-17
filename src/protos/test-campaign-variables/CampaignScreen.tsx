@@ -199,7 +199,8 @@ const CampaignScreen = () => {
                   <div className={styles.bannerWrap}>
                     <Banner
                       variant="primary"
-                      description={
+                    >
+                      <Banner.Description>
                         <div>
                           <div className={styles.bannerDesc}>
                             {changedCount} variable{changedCount > 1 ? 's' : ''} changed in
@@ -210,18 +211,18 @@ const CampaignScreen = () => {
                             update.
                           </div>
                         </div>
-                      }
-                      aside={
+                      </Banner.Description>
+                      <Banner.Aside>
                         <Button
                           color="secondary"
                           size="s"
-                          icon={ListChecks}
                           onClick={openReview}
                         >
+                          <Button.Icon icon={ListChecks} />
                           Review changes
                         </Button>
-                      }
-                    />
+                      </Banner.Aside>
+                    </Banner>
                   </div>
                 )}
 
@@ -272,7 +273,10 @@ const CampaignScreen = () => {
               </div>
 
               <div>
-                <Button color="primary" icon={Plus}>
+                <Button
+                  color="primary"
+                >
+                  <Button.Icon icon={Plus} />
                   Add test(s)
                 </Button>
               </div>
@@ -343,10 +347,10 @@ const CampaignScreen = () => {
             </Button>
             <Button
               color="primary"
-              icon={RefreshCw}
               disabled={selectedCount === 0}
               onClick={applyUpdate}
             >
+              <Button.Icon icon={RefreshCw} />
               Update {selectedCount} variable{selectedCount > 1 ? 's' : ''}
             </Button>
           </div>

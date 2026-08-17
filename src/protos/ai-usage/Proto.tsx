@@ -49,7 +49,10 @@ const AIUsagePage = () => {
               </div>
             </div>
             <div className={styles.contentActions}>
-              <Button color="secondary" icon={IconDownload}>
+              <Button
+                color="secondary"
+              >
+                <Button.Icon icon={IconDownload} />
                 Export
               </Button>
               <Button color="primary" onClick={() => setDrawerOpen(true)}>
@@ -64,66 +67,70 @@ const AIUsagePage = () => {
             {budgetState === 'warn' && (
               <Banner
                 variant="warning"
-                description="85% of your monthly tokens used"
-                subDescription={
+              >
+                <Banner.Icon><IconAlertTriangle size={18} /></Banner.Icon>
+                <Banner.Description>85% of your monthly tokens used</Banner.Description>
+                <Banner.SubDescription>
                   <>
                     At the current rate, your <b>60M</b> included tokens will run out around{' '}
                     <b>May 27</b>. AI actions keep working; admins have been notified.
                   </>
-                }
-                icon={<IconAlertTriangle size={18} />}
-                aside={<Button color="secondary" size="s">Add tokens</Button>}
-              />
+                </Banner.SubDescription>
+                <Banner.Aside><Button color="secondary" size="s">Add tokens</Button></Banner.Aside>
+              </Banner>
             )}
 
             {budgetState === 'over' && policyMode === 'post' && (
               <Banner
                 variant="warning"
-                description="Monthly allowance used up — overage billing active"
-                subDescription={
+              >
+                <Banner.Icon><IconAlertTriangle size={18} /></Banner.Icon>
+                <Banner.Description>Monthly allowance used up — overage billing active</Banner.Description>
+                <Banner.SubDescription>
                   <>
                     All <b>60M</b> included tokens are used. Extra usage keeps running and is
                     billed as overage (<b>1.2M tokens · €38</b> so far this month). Resets on{' '}
                     <b>Jun 1</b>.
                   </>
-                }
-                icon={<IconAlertTriangle size={18} />}
-                aside={<Button color="secondary" size="s">Manage plan</Button>}
-              />
+                </Banner.SubDescription>
+                <Banner.Aside><Button color="secondary" size="s">Manage plan</Button></Banner.Aside>
+              </Banner>
             )}
 
             {budgetState === 'over' && policyMode === 'ant' && (
               <Banner
                 variant="error"
-                description="Monthly allowance used up — new AI actions blocked"
-                subDescription={
+              >
+                <Banner.Icon><IconBan size={18} /></Banner.Icon>
+                <Banner.Description>Monthly allowance used up — new AI actions blocked</Banner.Description>
+                <Banner.SubDescription>
                   <>
                     All <b>60M</b> included tokens are used and the hard limit blocks further
                     actions. No overage is charged. Resumes on <b>Jun 1</b> or after adding tokens.
                   </>
-                }
-                icon={<IconBan size={18} />}
-                aside={
+                </Banner.SubDescription>
+                <Banner.Aside>
                   <Button color="primary" size="s">
                     Add tokens
                   </Button>
-                }
-              />
+                </Banner.Aside>
+              </Banner>
             )}
 
             {policyMode === 'ant' && budgetState !== 'over' && (
               <Banner
                 variant="primary"
-                description="Hard limit active"
-                subDescription={
+              >
+                <Banner.Icon><ShieldCheck size={18} /></Banner.Icon>
+                <Banner.Description>Hard limit active</Banner.Description>
+                <Banner.SubDescription>
                   <>
                     Each action is estimated <b>before it runs</b> and blocked if it would exceed
                     the remaining tokens. No overage, but +120&nbsp;ms average latency and
                     approximate estimates (token cache unknown in advance).
                   </>
-                }
-                icon={<ShieldCheck size={18} />}
-              />
+                </Banner.SubDescription>
+              </Banner>
             )}
 
             </div>

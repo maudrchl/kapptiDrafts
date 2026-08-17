@@ -11,6 +11,8 @@ import {
   Card,
   Timeline,
   Table,
+  Panel,
+  Button,
   IconCode,
   IconActivity,
 } from '@kapptivate/ui-kit'
@@ -279,11 +281,13 @@ export const CardPage = () => (
     <Demo title="Composed card" column>
       <div style={{ maxWidth: 420, width: '100%' }}>
         <Card>
-          <Card.Header icon={IconActivity} title="Realtime status" />
-          <Card.Content
-            title="All systems operational"
-            description="No incident in the last 24 hours."
-          />
+          <Card.Header>
+            <Card.Header.Title><Card.Header.Icon icon={IconActivity} />Realtime status</Card.Header.Title>
+          </Card.Header>
+          <Card.Content>
+            <Card.Content.Title>All systems operational</Card.Content.Title>
+            <Card.Content.Description>No incident in the last 24 hours.</Card.Content.Description>
+          </Card.Content>
         </Card>
       </div>
     </Demo>
@@ -297,18 +301,18 @@ export const CardPage = () => (
     <PropsTable
       title="Card.Header"
       rows={[
-        { name: 'title', type: 'string', required: true, description: 'Header title' },
-        { name: 'icon', type: 'IconComponent', description: 'Icon before the title' },
-        { name: 'asideContent', type: 'ReactNode', description: 'Content aligned to the right' },
+        { name: 'Card.Header.Title', type: 'slot: children', required: true, description: 'The title row' },
+        { name: 'Card.Header.Icon', type: 'slot: icon={IconComponent}', description: 'Icon, placed inside the Title slot' },
+        { name: 'Card.Header.Aside', type: 'slot: children', description: 'Content aligned to the right' },
       ]}
     />
     <PropsTable
       title="Card.Content"
       rows={[
-        { name: 'title', type: 'string', description: 'Section title' },
-        { name: 'description', type: 'string', description: 'Section description' },
-        { name: 'children', type: 'ReactNode', description: 'Body content' },
-        { name: 'asideContent', type: 'ReactNode', description: 'Content aligned to the right' },
+        { name: 'Card.Content.Title', type: 'slot: children', description: 'Section title' },
+        { name: 'Card.Content.Description', type: 'slot: children', description: 'Section description' },
+        { name: 'Card.Content.Aside', type: 'slot: children', description: 'Content aligned to the right' },
+        { name: 'children', type: 'ReactNode', description: 'Body content, below the slots' },
         { name: 'compact', type: 'boolean', description: 'Tighter spacing' },
       ]}
     />
@@ -407,6 +411,79 @@ export const TablePage = () => (
         { name: 'noHorizontalBorders', type: 'boolean', description: 'Remove row separators' },
         { name: 'compact', type: 'boolean', description: 'Tighter row height' },
         { name: 'persistSortKey', type: 'string', description: 'Persist the sort under this key' },
+      ]}
+    />
+  </Page>
+)
+
+export const PanelPage = () => (
+  <Page
+    title="Panel"
+    description="A bordered section surface, composed with slots. Use it to group a block of settings inside a page; Card is for a standalone object."
+    importCode={"import { Panel } from '@kapptivate/ui-kit'"}
+  >
+    <Demo title="Composed panel" column>
+      <div style={{ maxWidth: 520, width: '100%' }}>
+        <Panel>
+          <Panel.Header>
+            <Panel.Header.Title>Security policy</Panel.Header.Title>
+            <Panel.Header.Aside>
+              <Button color="secondary" size="s">
+                Edit
+              </Button>
+            </Panel.Header.Aside>
+            <Panel.Header.Description>
+              Who can run this test and from which locations.
+            </Panel.Header.Description>
+          </Panel.Header>
+          <Panel.Content>
+            <Text color="secondary">Runs are restricted to the private runners of the workspace.</Text>
+          </Panel.Content>
+          <Panel.Footer>
+            <Button color="primary" size="s">
+              Save
+            </Button>
+          </Panel.Footer>
+        </Panel>
+      </div>
+    </Demo>
+
+    <Demo title="Compact, header only" column>
+      <div style={{ maxWidth: 520, width: '100%' }}>
+        <Panel compact>
+          <Panel.Header>
+            <Panel.Header.Title>Notifications</Panel.Header.Title>
+            <Panel.Header.Aside>
+              <Text color="secondary" size="sm">
+                3 recipients
+              </Text>
+            </Panel.Header.Aside>
+          </Panel.Header>
+          <Panel.Content>
+            <Text color="secondary">Slack #qa-alerts, on failure only.</Text>
+          </Panel.Content>
+        </Panel>
+      </div>
+    </Demo>
+
+    <PropsTable
+      rows={[
+        { name: 'children', type: 'ReactNode', required: true, description: 'Panel.Header / Panel.Content / Panel.Footer, in any order' },
+        { name: 'compact', type: 'boolean', default: 'false', description: 'Tighter paddings' },
+      ]}
+    />
+    <PropsTable
+      title="Panel.Header"
+      rows={[
+        { name: 'Panel.Header.Title', type: 'slot: children', description: 'Title, on the divider row' },
+        { name: 'Panel.Header.Aside', type: 'slot: children', description: 'Actions, right of the title row' },
+        { name: 'Panel.Header.Description', type: 'slot: children', description: 'Description, below the row' },
+      ]}
+    />
+    <PropsTable
+      title="Panel.Content / Panel.Footer"
+      rows={[
+        { name: 'children', type: 'ReactNode', description: 'Body and footer content. Header renders first and Footer last whatever the order in the code' },
       ]}
     />
   </Page>

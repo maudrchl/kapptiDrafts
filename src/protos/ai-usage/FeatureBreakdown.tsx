@@ -11,7 +11,9 @@ const ICONS: Record<string, typeof IconSearch> = {
 const FeatureBreakdown = () => {
   return (
     <Card className={styles.uiCard}>
-      <Card.Content title="By feature" description="Token breakdown">
+      <Card.Content>
+        <Card.Content.Title>By feature</Card.Content.Title>
+        <Card.Content.Description>Token breakdown</Card.Content.Description>
       {FEATURES.map((f) => {
         const Icon = ICONS[f.icon] ?? IconSearch
         return (

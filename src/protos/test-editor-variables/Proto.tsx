@@ -406,7 +406,6 @@ const VariablesProto = () => {
           fullWidth
           size="s"
           color="secondary"
-          icon={IconPlus}
           onClick={() =>
             setNewInput({
               insert,
@@ -416,6 +415,7 @@ const VariablesProto = () => {
             })
           }
         >
+          <Button.Icon icon={IconPlus} />
           Create in-test variable
         </Button>
       ),
@@ -457,7 +457,6 @@ const VariablesProto = () => {
           fullWidth
           size="s"
           color="secondary"
-          icon={IconPlus}
           onClick={() =>
             setNewInput({
               insert,
@@ -467,6 +466,7 @@ const VariablesProto = () => {
             })
           }
         >
+          <Button.Icon icon={IconPlus} />
           Create in-test variable
         </Button>
       ),
@@ -553,7 +553,10 @@ const VariablesProto = () => {
             </Popover>
           ))}
           <div className={styles.popFoot}>
-            <Button color="secondary" size="s" fullWidth icon={IconPlus}>
+            <Button
+              color="secondary" size="s" fullWidth
+            >
+              <Button.Icon icon={IconPlus} />
               Create global variable
             </Button>
           </div>
@@ -575,9 +578,9 @@ const VariablesProto = () => {
                 fullWidth
                 size="s"
                 color="secondary"
-                icon={IconPlus}
                 onClick={() => setTarget(step, 'new')}
               >
+                <Button.Icon icon={IconPlus} />
                 Create a new variable
               </Button>
             </div>
@@ -676,8 +679,11 @@ const VariablesProto = () => {
           Tooltip comme enfant, le clic n'atteint jamais le trigger. Le Tooltip
           se met donc À L'INTÉRIEUR, sur le bouton. */}
       <span className={styles.pickWrap}>
-        <Tooltip content="Pick from the last response">
-          <Button color="secondary" size="s" icon={IconCode} />
+        <Tooltip>
+          <Tooltip.Trigger>
+            <Button color="secondary" size="s"><Button.Icon icon={IconCode} /></Button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Pick from the last response</Tooltip.Content>
         </Tooltip>
       </span>
     </Popover>
@@ -1018,7 +1024,10 @@ const VariablesProto = () => {
           ))}
         </div>
         <div className={chrome.addWrap}>
-          <Button color="secondary" size="s" icon={IconPlus} onClick={addInput}>
+          <Button
+            color="secondary" size="s" onClick={addInput}
+          >
+            <Button.Icon icon={IconPlus} />
             Add input
           </Button>
         </div>
@@ -1090,7 +1099,7 @@ const VariablesProto = () => {
           <span className={chrome.panelTitleNum}>{n}</span>
           <span className={chrome.panelTitle}>{title}</span>
           <div className={chrome.panelHeaderActions}>
-            <Button color="secondary" size="s" icon={IconMoreHorizontal} />
+            <Button color="secondary" size="s"><Button.Icon icon={IconMoreHorizontal} /></Button>
           </div>
         </div>
         <Tabs
@@ -1116,7 +1125,11 @@ const VariablesProto = () => {
           {/* la portée d'abord : elle cadre ce qu'on va régler en dessous.
               `invisible` = le gris neutre du DS, `secondary` tire sur le vert. */}
           <div className={styles.noteBanner}>
-            <Banner variant="invisible" description={targetNote(step)} />
+            <Banner
+              variant="invisible"
+            >
+              <Banner.Description>{targetNote(step)}</Banner.Description>
+            </Banner>
           </div>
           <div className={styles.defRow}>
             <div className={styles.defLabel}>Source</div>
@@ -1297,7 +1310,11 @@ const VariablesProto = () => {
         <Modal.Content>
           <div className={cv.cvBody}>
             <div className={styles.noteBanner}>
-              <Banner variant="invisible" description="Available in this test only." />
+              <Banner
+                variant="invisible"
+              >
+                <Banner.Description>Available in this test only.</Banner.Description>
+              </Banner>
             </div>
             <div className={cv.cvField}>
               <label className={cv.cvLabel} htmlFor="ci-name">
@@ -1393,19 +1410,28 @@ const VariablesProto = () => {
         <header className={chrome.topbar}>
           <div className={chrome.crumb}>
             {/* court : le fil d'Ariane du chrome kapptiDrafts recouvre le début de la barre */}
-            <Breadcrumb items={[{ title: 'Tests' }, { title: 'Checkout' }]} />
+            <Breadcrumb>
+              <Breadcrumb.Item>Tests</Breadcrumb.Item>
+              <Breadcrumb.Item>Checkout</Breadcrumb.Item>
+            </Breadcrumb>
           </div>
           <div className={chrome.topActions}>
             <ButtonGroup>
-              <Button color="secondary" size="m" icon={IconLock} />
-              <Button color="secondary" size="m" icon={IconMonitor} />
-              <Button color="secondary" size="m" icon={IconStar} />
-              <Button color="danger-s" size="m" icon={IconTrash} />
+              <Button color="secondary" size="m"><Button.Icon icon={IconLock} /></Button>
+              <Button color="secondary" size="m"><Button.Icon icon={IconMonitor} /></Button>
+              <Button color="secondary" size="m"><Button.Icon icon={IconStar} /></Button>
+              <Button color="danger-s" size="m"><Button.Icon icon={IconTrash} /></Button>
             </ButtonGroup>
-            <Button color="secondary" size="m" icon={IconSave}>
+            <Button
+              color="secondary" size="m"
+            >
+              <Button.Icon icon={IconSave} />
               Save
             </Button>
-            <Button color="primary" size="m" icon={IconZap}>
+            <Button
+              color="primary" size="m"
+            >
+              <Button.Icon icon={IconZap} />
               Run
             </Button>
           </div>
@@ -1491,10 +1517,16 @@ const VariablesProto = () => {
                           ))}
 
                           <div className={chrome.stepFooter}>
-                            <Button color="invisible" size="s" icon={IconPlus}>
+                            <Button
+                              color="invisible" size="s"
+                            >
+                              <Button.Icon icon={IconPlus} />
                               Add step…
                             </Button>
-                            <Button color="secondary" size="s" icon={IconPlay}>
+                            <Button
+                              color="secondary" size="s"
+                            >
+                              <Button.Icon icon={IconPlay} />
                               Use recorder
                             </Button>
                           </div>

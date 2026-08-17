@@ -10,7 +10,7 @@
     "build:legacy": "node build.js"
   },
   "dependencies": {
-    "@kapptivate/ui-kit": "1.47.0",
+    "@kapptivate/ui-kit": "1.52.0",
     "@supabase/supabase-js": "^2.109.0",
     "@xyflow/react": "^12.11.2",
     "antd": "5.16.4",

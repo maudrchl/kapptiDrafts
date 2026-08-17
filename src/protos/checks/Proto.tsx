@@ -752,12 +752,12 @@ const ChecksProto = () => {
                           color="secondary"
                           size="s"
                           fullWidth
-                          icon={IconSquareArrowOutUpRight}
                           onClick={() => {
                             setSubjOpen(null)
                             openTreeMulti((paths) => addChecksFromPaths(c, paths))
                           }}
                         >
+                          <Button.Icon icon={IconSquareArrowOutUpRight} />
                           Open in full view
                         </Button>
                         {responseTree((path) => pick(path))}
@@ -960,7 +960,10 @@ const ChecksProto = () => {
         {/* Ajout direct dans CE groupe (accès direct, pas de menu) : les checks
             les plus courants sont des success conditions. */}
         <div className={styles.grpAdd}>
-          <Button color="secondary" size="s" icon={IconPlus} onClick={() => add(sev)}>
+          <Button
+            color="secondary" size="s" onClick={() => add(sev)}
+          >
+            <Button.Icon icon={IconPlus} />
             {sev === 'fail' ? 'Add condition' : 'Add warning'}
           </Button>
         </div>
@@ -1228,7 +1231,10 @@ const ChecksProto = () => {
           ))}
         </div>
         <div className={styles.addWrap}>
-          <Button color="secondary" size="s" icon={IconPlus} onClick={openAddOut}>
+          <Button
+            color="secondary" size="s" onClick={openAddOut}
+          >
+            <Button.Icon icon={IconPlus} />
             Add variable
           </Button>
         </div>
@@ -1278,7 +1284,7 @@ const ChecksProto = () => {
             <div className={styles.advTitle}>Capabilities</div>
             <div className={styles.advRowEdit}>
               {advCheckbox('adv-caps', 'Add custom capabilities', addCapabilities, setAddCapabilities)}
-              <Button color="secondary" size="s" icon={IconPencil} />
+              <Button color="secondary" size="s"><Button.Icon icon={IconPencil} /></Button>
             </div>
           </div>
         </div>
@@ -1346,7 +1352,10 @@ const ChecksProto = () => {
       <div className={styles.previewEmpty}>
         <div className={styles.previewHint}>
           <span>Click</span>
-          <Button color="secondary" size="s" icon={IconZap}>
+          <Button
+            color="secondary" size="s"
+          >
+            <Button.Icon icon={IconZap} />
             Run
           </Button>
           <span>or press</span>
@@ -1455,17 +1464,20 @@ const ChecksProto = () => {
       <div className={styles.workspace}>
         <header className={styles.topbar}>
           <div className={styles.crumb}>
-            <Breadcrumb items={[{ title: 'Tests' }, { title: 'API' }]} />
+            <Breadcrumb>
+              <Breadcrumb.Item>Tests</Breadcrumb.Item>
+              <Breadcrumb.Item>API</Breadcrumb.Item>
+            </Breadcrumb>
           </div>
           <div className={styles.topActions}>
             <ButtonGroup>
-              <Button color="secondary" size="m" icon={IconLock} />
-              <Button color="secondary" size="m" icon={IconMonitor} />
-              <Button color="secondary" size="m" icon={IconStar} />
-              <Button color="danger-s" size="m" icon={IconTrash} />
+              <Button color="secondary" size="m"><Button.Icon icon={IconLock} /></Button>
+              <Button color="secondary" size="m"><Button.Icon icon={IconMonitor} /></Button>
+              <Button color="secondary" size="m"><Button.Icon icon={IconStar} /></Button>
+              <Button color="danger-s" size="m"><Button.Icon icon={IconTrash} /></Button>
             </ButtonGroup>
-            <Button color="secondary" size="m" icon={IconSave}>Save</Button>
-            <Button color="primary" size="m" icon={IconZap}>Run</Button>
+            <Button color="secondary" size="m"><Button.Icon icon={IconSave} />Save</Button>
+            <Button color="primary" size="m"><Button.Icon icon={IconZap} />Run</Button>
           </div>
         </header>
 
@@ -1607,8 +1619,18 @@ const ChecksProto = () => {
                   </div>
 
                 <div className={styles.stepFooter}>
-                  <Button color="invisible" size="s" icon={IconPlus}>Add step…</Button>
-                  <Button color="secondary" size="s" icon={IconPlay}>Use recorder</Button>
+                  <Button
+                    color="invisible" size="s"
+                  >
+                    <Button.Icon icon={IconPlus} />
+                    Add step…
+                  </Button>
+                  <Button
+                    color="secondary" size="s"
+                  >
+                    <Button.Icon icon={IconPlay} />
+                    Use recorder
+                  </Button>
                 </div>
               </div>
 
@@ -1645,7 +1667,11 @@ const ChecksProto = () => {
                     ],
                   }}
                 >
-                  <Button color="secondary" size="s" icon={IconMoreHorizontal} />
+                  <Button
+                    color="secondary" size="s"
+                  >
+                    <Button.Icon icon={IconMoreHorizontal} />
+                  </Button>
                 </Dropdown>
               </div>
             </div>
@@ -1835,12 +1861,12 @@ const ChecksProto = () => {
               {outDraftMode === 'edit' && (
                 <Button
                   color="danger-s"
-                  icon={IconTrash}
                   onClick={() => {
                     removeOutVar(outDraft.id)
                     setOutDraft(null)
                   }}
                 >
+                  <Button.Icon icon={IconTrash} />
                   Delete
                 </Button>
               )}

@@ -85,7 +85,7 @@ const Proto = () => {
     <div style={{ maxWidth: 920, margin: '0 auto', padding: '2.5rem 1.5rem' }}>
       {/* --- Contexte : haut de la page execution details --- */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-        <Button color="invisible" size="s" icon={IconArrowLeft} />
+        <Button color="invisible" size="s"><Button.Icon icon={IconArrowLeft} /></Button>
         <Text size="sm" color="secondary">
           Executions
         </Text>
@@ -117,7 +117,6 @@ const Proto = () => {
         {/* --- Le déclencheur : ButtonDropdown (secondary) --- */}
         <ButtonDropdown
           color="secondary"
-          icon={IconDownload}
           onClick={exportExcel}
           menu={{
             onClick: ({ key }: { key: string }) => {
@@ -132,6 +131,7 @@ const Proto = () => {
             ],
           }}
         >
+          <Button.Icon icon={IconDownload} />
           Export
         </ButtonDropdown>
       </div>
@@ -198,11 +198,11 @@ const Proto = () => {
             </Button>
             <Button
               color="primary"
-              icon={IconMail}
               isLoading={sending}
               disabled={!canSend}
               onClick={send}
             >
+              <Button.Icon icon={IconMail} />
               Send report
             </Button>
           </div>
