@@ -352,6 +352,22 @@ const VariablesProto = () => {
       {
         name: 'In-test inputs',
         key: 'built_in' as const,
+        // l'onglet des globales a son bouton de création : celui des in-test aussi
+        footer: (
+          <Button
+            fullWidth
+            size="s"
+            color="secondary"
+            icon={IconPlus}
+            onClick={() => {
+              addInput()
+              setSel(null)
+              setTestTab('environment')
+            }}
+          >
+            Create in-test variable
+          </Button>
+        ),
         // un input encore sans nom n'a rien à proposer
         suggestions: inputs
           .filter((v) => v.name)
@@ -813,7 +829,7 @@ const VariablesProto = () => {
             onValue={(v) => patchUi(step.id, { locator: v })}
             toText={fromSegments}
             suggestions={suggestionsFor(step.n)}
-            placeholder="Describe the element"
+            placeholder="Target element"
           />
         </span>
         {/* la valeur reste sur la ligne, à côté de l'élément */}
@@ -848,11 +864,9 @@ const VariablesProto = () => {
             }}
             title="Edit the value in the step panel"
           >
+            <span className={styles.sumSource}>{sourceLabel(step.source)}</span>
             {stepValue(step) ? (
-              <>
-                <span className={styles.sumChip}>{sourceLabel(step.source)}</span>
-                <span className={styles.sumVal}>{stepValue(step)}</span>
-              </>
+              <span className={styles.sumVal}>{stepValue(step)}</span>
             ) : (
               <span className={styles.sumEmpty}>No value yet</span>
             )}

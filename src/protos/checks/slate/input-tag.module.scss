@@ -209,8 +209,9 @@
   }
   
   .suggestionList {
-    padding-inline: var(--spacing-4);
-    padding-block: var(--spacing-2);
+    /* popover compact : la gouttière d'origine était très large */
+    padding-inline: var(--spacing-2);
+    padding-block: var(--spacing-1);
     width: 100%;
     cursor: pointer;
     .suggestionItem {
@@ -283,5 +284,5 @@
 
 .createVariableButton {
   width: 100%;
-  padding: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-2) var(--spacing-2);
 }

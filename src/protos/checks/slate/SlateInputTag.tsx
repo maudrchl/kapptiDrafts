@@ -89,6 +89,12 @@ export type Suggestions = {
   key: 'previous_steps' | 'built_in' | 'variables'
   suggestions: SuggestionItem[]
   emptyState?: JSX.Element
+  /**
+   * Pied de liste propre à l'onglet (ex. « Create in-test variable »), en plus
+   * du bouton de création de globale câblé sur l'onglet `variables`.
+   * Ajout local au port.
+   */
+  footer?: React.ReactNode
 }
 
 type SlateInputTagProps = {
@@ -757,6 +763,7 @@ const SlateInputTag = ({
             })}
             {currentSuggestions.length === 0 && current?.emptyState ? current.emptyState : null}
           </Flex>
+          {current?.footer && <div className={styles.createVariableButton}>{current.footer}</div>}
           {tab === 'variables' && (
             <div className={styles.createVariableButton}>
               <Button

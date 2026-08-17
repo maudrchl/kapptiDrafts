@@ -200,8 +200,6 @@ export const ACTION_GROUPS: ActionGroup[] = [
 export const VALUE_ACTIONS = new Set([
   'Fill input',
   'Select option',
-  'Assert displayed',
-  'Assert not displayed',
   'Verify with AI',
   'Wait for delay',
   'Get text or value',
@@ -378,8 +376,7 @@ export const INITIAL_STEPS: Step[] = [
     n: 11, group: 2,
     kind: 'ui',
     action: 'Assert displayed',
-    locator: 'The order confirmation banner',
-    value: 'Order {{orderRef}} confirmed',
+    locator: 'The confirmation banner of order {{orderRef}}',
   },
 ]
 
