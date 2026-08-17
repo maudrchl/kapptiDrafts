@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
+  Banner,
   Breadcrumb,
   Button,
   ButtonGroup,
@@ -986,7 +987,7 @@ const VariablesProto = () => {
       { key: 'general', label: 'General', children: stepGeneralTab(step) },
       ...(step.kind === 'set'
         ? []
-        : [{ key: 'variables', label: 'Variables', children: stepVariablesTab(step) }]),
+        : [{ key: 'variables', label: 'Variables', children: stepVariablesTab() }]),
       { key: 'checks', label: 'Checks', children: <div className={chrome.tabPlaceholder}>Checks</div> },
       { key: 'advanced', label: 'Advanced settings', children: stepAdvancedTab() },
     ]
@@ -1035,10 +1036,8 @@ const VariablesProto = () => {
             <div className={styles.defLabel}>Value</div>
             <div className={styles.defField}>{valueControl(step)}</div>
           </div>
-          <div className={styles.defNote}>
-            <IconInfo size={14} />
-            <span>{targetNote(step)}</span>
-          </div>
+          {/* Banner neutre du DS plutôt qu'une note maison */}
+          <Banner variant="secondary" description={targetNote(step)} />
         </div>
       )}
       {/* pas de capture de référence pour un step de variable : il ne touche
@@ -1060,55 +1059,10 @@ const VariablesProto = () => {
    * « où est passée la table Output variables ? » — l'affectation est éditée
    * sur le step, le panneau ne fait que la refléter.
    */
-  const stepVariablesTab = (step: Step) => {
-    if (step.kind !== 'set') {
-      return <div className={chrome.tabPlaceholder}>This step does not set a variable</div>
-    }
-    return (
-      <div className={styles.stepPane}>
-        <div className={styles.recap}>
-          <div className={styles.recapRow}>
-            <span className={styles.recapLabel}>Target</span>
-            <span>
-              {step.target.kind === 'new'
-                ? step.name
-                  ? pill(step.name, { step: step.n, clickable: false })
-                  : '—'
-                : pill(step.target.name, {
-                    step: step.target.kind === 'local' ? originStep(step.target.name) : undefined,
-                    clickable: false,
-                  })}
-            </span>
-          </div>
-          <div className={styles.recapRow}>
-            <span className={styles.recapLabel}>Nature</span>
-            <span className={styles.recapValue}>
-              {step.target.kind === 'global'
-                ? 'Global variable, from Configurations'
-                : `Local variable, assigned at step ${step.n}`}
-            </span>
-          </div>
-          <div className={styles.recapRow}>
-            <span className={styles.recapLabel}>Source</span>
-            <span className={styles.recapValue}>{sourceLabel(step.source)}</span>
-          </div>
-          <div className={styles.recapRow}>
-            <span className={styles.recapLabel}>Value</span>
-            <span className={styles.recapValue}>{stepValue(step) || '—'}</span>
-          </div>
-        </div>
-        <div className={styles.note}>
-          <IconInfo size={15} />
-          <span>
-            <b>Edited on the step.</b>{' '}
-            {step.target.kind === 'new'
-              ? 'The panel keeps the test interface: in-test inputs and globals.'
-              : `The panel lists ${step.target.name}, the assignment stays on this step.`}
-          </span>
-        </div>
-      </div>
-    )
-  }
+  /** Un step d'interface ou d'API n'affecte pas de variable. */
+  const stepVariablesTab = () => (
+    <div className={chrome.tabPlaceholder}>This step does not set a variable</div>
+  )
 
   const stepAdvancedTab = () => (
     <div className={styles.stepPane}>
