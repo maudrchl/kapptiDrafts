@@ -238,9 +238,13 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   color: $faint;
 }
 
-/* le Banner du DS respire à 16px : trop pour une note de panneau */
+/* le Banner du DS respire à 16px et parle en 13px : trop pour une note de panneau */
 .noteBanner > div {
   padding: 8px 12px;
+}
+.noteBanner,
+.noteBanner * {
+  font-size: 12px;
 }
 
 /* ===================== définition de la variable (panneau du step) ===================== */
@@ -597,7 +601,7 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 4px 6px;
+  padding: 3px 6px;
   border-radius: 5px;
   font-size: 13px;
   cursor: pointer;
@@ -615,6 +619,7 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
 }
 .optName {
   min-width: 0;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -211,9 +211,10 @@
   }
   
   .suggestionList {
-    /* popover compact : la gouttière d'origine était très large */
+    /* popover compact : gouttière et interlignes resserrés */
     padding-inline: var(--spacing-2);
     padding-block: var(--spacing-1);
+    gap: 2px !important;
     width: 100%;
     cursor: pointer;
     .suggestionItem {

@@ -1038,6 +1038,11 @@ const VariablesProto = () => {
     <>
       {step.kind === 'set' && (
         <div className={styles.defBlock}>
+          {/* la portée d'abord : elle cadre ce qu'on va régler en dessous.
+              `invisible` = le gris neutre du DS, `secondary` tire sur le vert. */}
+          <div className={styles.noteBanner}>
+            <Banner variant="invisible" description={targetNote(step)} />
+          </div>
           <div className={styles.defRow}>
             <div className={styles.defLabel}>Source</div>
             <Select
@@ -1055,10 +1060,6 @@ const VariablesProto = () => {
             <div className={styles.defField}>{valueControl(step)}</div>
           </div>
           {/* Banner neutre du DS plutôt qu'une note maison */}
-          {/* `invisible` = le gris neutre du DS ; `secondary` tire sur le vert de marque */}
-          <div className={styles.noteBanner}>
-            <Banner variant="invisible" description={targetNote(step)} />
-          </div>
         </div>
       )}
       {/* pas de capture de référence pour un step de variable : il ne touche
