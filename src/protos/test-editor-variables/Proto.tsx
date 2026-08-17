@@ -890,7 +890,11 @@ const VariablesProto = () => {
     <div className={chrome.varsPane}>
       <div className={chrome.varsSection}>
         <div className={chrome.outTable}>
-          <div className={chrome.gvHeadRow}>Global variables ({globals.length})</div>
+          {/* même en-tête à deux colonnes que la table des in-test */}
+          <div className={chrome.outHeadRow}>
+            <div className={chrome.outHeadCell}>Global variables ({globals.length})</div>
+            <div className={chrome.outHeadCell}>Values</div>
+          </div>
           {globals.map((g, i) => globalRow(g, i))}
         </div>
       </div>
@@ -1469,7 +1473,12 @@ const VariablesProto = () => {
         {usedGlobals.length > 0 && (
           <div className={chrome.varsSection}>
             <div className={chrome.outTable}>
-              <div className={chrome.gvHeadRow}>Global variables ({usedGlobals.length})</div>
+              <div className={chrome.outHeadRow}>
+                <div className={chrome.outHeadCell}>
+                  Global variables ({usedGlobals.length})
+                </div>
+                <div className={chrome.outHeadCell}>Values</div>
+              </div>
               {usedGlobals.map((name) => {
                 const i = globals.findIndex((g) => g.name === name)
                 return i >= 0 ? globalRow(globals[i], i) : null
