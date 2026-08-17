@@ -363,6 +363,18 @@ const VariablesProto = () => {
    * calculée au démarrage du run. Neutres en gris, pour ne pas ajouter une
    * 4e teinte au système de variables.
    */
+  const globalGroup = (): Suggestions => ({
+    name: 'Global',
+    key: 'variables',
+    suggestions: globals.map((v, i) => ({
+      id: `gl${i}`,
+      label: optLabel(v.name, 'global'),
+      color: TAG_COLOR['dark-blue'],
+      value: v.name,
+      technicalName: v.name,
+    })),
+  })
+
   const randomGroup = (): Suggestions => ({
     name: 'Random',
     key: 'built_in',
@@ -378,7 +390,7 @@ const VariablesProto = () => {
 
   const inputSuggestions = (skip?: string): Suggestions[] => [
     {
-      name: 'Test variables',
+      name: 'In-test',
       key: 'test',
       suggestions: inputs
         .filter((v) => v.name && v.name !== skip)
@@ -389,30 +401,38 @@ const VariablesProto = () => {
           value: v.name,
           technicalName: v.name,
         })),
+      footer: (insert, selectedText) => (
+        <Button
+          fullWidth
+          size="s"
+          color="secondary"
+          icon={IconPlus}
+          onClick={() =>
+            setNewInput({
+              insert,
+              name: /^[\w.]+$/.test(selectedText ?? '') ? (selectedText as string) : '',
+              value: '',
+              secret: false,
+            })
+          }
+        >
+          Create in-test variable
+        </Button>
+      ),
     },
+    globalGroup(),
     randomGroup(),
-    {
-      name: 'Global variables',
-      key: 'variables' as const,
-      suggestions: globals.map((v, i) => ({
-        id: `ogl${i}`,
-        label: optLabel(v.name, 'global'),
-        color: TAG_COLOR['dark-blue'],
-        value: v.name,
-        technicalName: v.name,
-      })),
-    },
   ]
 
   const suggestionsFor = (n: number): Suggestions[] => [
     {
       /**
-       * Une seule liste pour les variables du test : les in-test, toujours
+       * Une seule liste pour ce que le test définit : les in-test, toujours
        * disponibles, puis les locales déjà affectées. Au moment de consommer
-       * une variable, la question est « laquelle puis-je mettre ici », pas
-       * « de quelle nature est-elle » : la teinte et le badge Step N le disent.
+       * une variable la question est « laquelle puis-je mettre ici », pas « de
+       * quelle nature est-elle » : la teinte et le badge Step N le disent.
        */
-      name: 'Test variables',
+      name: 'In-test',
       key: 'test',
       suggestions: [
         ...inputs
@@ -432,19 +452,27 @@ const VariablesProto = () => {
           technicalName: l.name,
         })),
       ],
+      footer: (insert, selectedText) => (
+        <Button
+          fullWidth
+          size="s"
+          color="secondary"
+          icon={IconPlus}
+          onClick={() =>
+            setNewInput({
+              insert,
+              name: /^[\w.]+$/.test(selectedText ?? '') ? (selectedText as string) : '',
+              value: '',
+              secret: false,
+            })
+          }
+        >
+          Create in-test variable
+        </Button>
+      ),
     },
+    globalGroup(),
     randomGroup(),
-    {
-      name: 'Global variables',
-      key: 'variables' as const,
-      suggestions: globals.map((v, i) => ({
-        id: `gl${i}`,
-        label: optLabel(v.name, 'global'),
-        color: TAG_COLOR['dark-blue'],
-        value: v.name,
-        technicalName: v.name,
-      })),
-    },
   ]
 
   /* ---------------- sélecteur de cible ---------------- */
@@ -1052,7 +1080,7 @@ const VariablesProto = () => {
       { key: 'general', label: 'General', children: stepGeneralTab(step) },
       ...(step.kind === 'set'
         ? []
-        : [{ key: 'variables', label: 'Variables', children: stepVariablesTab() }]),
+        : [{ key: 'variables', label: 'Variables', children: stepVariablesTab(step) }]),
       { key: 'checks', label: 'Checks', children: <div className={chrome.tabPlaceholder}>Checks</div> },
       { key: 'advanced', label: 'Advanced settings', children: stepAdvancedTab() },
     ]
@@ -1128,10 +1156,96 @@ const VariablesProto = () => {
    * « où est passée la table Output variables ? » — l'affectation est éditée
    * sur le step, le panneau ne fait que la refléter.
    */
-  /** Un step d'interface ou d'API n'affecte pas de variable. */
-  const stepVariablesTab = () => (
-    <div className={chrome.tabPlaceholder}>This step does not set a variable</div>
-  )
+  /** Variables citées par un step, dans l'ordre d'apparition. */
+  const usedVars = (step: Step): string[] => {
+    const texts =
+      step.kind === 'ui'
+        ? [step.locator, step.value ?? '']
+        : step.kind === 'api'
+          ? [step.url]
+          : [stepValue(step)]
+    const out: string[] = []
+    texts.forEach((t) => {
+      for (const m of t.matchAll(/\{\{([^}]+)\}\}/g)) if (!out.includes(m[1])) out.push(m[1])
+    })
+    return out
+  }
+
+  /**
+   * Variables : ce dont CE step dépend, et d'où ça vient. Même table que le
+   * panneau du test, réduite aux variables citées par le step.
+   */
+  const stepVariablesTab = (step: Step) => {
+    const used = usedVars(step)
+    if (!used.length) {
+      return <div className={chrome.tabPlaceholder}>This step does not use a variable</div>
+    }
+    return (
+      <div className={chrome.varsPane}>
+        <div className={chrome.outTable}>
+          <div className={chrome.outHeadRow}>
+            <div className={chrome.outHeadCell}>Variables used ({used.length})</div>
+            <div className={chrome.outHeadCell}>Values</div>
+          </div>
+          {used.map((name) => {
+            const nature = natureOf(name)
+            const inputIndex = inputs.findIndex((v) => v.name === name)
+            const globalIndex = globals.findIndex((g) => g.name === name)
+            const from = originStep(name)
+            return (
+              <div key={name} className={`${chrome.outDataRow} ${styles.varRow}`}>
+                <div className={chrome.outNameCell}>
+                  <Tag
+                    color={nature === 'input' ? 'orange' : nature === 'global' ? 'dark-blue' : 'blue'}
+                    size="sm"
+                    icon={IconBraces}
+                  />
+                  <span className={chrome.outName}>{name}</span>
+                </div>
+                <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
+                  {nature === 'local' ? (
+                    /* une locale n'a pas de valeur ici : elle vient de son step */
+                    <button
+                      type="button"
+                      className={styles.envLink}
+                      onClick={() => from != null && gotoStep(from)}
+                    >
+                      <IconBraces size={11} /> Set at step {from ?? '?'}
+                    </button>
+                  ) : inputIndex >= 0 ? (
+                    <Input
+                      size="s"
+                      mono
+                      fullWidth
+                      borderless
+                      type={inputs[inputIndex].secret ? 'password' : 'text'}
+                      value={inputs[inputIndex].value}
+                      onChange={(e) => patchInput(inputIndex, { value: e.target.value })}
+                    />
+                  ) : globalIndex >= 0 ? (
+                    <Input
+                      size="s"
+                      mono
+                      fullWidth
+                      borderless
+                      value={globals[globalIndex].value}
+                      onChange={(e) =>
+                        setGlobals((cur) =>
+                          cur.map((x, j) => (j === globalIndex ? { ...x, value: e.target.value } : x)),
+                        )
+                      }
+                    />
+                  ) : (
+                    <span className={styles.sumEmpty}>Generated when the run starts</span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
 
   const stepAdvancedTab = () => (
     <div className={styles.stepPane}>
