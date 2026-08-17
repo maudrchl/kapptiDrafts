@@ -203,9 +203,6 @@ const VariablesProto = () => {
   /** connecteur de chaque groupe (le 1er select pilote, les suivants héritent) */
   const [failLogic, setFailLogic] = useState<'and' | 'or'>('and')
   const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('and')
-  /** dropdown « quelle variable mettre à jour » (Update variable) */
-  const [targetOpen, setTargetOpen] = useState<string | null>(null)
-  const [targetTab, setTargetTab] = useState('in-test')
   const [subjOpen, setSubjOpen] = useState<string | null>(null)
   const [subjTab, setSubjTab] = useState('response')
   /** modale « Create in-test variable » : ouverte depuis le picker, elle insère */
@@ -433,28 +430,54 @@ const VariablesProto = () => {
           value: v.name,
           technicalName: v.name,
         })),
-      footer: (insert, selectedText) => (
-        <Button
-          fullWidth
-          size="s"
-          color="secondary"
-          onClick={() =>
-            setNewInput({
-              insert,
-              name: /^[\w.]+$/.test(selectedText ?? '') ? (selectedText as string) : '',
-              value: '',
-              secret: false,
-            })
-          }
-        >
-          <Button.Icon icon={IconPlus} />
-          Create in-test variable
-        </Button>
-      ),
+      footer: (insert, selectedText) => createInTestFooter(insert, selectedText),
     },
     globalGroup(),
     randomGroup(),
   ]
+
+  /**
+   * Suggestions pour la variable qu'un « Update variable » écrit : le MÊME
+   * dropdown que le picker {}, sans l'onglet Random (un générateur ne s'écrit
+   * pas) et sans les locales (une locale s'écrit avec « Set local variable »).
+   */
+  const targetSuggestions = (): Suggestions[] => [
+    {
+      name: 'In-test',
+      key: 'test',
+      suggestions: inputs
+        .filter((v) => v.name)
+        .map((v, i) => ({
+          id: `tin${i}`,
+          label: optLabel(v.name, 'input'),
+          color: TAG_COLOR.orange,
+          value: v.name,
+          technicalName: v.name,
+        })),
+      footer: (insert, selectedText) => createInTestFooter(insert, selectedText),
+    },
+    globalGroup(),
+  ]
+
+  /** Pied de l'onglet In-test : créer la variable qu'on cherchait. */
+  const createInTestFooter = (insert: (value: string, color: TagColor) => void, sel?: string) => (
+    <Button
+      fullWidth
+      size="s"
+      color="secondary"
+      onClick={() =>
+        setNewInput({
+          insert,
+          name: /^[\w.]+$/.test(sel ?? '') ? (sel as string) : '',
+          value: '',
+          secret: false,
+        })
+      }
+    >
+      <Button.Icon icon={IconPlus} />
+      Create in-test variable
+    </Button>
+  )
 
   const suggestionsFor = (n: number): Suggestions[] => [
     {
@@ -531,94 +554,23 @@ const VariablesProto = () => {
         </span>
       )
     }
-    const pick = (name: string) => {
-      patchStep(step.id, { name })
-      setTargetOpen(null)
-    }
-    const list = (vars: { name: string; nature: VarNature }[]) => (
-      <div className={styles.targetList}>
-        {vars.map((v) => (
-          <button
-            key={v.name}
-            type="button"
-            className={step.name === v.name ? styles.popItemOn : styles.popItem}
-            onClick={() => pick(v.name)}
-          >
-            {optLabel(v.name, v.nature)}
-            {step.name === v.name && (
-              <span className={styles.popCheck}>
-                <IconCheck size={14} />
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-    )
     /**
-     * Même dropdown que le picker {} : onglets par nature, mêmes lignes
-     * (pastille teintée + nom), même conteneur. Deux onglets seulement : pas de
-     * Random (un générateur ne s'écrit pas) et pas de locale (une locale
-     * s'écrit avec « Set local variable », et elle n'existe pas encore ici).
+     * « Update variable » écrit dans une variable qui existe déjà : le champ est
+     * donc le CHAMP DU PRODUIT, avec son dropdown {} — mêmes onglets, mêmes
+     * lignes — moins l'onglet Random (un générateur ne s'écrit pas) et moins les
+     * locales (une locale s'écrit avec « Set local variable »).
      */
-    const content = (
-      <div className={`${cv.popOverContainer} ${styles.targetPop}`}>
-        <Tabs
-          className={cv.suggestionTabs}
-          type="card"
-          activeKey={targetTab}
-          onChange={setTargetTab}
-          tabs={[
-            {
-              key: 'in-test',
-              label: 'In-test',
-              children: list(
-                inputs
-                  .filter((v) => v.name)
-                  .map((v) => ({ name: v.name, nature: 'input' as VarNature })),
-              ),
-            },
-            {
-              key: 'global',
-              label: 'Global',
-              children: list(globals.map((g) => ({ name: g.name, nature: 'global' as VarNature }))),
-            },
-          ]}
-        />
-      </div>
-    )
     return (
-      <span className={styles.targetSlot} onClick={(e) => e.stopPropagation()}>
-        {/* pas d'accolades grises ici : la pastille {} de la variable choisie dit
-            déjà de quoi il s'agit, et elle porte la teinte de sa nature. */}
-        <span className={styles.slotName}>
-          {step.name ? (
-            <span className={styles.slotPick}>
-              <span className={`${styles.optIcon} ${TINT_CLASS[tintOf(step.name)]}`}>
-                <IconBraces size={12} />
-              </span>
-              {step.name}
-            </span>
-          ) : (
-            <span className={styles.slotEmpty}>Pick a variable</span>
-          )}
-        </span>
-        <Popover
-          trigger="click"
-          placement="bottomLeft"
-          noPadding
-          arrow={false}
-          open={targetOpen === step.id}
-          setOpen={(o) => {
-            setTargetOpen(o ? step.id : null)
-            // s'ouvre sur l'onglet de la variable déjà choisie
-            if (o) setTargetTab(step.name && natureOf(step.name) === 'global' ? 'global' : 'in-test')
-          }}
-          content={content}
-        >
-          <button type="button" className={styles.slotChevron} aria-label="Variable to update">
-            <IconChevronDown size={13} />
-          </button>
-        </Popover>
+      <span className={styles.targetField} onClick={(e) => e.stopPropagation()}>
+        <VarField
+          key={`${step.id}-target`}
+          initial={toSegments(step.name ? `{{${step.name}}}` : '')}
+          onValue={(v) => patchStep(step.id, { name: v.replace(/[{}]/g, '').trim() })}
+          toText={fromSegments}
+          suggestions={targetSuggestions()}
+          placeholder="Pick a variable"
+          onVariableCreated={addGlobal}
+        />
       </span>
     )
   }

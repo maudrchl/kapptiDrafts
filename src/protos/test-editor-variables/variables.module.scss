@@ -278,50 +278,6 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
     color: $faint;
   }
 }
-/* variable choisie : le nom se lit comme la saisie, entre les mêmes { } */
-.slotName {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 96px;
-  padding: 0 7px;
-  font-size: 13px;
-  font-weight: 500;
-  color: $ink;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* variable choisie dans le dropdown : pastille teintée + nom */
-.slotPick {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-}
-.slotEmpty {
-  color: $faint;
-  font-weight: 400;
-}
-.slotChevron {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 100%;
-  border: 0;
-  border-left: 1px solid $border;
-  background: transparent;
-  color: $faint;
-  cursor: pointer;
-  &:hover {
-    color: $ink-2;
-  }
-  &:focus-visible {
-    outline: none;
-  }
-}
 
 /* ===================== menu d'actions du step =====================
    Calqué sur le popover produit : search + catégories repliables (Collapse DS),
@@ -433,19 +389,14 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
 }
 
 /* ===================== dropdown de variable (Update variable) ===================== */
-.targetPop {
-  /* le conteneur vient du picker (cv.popOverContainer) ; on ne fixe que la
-     largeur, pour que les deux dropdowns tombent pareil. */
-  width: 300px;
-}
-/* liste d'un onglet : mêmes gouttières resserrées que la liste du picker */
-.targetList {
+/* Champ « quelle variable j'écris » d'un Update variable : le champ Slate du
+   produit, calé sur la largeur de la commande qu'il remplace. */
+.targetField {
+  flex: 1 1 0;
+  min-width: 132px;
+  max-width: 220px;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 4px 6px 6px;
-  max-height: 300px;
-  overflow-y: auto;
+  align-items: center;
 }
 /* Tag « in-test variable définie par ce step » : le chip du récap de checks,
    avec l'icône bleu ciel à la place de la pastille de sévérité. */
@@ -466,16 +417,6 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   }
 }
 
-/* intitulé de section dans le dropdown de variable (In-test / Global) */
-.popGroup {
-  padding: 6px 8px 2px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: $faint;
-}
-
 .popItem {
   display: flex;
   align-items: center;
@@ -492,15 +433,6 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
   &:hover {
     background: rgba(102, 112, 133, 0.07);
   }
-}
-.popItemOn {
-  @extend .popItem;
-  background: rgba(102, 112, 133, 0.09);
-}
-.popCheck {
-  margin-left: auto;
-  color: $light-blue;
-  flex: none;
 }
 
 .pickRow {
