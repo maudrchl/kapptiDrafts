@@ -43,7 +43,7 @@ import {
   IconTrash,
   IconZap,
 } from '@kapptivate/ui-kit'
-import SlateInputTag from '../checks/slate/SlateInputTag'
+import SlateInputTag, { SuggestionsPicker } from '../checks/slate/SlateInputTag'
 import type { Color as TagColor, Suggestions, TagInputValue } from '../checks/slate/SlateInputTag'
 import chrome from '../checks/checks.module.scss'
 import cv from '../checks/slate/input-tag.module.scss'
@@ -203,6 +203,9 @@ const VariablesProto = () => {
   /** connecteur de chaque groupe (le 1er select pilote, les suivants héritent) */
   const [failLogic, setFailLogic] = useState<'and' | 'or'>('and')
   const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('and')
+  /** dropdown « quelle variable mettre à jour » (Update variable) */
+  const [targetOpen, setTargetOpen] = useState<string | null>(null)
+  const [targetTab, setTargetTab] = useState('test')
   const [subjOpen, setSubjOpen] = useState<string | null>(null)
   const [subjTab, setSubjTab] = useState('response')
   /** modale « Create in-test variable » : ouverte depuis le picker, elle insère */
@@ -221,8 +224,12 @@ const VariablesProto = () => {
   /** Une globale créée depuis la modale du picker rejoint Configurations. */
   const addGlobal = (v: { name: string; value: string }) =>
     setGlobals((cur) => (cur.some((g) => g.name === v.name) ? cur : [...cur, v]))
-  const addInput = () =>
-    setInputs((cur) => [...cur, { id: `in${cur.length + 1}-${cur.length}`, name: '', value: '' }])
+  /**
+   * Créer une in-test depuis un panneau : la même modale que depuis le picker,
+   * sans champ où insérer la variable — ici on la crée, c'est tout.
+   */
+  const openCreateInput = () =>
+    setNewInput({ insert: () => undefined, name: '', value: '', secret: false })
 
   const patchStep = (id: string, next: Partial<SetStep>) =>
     setSteps((cur) =>
@@ -555,23 +562,58 @@ const VariablesProto = () => {
       )
     }
     /**
-     * « Update variable » écrit dans une variable qui existe déjà : le champ est
-     * donc le CHAMP DU PRODUIT, avec son dropdown {} — mêmes onglets, mêmes
-     * lignes — moins l'onglet Random (un générateur ne s'écrit pas) et moins les
-     * locales (une locale s'écrit avec « Set local variable »).
+     * « Update variable » écrit dans une variable qui existe déjà : un select,
+     * qui ouvre LE dropdown {} du produit (`SuggestionsPicker`), amputé de
+     * l'onglet Random (un générateur ne s'écrit pas) et des locales (elles
+     * passent par « Set local variable »).
      */
+    const pick = (name: string) => {
+      patchStep(step.id, { name })
+      setTargetOpen(null)
+    }
     return (
-      <span className={styles.targetField} onClick={(e) => e.stopPropagation()}>
-        <VarField
-          key={`${step.id}-target`}
-          initial={toSegments(step.name ? `{{${step.name}}}` : '')}
-          onValue={(v) => patchStep(step.id, { name: v.replace(/[{}]/g, '').trim() })}
-          toText={fromSegments}
-          suggestions={targetSuggestions()}
-          placeholder="Pick a variable"
-          onVariableCreated={addGlobal}
-        />
-      </span>
+      <Popover
+        trigger="click"
+        placement="bottomLeft"
+        noPadding
+        arrow={false}
+        open={targetOpen === step.id}
+        setOpen={(o) => {
+          setTargetOpen(o ? step.id : null)
+          // s'ouvre sur l'onglet de la variable déjà choisie
+          if (o) setTargetTab(step.name && natureOf(step.name) === 'global' ? 'variables' : 'test')
+        }}
+        content={
+          <div className={styles.targetPop}>
+            <SuggestionsPicker
+              suggestions={targetSuggestions()}
+              tab={targetTab}
+              onTab={setTargetTab}
+              onPick={(sugg) => pick(sugg.value)}
+              footerInsert={(value) => pick(value)}
+            />
+          </div>
+        }
+      >
+        <button
+          type="button"
+          className={styles.targetSelect}
+          aria-label="Variable to update"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {step.name ? (
+            <span className={styles.slotPick}>
+              <span className={`${styles.optIcon} ${TINT_CLASS[tintOf(step.name)]}`}>
+                <IconBraces size={12} />
+              </span>
+              {step.name}
+            </span>
+          ) : (
+            <span className={styles.slotEmpty}>Pick a variable</span>
+          )}
+          <IconChevronDown size={13} className={styles.slotCaret} />
+        </button>
+      </Popover>
     )
   }
 
@@ -798,99 +840,111 @@ const VariablesProto = () => {
    * Mêmes tables que la tab Variables du proto `checks` (outTable / outHeadRow /
    * outDataRow, pastille Tag + IconBraces), pour rester dans l'UI existante.
    */
+  /** Ligne de globale : nom en lecture, valeur éditable, et qui l'écrit. */
+  const globalRow = (g: { name: string; value: string }, i: number) => {
+    const n = writerStep(g.name)
+    return (
+      <div key={g.name} className={`${chrome.outDataRow} ${styles.varRow}`}>
+        <div className={chrome.outNameCell}>
+          <Tag color="dark-blue" size="sm" icon={IconBraces} />
+          <span className={chrome.outName}>{g.name}</span>
+        </div>
+        <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
+          <Input
+            size="s"
+            mono
+            fullWidth
+            borderless
+            placeholder="Enter value…"
+            value={g.value}
+            onChange={(e) =>
+              setGlobals((cur) =>
+                cur.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)),
+              )
+            }
+          />
+          {n != null && (
+            <button type="button" className={styles.envLink} onClick={() => gotoStep(n)}>
+              Updated at step {n}
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  /** Le bouton qui ouvre la modale de création, sous la table des in-test. */
+  const createInTestButton = () => (
+    <div className={chrome.addWrap}>
+      <Button color="secondary" size="s" onClick={openCreateInput}>
+        <Button.Icon icon={IconPlus} />
+        Create in-test variable
+      </Button>
+    </div>
+  )
+
+  /**
+   * Environment = ce qui est réglé AVANT le run : les globales de Configurations
+   * d'abord, puis les in-test du test. Même ordre que dans le panneau d'un step.
+   */
   const environmentTab = () => (
     <div className={chrome.varsPane}>
       <div className={chrome.varsSection}>
         <div className={chrome.outTable}>
-          <div className={chrome.outHeadRow}>
-            <div className={chrome.outHeadCell}>In-test inputs ({inputs.length})</div>
-            <div className={chrome.outHeadCell}>Values</div>
-          </div>
-          {inputs.map((v, i) => (
-            <div key={v.id} className={`${chrome.outDataRow} ${styles.varRow}`}>
-              <div className={`${chrome.outNameCell} ${styles.editable}`}>
-                <Tag color="orange" size="sm" icon={IconBraces} />
-                {/* le nom s'édite : c'est ce qui rend « Add input » utile */}
-                <Input
-                  size="s"
-                  mono
-                  fullWidth
-                  borderless
-                  placeholder="variableName"
-                  value={v.name}
-                  onChange={(e) => patchInput(i, { name: e.target.value })}
-                />
-              </div>
-              <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
-                {/* une valeur peut composer avec d'autres variables : {{URL}}/checkout */}
-                {v.secret ? (
-                  <Input
-                    size="s"
-                    mono
-                    fullWidth
-                    borderless
-                    placeholder="Enter value…"
-                    type="password"
-                    value={v.value}
-                    onChange={(e) => patchInput(i, { value: e.target.value })}
-                  />
-                ) : (
-                  <VarField
-                    borderless
-                    initial={toSegments(v.value)}
-                    onValue={(val) => patchInput(i, { value: val })}
-                    toText={fromSegments}
-                    suggestions={inputSuggestions(v.name)}
-                    placeholder="Enter value…"
-                    onVariableCreated={addGlobal}
-                  />
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className={chrome.addWrap}>
-          <Button color="secondary" size="s" onClick={addInput}>
-            <Button.Icon icon={IconPlus} />
-            Add input
-          </Button>
+          <div className={chrome.gvHeadRow}>Global variables ({globals.length})</div>
+          {globals.map((g, i) => globalRow(g, i))}
         </div>
       </div>
 
       <div className={chrome.outTable}>
-        <div className={chrome.gvHeadRow}>Global variables ({globals.length})</div>
-        {globals.map((g, i) => {
-          const n = writerStep(g.name)
-          return (
-            <div key={g.name} className={`${chrome.outDataRow} ${styles.varRow}`}>
-              <div className={chrome.outNameCell}>
-                <Tag color="dark-blue" size="sm" icon={IconBraces} />
-                <span className={chrome.outName}>{g.name}</span>
-              </div>
-              <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
+        <div className={chrome.outHeadRow}>
+          <div className={chrome.outHeadCell}>In-test variables ({inputs.length})</div>
+          <div className={chrome.outHeadCell}>Values</div>
+        </div>
+        {inputs.map((v, i) => (
+          <div key={v.id} className={`${chrome.outDataRow} ${styles.varRow}`}>
+            <div className={`${chrome.outNameCell} ${styles.editable}`}>
+              <Tag color="orange" size="sm" icon={IconBraces} />
+              {/* le nom s'édite : c'est ce qui rend la création utile */}
+              <Input
+                size="s"
+                mono
+                fullWidth
+                borderless
+                placeholder="variableName"
+                value={v.name}
+                onChange={(e) => patchInput(i, { name: e.target.value })}
+              />
+            </div>
+            <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
+              {/* une valeur peut composer avec d'autres variables : {{URL}}/checkout */}
+              {v.secret ? (
                 <Input
                   size="s"
                   mono
                   fullWidth
                   borderless
                   placeholder="Enter value…"
-                  value={g.value}
-                  onChange={(e) =>
-                    setGlobals((cur) =>
-                      cur.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)),
-                    )
-                  }
+                  type="password"
+                  value={v.value}
+                  onChange={(e) => patchInput(i, { value: e.target.value })}
                 />
-                {n != null && (
-                  <button type="button" className={styles.envLink} onClick={() => gotoStep(n)}>
-                    Updated at step {n}
-                  </button>
-                )}
-              </div>
+              ) : (
+                <VarField
+                  borderless
+                  initial={toSegments(v.value)}
+                  onValue={(val) => patchInput(i, { value: val })}
+                  toText={fromSegments}
+                  suggestions={inputSuggestions(v.name)}
+                  placeholder="Enter value…"
+                  onVariableCreated={addGlobal}
+                />
+              )}
             </div>
-          )
-        })}
+          </div>
+        ))}
       </div>
+      {createInTestButton()}
     </div>
   )
 
@@ -1377,125 +1431,121 @@ const VariablesProto = () => {
    * panneau du test, réduite aux variables citées par le step.
    */
   /**
-   * Ce que le step DÉFINIT : même table que celle du proto `checks`, icône en
-   * bleu ciel. Le nom s'édite ici ; la valeur, non : elle arrive avec le run.
+   * Variables du step, dans le même ordre que le panneau du test : les globales
+   * d'abord, puis les in-test. Une in-test peut être posée AVANT le run (orange)
+   * ou DÉFINIE par ce step (bleu ciel, icône de sortie), ou encore par un step
+   * plus haut (bleu ciel, « Set at step N »).
    */
-  const outputsSection = (step: Step) => {
-    const outs = step.kind === 'set' ? [] : (step.outputs ?? [])
-    if (!outs.length) return null
-    const setOut = (i: number, name: string) => {
-      const next = outs.map((o, j) => (j === i ? name : o))
-      if (step.kind === 'api') patchApi(step.id, { outputs: next })
-      else patchUi(step.id, { outputs: next })
-    }
-    return (
-      <div className={chrome.varsSection}>
-        <div className={chrome.outTable}>
-          <div className={chrome.outHeadRow}>
-            <div className={chrome.outHeadCell}>In-test variables ({outs.length})</div>
-            <div className={chrome.outHeadCell}>Last values</div>
-          </div>
-          {outs.map((name, i) => (
-            <div key={i} className={`${chrome.outDataRow} ${styles.varRow}`}>
-              <div className={`${chrome.outNameCell} ${styles.editable}`}>
-                <span className={`${styles.optIcon} ${styles.tintLightBlue}`}>
-                  <IconArrowRightFromLine size={12} />
-                </span>
-                <Input
-                  size="s"
-                  mono
-                  fullWidth
-                  borderless
-                  placeholder="variableName"
-                  value={name}
-                  onChange={(e) => setOut(i, e.target.value)}
-                />
-              </div>
-              <div className={`${chrome.outValCell} ${styles.valCell}`}>
-                <span className={styles.sumEmpty}>Set when this step runs</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
   const stepVariablesTab = (step: Step) => {
     const used = usedVars(step)
-    const outs = step.kind === 'set' ? [] : (step.outputs ?? [])
-    if (!used.length && !outs.length) {
+    const defined = step.kind === 'set' ? [] : (step.outputs ?? [])
+    const usedGlobals = used.filter((n) => natureOf(n) === 'global')
+    const usedInTest = used.filter((n) => natureOf(n) !== 'global' && !defined.includes(n))
+
+    if (!used.length && !defined.length) {
       return <div className={chrome.tabPlaceholder}>This step does not use a variable</div>
     }
+
+    const setDefined = (i: number, name: string) => {
+      const next = defined.map((o, j) => (j === i ? name : o))
+      if (step.kind === 'api') patchApi(step.id, { outputs: next })
+      else if (step.kind === 'ui') patchUi(step.id, { outputs: next })
+    }
+
     return (
       <div className={chrome.varsPane}>
-        {outputsSection(step)}
-        {used.length > 0 && (
-          <div className={chrome.outTable}>
-            <div className={chrome.outHeadRow}>
-              <div className={chrome.outHeadCell}>Variables used ({used.length})</div>
-              <div className={chrome.outHeadCell}>Values</div>
+        {usedGlobals.length > 0 && (
+          <div className={chrome.varsSection}>
+            <div className={chrome.outTable}>
+              <div className={chrome.gvHeadRow}>Global variables ({usedGlobals.length})</div>
+              {usedGlobals.map((name) => {
+                const i = globals.findIndex((g) => g.name === name)
+                return i >= 0 ? globalRow(globals[i], i) : null
+              })}
             </div>
-            {used.map((name) => {
-              const nature = natureOf(name)
-              const inputIndex = inputs.findIndex((v) => v.name === name)
-              const globalIndex = globals.findIndex((g) => g.name === name)
-              const from = originStep(name)
-              return (
-                <div key={name} className={`${chrome.outDataRow} ${styles.varRow}`}>
-                  <div className={chrome.outNameCell}>
-                    <Tag
-                      color={
-                        nature === 'input' ? 'orange' : nature === 'global' ? 'dark-blue' : 'blue'
-                      }
-                      size="sm"
-                      icon={IconBraces}
+          </div>
+        )}
+
+        {defined.length + usedInTest.length > 0 && (
+          <>
+            <div className={chrome.outTable}>
+              <div className={chrome.outHeadRow}>
+                <div className={chrome.outHeadCell}>
+                  In-test variables ({defined.length + usedInTest.length})
+                </div>
+                <div className={chrome.outHeadCell}>Values</div>
+              </div>
+
+              {/* ce que CE step définit : le nom s'édite, la valeur arrive au run */}
+              {defined.map((name, i) => (
+                <div key={`def-${i}`} className={`${chrome.outDataRow} ${styles.varRow}`}>
+                  <div
+                    className={`${chrome.outNameCell} ${styles.editable} ${styles.nameCellTight}`}
+                  >
+                    <span className={`${styles.optIcon} ${styles.tintLightBlue}`}>
+                      <IconArrowRightFromLine size={12} />
+                    </span>
+                    {/* Geist, et la même gouttière que la ligne d'une globale au-dessus */}
+                    <Input
+                      size="s"
+                      fullWidth
+                      borderless
+                      placeholder="variableName"
+                      value={name}
+                      onChange={(e) => setDefined(i, e.target.value)}
                     />
-                    <span className={chrome.outName}>{name}</span>
                   </div>
-                  <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
-                    {nature === 'local' ? (
-                      /* une locale n'a pas de valeur ici : elle vient de son step */
-                      <button
-                        type="button"
-                        className={styles.envLink}
-                        onClick={() => from != null && gotoStep(from)}
-                      >
-                        <IconBraces size={11} /> Set at step {from ?? '?'}
-                      </button>
-                    ) : inputIndex >= 0 ? (
-                      <Input
-                        size="s"
-                        mono
-                        fullWidth
-                        borderless
-                        type={inputs[inputIndex].secret ? 'password' : 'text'}
-                        value={inputs[inputIndex].value}
-                        onChange={(e) => patchInput(inputIndex, { value: e.target.value })}
-                      />
-                    ) : globalIndex >= 0 ? (
-                      <Input
-                        size="s"
-                        mono
-                        fullWidth
-                        borderless
-                        value={globals[globalIndex].value}
-                        onChange={(e) =>
-                          setGlobals((cur) =>
-                            cur.map((x, j) =>
-                              j === globalIndex ? { ...x, value: e.target.value } : x,
-                            ),
-                          )
-                        }
-                      />
-                    ) : (
-                      <span className={styles.sumEmpty}>Generated when the run starts</span>
-                    )}
+                  <div className={`${chrome.outValCell} ${styles.valCell}`}>
+                    <span className={styles.sumEmpty}>Set when this step runs</span>
                   </div>
                 </div>
-              )
-            })}
-          </div>
+              ))}
+
+              {/* ce qu'il cite : in-test posée avant le run, ou locale d'un step amont */}
+              {usedInTest.map((name) => {
+                const nature = natureOf(name)
+                const inputIndex = inputs.findIndex((v) => v.name === name)
+                const from = originStep(name)
+                return (
+                  <div key={name} className={`${chrome.outDataRow} ${styles.varRow}`}>
+                    <div className={chrome.outNameCell}>
+                      <Tag
+                        color={nature === 'local' ? 'blue' : 'orange'}
+                        size="sm"
+                        icon={IconBraces}
+                      />
+                      <span className={chrome.outName}>{name}</span>
+                    </div>
+                    <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
+                      {nature === 'local' ? (
+                        /* une locale n'a pas de valeur ici : elle vient de son step */
+                        <button
+                          type="button"
+                          className={styles.envLink}
+                          onClick={() => from != null && gotoStep(from)}
+                        >
+                          <IconBraces size={11} /> Set at step {from ?? '?'}
+                        </button>
+                      ) : inputIndex >= 0 ? (
+                        <Input
+                          size="s"
+                          mono
+                          fullWidth
+                          borderless
+                          type={inputs[inputIndex].secret ? 'password' : 'text'}
+                          value={inputs[inputIndex].value}
+                          onChange={(e) => patchInput(inputIndex, { value: e.target.value })}
+                        />
+                      ) : (
+                        <span className={styles.sumEmpty}>Generated when the run starts</span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {createInTestButton()}
+          </>
         )}
       </div>
     )
@@ -1548,13 +1598,15 @@ const VariablesProto = () => {
     }
     return (
       <Modal open width={620} title="Create in-test variable" onCancel={close}>
-        <Modal.Content>
-          <div className={cv.cvBody}>
-            <div className={styles.noteBanner}>
-              <Banner variant="invisible">
-                <Banner.Description>Available in this test only.</Banner.Description>
-              </Banner>
-            </div>
+        {/* `hasPadding={false}` : le banner touche le header et prend toute la
+            largeur, le corps reprend sa gouttière juste en dessous. */}
+        <Modal.Content hasPadding={false}>
+          <div className={styles.cvBanner}>
+            <Banner variant="invisible">
+              <Banner.Description>Available in this test only.</Banner.Description>
+            </Banner>
+          </div>
+          <div className={`${cv.cvBody} ${styles.cvBodyPad}`}>
             <div className={cv.cvField}>
               <label className={cv.cvLabel} htmlFor="ci-name">
                 Name
@@ -1582,15 +1634,30 @@ const VariablesProto = () => {
               <label className={cv.cvLabel} htmlFor="ci-value">
                 Value
               </label>
-              <Input
-                size="l"
-                fullWidth
-                name="ci-value"
-                placeholder="Enter value"
-                type={newInput.secret ? 'password' : 'text'}
-                value={newInput.value}
-                onChange={(e) => setNewInput({ ...newInput, value: e.target.value })}
-              />
+              {/* une valeur statique peut composer avec une variable : d'où le {} */}
+              {newInput.secret ? (
+                <Input
+                  size="l"
+                  fullWidth
+                  name="ci-value"
+                  placeholder="Enter value"
+                  type="password"
+                  value={newInput.value}
+                  onChange={(e) => setNewInput({ ...newInput, value: e.target.value })}
+                />
+              ) : (
+                <span className={styles.cvValue}>
+                  <VarField
+                    key="ci-value"
+                    initial={toSegments(newInput.value)}
+                    onValue={(v) => setNewInput((cur) => (cur ? { ...cur, value: v } : cur))}
+                    toText={fromSegments}
+                    suggestions={inputSuggestions('')}
+                    placeholder="Enter value"
+                    onVariableCreated={addGlobal}
+                  />
+                </span>
+              )}
             </div>
             <Checkbox
               identifier="ci-secret"

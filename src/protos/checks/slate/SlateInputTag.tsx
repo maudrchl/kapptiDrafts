@@ -702,109 +702,77 @@ const SlateInputTag = ({
     )
   }
 
+  /**
+   * Le contenu du dropdown {} vit dans `SuggestionsPicker` (exporté plus bas) :
+   * onglets, liste, pieds. Ici on ne branche que ce qui dépend de l'éditeur —
+   * insérer un tag, la modale des built-in, celle des globales, et le
+   * sous-popover d'un groupe de variables.
+   */
   const renderSuggestions = () => {
     const current = suggestions?.find((suggestion) => suggestion.key === tab)
-    const currentSuggestions = current?.suggestions
-    if (!currentSuggestions) return null
+    if (!current?.suggestions) return null
 
     return (
       <PreventDnD>
-        <Flex vertical className={styles.popOverContainer}>
-          {suggestions && suggestions?.length > 1 && (
-            <div className={styles.slateTabsContainer}>
-              <Tabs
-                className={styles.suggestionTabs}
-                activeKey={tab || undefined}
-                onChange={(key: string) => setTab(key as 'previous_steps' | 'built_in' | 'variables')}
-                type="card"
-                tabs={suggestions.map((suggestion) => {
-                  return {
-                    key: suggestion.key,
-                    label: suggestion.name,
-                  }
-                })}
-              />
-            </div>
-          )}
-
-          <Flex gap={3} vertical className={cx(styles.suggestionList, styles.fullWidth)}>
-            {currentSuggestions.map((suggestion) => {
-              if (suggestion.groupId != null) {
-                return (
-                  <Popover
-                    key={suggestion.id}
-                    trigger="hover"
-                    placement="rightTop"
-                    arrow={false}
-                    noPadding
-                    zIndex={POPOVER_Z_INDEX}
-                    content={
-                      <VariableGroupPopoverContent
-                        groupId={suggestion.groupId}
-                        onSelect={(variable) => {
-                          addTag(variable.name, 'blue', undefined, undefined, `variable_group_variable|${suggestion.groupId}`)
-                        }}
-                      />
-                    }
-                  >
-                    <div className={cx(styles.groupItem, styles.fullWidth)}>{suggestion.label}</div>
-                  </Popover>
-                )
+        <SuggestionsPicker
+          suggestions={suggestions ?? []}
+          tab={tab ?? ''}
+          onTab={(key) => setTab(key as 'previous_steps' | 'built_in' | 'variables')}
+          onPick={(suggestion) => {
+            if (tab === 'built_in' && suggestion.value === 'custom') {
+              setOpenModal(true)
+              setOpenSuggestions(false)
+            } else {
+              addTag(suggestion.value, suggestion.color, undefined, undefined, suggestion.technicalName)
+            }
+          }}
+          renderGroupItem={(suggestion) => (
+            <Popover
+              key={suggestion.id}
+              trigger="hover"
+              placement="rightTop"
+              arrow={false}
+              noPadding
+              zIndex={POPOVER_Z_INDEX}
+              content={
+                <VariableGroupPopoverContent
+                  groupId={suggestion.groupId as number}
+                  onSelect={(variable) => {
+                    addTag(variable.name, 'blue', undefined, undefined, `variable_group_variable|${suggestion.groupId}`)
+                  }}
+                />
               }
-
-              return (
-                <Fragment key={suggestion.id}>
-                  {suggestion.value === 'custom' && <Separator type="horizontal" />}
-                  <div
-                    key={suggestion.id}
-                    onClick={() => {
-                      if (tab === 'built_in' && suggestion.value === 'custom') {
-                        setOpenModal(true)
-                        setOpenSuggestions(false)
-                      } else {
-                        addTag(suggestion.value, suggestion.color, undefined, undefined, suggestion.technicalName)
-                      }
-                    }}
-                    className={cx({ suggestionItem: typeof suggestion.label === 'string' }, styles.fullWidth)}
-                  >
-                    {suggestion.label}
-                  </div>
-                </Fragment>
-              )
-            })}
-            {currentSuggestions.length === 0 && current?.emptyState ? current.emptyState : null}
-          </Flex>
-          {current?.footer && (
-            <div className={styles.createVariableButton}>
-              {typeof current.footer === 'function'
-                ? current.footer(
-                    (value, color) => {
-                      addTag(value, color, undefined, undefined, value)
-                      setOpenSuggestions(false)
-                    },
-                    savedSelection && Range.isExpanded(savedSelection)
-                      ? Editor.string(editor, savedSelection)
-                      : undefined,
-                  )
-                : current.footer}
-            </div>
+            >
+              <div className={cx(styles.groupItem, styles.fullWidth)}>{suggestion.label}</div>
+            </Popover>
           )}
-          {tab === 'variables' && (
-            <div className={styles.createVariableButton}>
-              <Button
-                fullWidth
-                size="s"
-                onClick={() => {
-                  setCreateVariableModalOpen(true)
-                  setOpenSuggestions(false)
-                }}
-              >
-                <Button.Icon icon={IconPlus} />
-                {t('list.variable.createGlobal')}
-              </Button>
-            </div>
-          )}
-        </Flex>
+          footerInsert={(value, color) => {
+            addTag(value, color, undefined, undefined, value)
+            setOpenSuggestions(false)
+          }}
+          selectedText={
+            savedSelection && Range.isExpanded(savedSelection)
+              ? Editor.string(editor, savedSelection)
+              : undefined
+          }
+          extraFooter={
+            tab === 'variables' ? (
+              <div className={styles.createVariableButton}>
+                <Button
+                  fullWidth
+                  size="s"
+                  onClick={() => {
+                    setCreateVariableModalOpen(true)
+                    setOpenSuggestions(false)
+                  }}
+                >
+                  <Button.Icon icon={IconPlus} />
+                  {t('list.variable.createGlobal')}
+                </Button>
+              </div>
+            ) : null
+          }
+        />
       </PreventDnD>
     )
   }
@@ -1094,6 +1062,81 @@ const VariableGroupPopoverContent = ({ groupId, onSelect }: VariableGroupPopover
           </Text>
         )}
       </Flex>
+    </Flex>
+  )
+}
+
+/**
+ * Le dropdown {} tout seul : mêmes onglets, mêmes lignes, mêmes pieds que dans
+ * le champ. Exporté pour qu'un autre déclencheur (un select, par exemple) puisse
+ * ouvrir EXACTEMENT ce dropdown, sans le réinventer.
+ */
+export const SuggestionsPicker = ({
+  suggestions,
+  tab,
+  onTab,
+  onPick,
+  renderGroupItem,
+  footerInsert,
+  selectedText,
+  extraFooter,
+}: {
+  suggestions: Suggestions[]
+  tab: string
+  onTab: (key: string) => void
+  onPick: (suggestion: SuggestionItem) => void
+  renderGroupItem?: (suggestion: SuggestionItem) => React.ReactNode
+  footerInsert?: (value: string, color: Color) => void
+  selectedText?: string
+  extraFooter?: React.ReactNode
+}) => {
+  const current = suggestions.find((suggestion) => suggestion.key === tab) ?? suggestions[0]
+  const currentSuggestions = current?.suggestions
+  if (!currentSuggestions) return null
+
+  return (
+    <Flex vertical className={styles.popOverContainer}>
+      {suggestions.length > 1 && (
+        <div className={styles.slateTabsContainer}>
+          <Tabs
+            className={styles.suggestionTabs}
+            activeKey={current?.key}
+            onChange={onTab}
+            type="card"
+            tabs={suggestions.map((suggestion) => ({
+              key: suggestion.key,
+              label: suggestion.name,
+            }))}
+          />
+        </div>
+      )}
+
+      <Flex gap={3} vertical className={cx(styles.suggestionList, styles.fullWidth)}>
+        {currentSuggestions.map((suggestion) =>
+          suggestion.groupId != null && renderGroupItem ? (
+            renderGroupItem(suggestion)
+          ) : (
+            <Fragment key={suggestion.id}>
+              {suggestion.value === 'custom' && <Separator type="horizontal" />}
+              <div
+                onClick={() => onPick(suggestion)}
+                className={cx({ suggestionItem: typeof suggestion.label === 'string' }, styles.fullWidth)}
+              >
+                {suggestion.label}
+              </div>
+            </Fragment>
+          ),
+        )}
+        {currentSuggestions.length === 0 && current?.emptyState ? current.emptyState : null}
+      </Flex>
+      {current?.footer && (
+        <div className={styles.createVariableButton}>
+          {typeof current.footer === 'function'
+            ? current.footer(footerInsert ?? (() => undefined), selectedText)
+            : current.footer}
+        </div>
+      )}
+      {extraFooter}
     </Flex>
   )
 }

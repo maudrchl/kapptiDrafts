@@ -166,6 +166,9 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
      entre la coche et le texte devenait énorme. */
   gap: 0;
   [class*='inputContainer'] > div {
+    padding-left: 0;
+  }
+  [class*='slateEditable'] {
     padding-left: 4px;
   }
   /* base 0 : sinon flex-wrap renvoie la valeur à la ligne avant de rétrécir */
@@ -389,14 +392,95 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
 }
 
 /* ===================== dropdown de variable (Update variable) ===================== */
-/* Champ « quelle variable j'écris » d'un Update variable : le champ Slate du
-   produit, calé sur la largeur de la commande qu'il remplace. */
-.targetField {
+/* Dropdown de ce select : deux onglets seulement, ils se partagent la largeur
+   (le picker en a trois, il tombait déjà juste). */
+.targetPop {
+  /* même largeur que le dropdown du picker, pour que les deux tombent pareil */
+  width: 260px;
+  > div {
+    width: 100%;
+    max-width: none;
+  }
+  :global(.ant-tabs-nav-list) {
+    width: 100%;
+  }
+  :global(.ant-tabs-tab) {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+}
+
+/* Modale de création : le banner touche le header et prend toute la largeur,
+   le corps reprend la gouttière juste en dessous. */
+.cvBanner {
+  > div {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    padding: 10px 24px;
+  }
+}
+/* Nom éditable dans une table : l'Input du DS ajoute sa propre gouttière, ce qui
+   décale le texte par rapport aux lignes non éditables (une globale, p. ex.). */
+.nameCellTight input {
+  padding-left: 0;
+}
+
+/* le champ Slate n'a pas de taille « l » : on le cale sur le champ Name (40px) */
+.cvValue {
+  display: block;
+  [class*='slateContainer'] {
+    min-height: 40px;
+    padding-inline: 4px;
+    font-size: 14px;
+  }
+}
+.cvBodyPad {
+  padding: 20px 24px 24px;
+}
+
+/* « Quelle variable j'écris » d'un Update variable : un select (26px, Geist 13,
+   chevron à droite), qui ouvre le dropdown {} du produit. */
+.targetSelect {
   flex: 1 1 0;
   min-width: 132px;
   max-width: 220px;
   display: flex;
   align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 6px 0 7px;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  background: $surface;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+  cursor: pointer;
+  overflow: hidden;
+  &:hover {
+    border-color: $border-focus;
+  }
+}
+/* la variable choisie : pastille teintée + nom */
+.slotPick {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.slotEmpty {
+  color: $faint;
+  font-weight: 400;
+}
+.slotCaret {
+  flex: none;
+  margin-left: auto;
+  color: $faint;
 }
 /* Tag « in-test variable définie par ce step » : le chip du récap de checks,
    avec l'icône bleu ciel à la place de la pastille de sévérité. */
