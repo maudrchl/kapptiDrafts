@@ -6,7 +6,7 @@ const meta: ProtoMeta = {
   status: 'wip design',
   collection: 'Testing',
   icon: IconBraces,
-  updatedAt: '2026-08-13',
+  updatedAt: '2026-08-17',
   description:
     'Éditeur de test v2 : le Set variable redevient autonome (nom + valeur sur le step), et le panneau Environment ne garde que l\'interface du test',
 }
