@@ -15,6 +15,7 @@ import {
   Select,
   Tabs,
   Tag,
+  Tooltip,
   IconArrowRightFromLine,
   IconBell,
   IconBot,
@@ -58,6 +59,7 @@ import {
   NATURE_TINT,
   RANDOM_VALUES,
   RESPONSE_HEADERS,
+  RESPONSE_ROWS,
   SOURCES,
   STEP_GROUPS,
   SET_LOCAL,
@@ -211,6 +213,8 @@ const VariablesProto = () => {
   /** dropdown « quelle variable mettre à jour » (Update variable) */
   const [targetOpen, setTargetOpen] = useState<string | null>(null)
   const [targetTab, setTargetTab] = useState('test')
+  /** arbre de la dernière réponse, ouvert depuis un champ « JSON attribute » */
+  const [pathOpen, setPathOpen] = useState<string | null>(null)
   const [subjOpen, setSubjOpen] = useState<string | null>(null)
   const [subjTab, setSubjTab] = useState('response')
   /**
@@ -236,6 +240,7 @@ const VariablesProto = () => {
     name: string
     source: Source
     detail: string
+    fallback?: string
   } | null>(null)
   const [ignoreError, setIgnoreError] = useState(false)
   const [skipRun, setSkipRun] = useState(false)
@@ -896,6 +901,66 @@ const VariablesProto = () => {
     </div>
   )
 
+  /**
+   * Choisir un attribut plutôt que de le taper : l'arbre de la dernière réponse,
+   * comme dans le proto `checks`. Un clic sur une feuille pose son JSONPath.
+   */
+  const jsonPicker = (key: string, onPick: (path: string) => void) => (
+    <Popover
+      trigger="click"
+      placement="bottomRight"
+      noPadding
+      arrow={false}
+      open={pathOpen === key}
+      setOpen={(o) => setPathOpen(o ? key : null)}
+      content={
+        <div className={chrome.rpBox}>
+          <div className={chrome.rpList}>
+            {RESPONSE_ROWS.map((row) =>
+              row.leaf ? (
+                <button
+                  key={row.path}
+                  type="button"
+                  className={chrome.rpRow}
+                  style={{ paddingLeft: 10 + row.depth * 14 }}
+                  title={`${row.path} = ${row.preview}`}
+                  onClick={() => {
+                    onPick(row.path)
+                    setPathOpen(null)
+                  }}
+                >
+                  <span className={chrome.rpKey}>{row.label}</span>
+                  <span className={chrome.rpVal}>{row.preview}</span>
+                </button>
+              ) : (
+                <div
+                  key={row.path}
+                  className={chrome.rpNode}
+                  style={{ paddingLeft: 10 + row.depth * 14 }}
+                >
+                  <span className={chrome.rpKey}>{row.label}</span>
+                  <span className={chrome.rpMuted}>{row.preview}</span>
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+      }
+    >
+      {/* le Popover s'accroche à un élément simple : le Tooltip va DEDANS */}
+      <span className={styles.pickWrap}>
+        <Tooltip>
+          <Tooltip.Trigger>
+            <Button color="secondary" size="s">
+              <Button.Icon icon={IconCode} />
+            </Button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Pick from the last response</Tooltip.Content>
+        </Tooltip>
+      </span>
+    </Popover>
+  )
+
   /** Créer une variable produite par CE step (c'est là que la source existe). */
   const createOutputButton = (stepId: string) => (
     <div>
@@ -1534,6 +1599,7 @@ const VariablesProto = () => {
                     name: o.name,
                     source: o.source,
                     detail: o.detail,
+                    fallback: o.fallback,
                   })
                 }
               >
@@ -1542,15 +1608,28 @@ const VariablesProto = () => {
               </button>
             )
           case 'json':
+            return (
+              <>
+                <Input
+                  size="s"
+                  mono
+                  fullWidth
+                  borderless
+                  placeholder="$.order.reference"
+                  value={o.detail}
+                  onChange={(e) => patchDefined(i, { detail: e.target.value })}
+                />
+                {jsonPicker(`${step.id}-${i}`, (path) => patchDefined(i, { detail: path }))}
+              </>
+            )
           case 'static':
           default:
             return (
               <Input
                 size="s"
-                mono
                 fullWidth
                 borderless
-                placeholder={o.source === 'json' ? '$.order.reference' : 'Value'}
+                placeholder="Value"
                 value={o.detail}
                 onChange={(e) => patchDefined(i, { detail: e.target.value })}
               />
@@ -1870,7 +1949,12 @@ const VariablesProto = () => {
       const step = steps.find((x) => x.id === o.stepId)
       if (step && step.kind !== 'set') {
         const cur = step.outputs ?? []
-        const next: StepOutput = { name, source: o.source, detail: o.detail }
+        const next: StepOutput = {
+        name,
+        source: o.source,
+        detail: o.detail,
+        ...(o.fallback !== undefined ? { fallback: o.fallback } : {}),
+      }
         const outs = isNew
           ? [...cur, next]
           : cur.map((x, j) => (j === o.index ? next : x))
@@ -1906,14 +1990,26 @@ const VariablesProto = () => {
             </div>
           )
         case 'json':
+          return (
+            <div className={styles.jsonRow}>
+              <Input
+                size="l"
+                fullWidth
+                mono
+                placeholder="$.order.reference"
+                value={o.detail}
+                onChange={(e) => setOutEdit({ ...o, detail: e.target.value })}
+              />
+              {jsonPicker('modal', (path) => setOutEdit({ ...o, detail: path }))}
+            </div>
+          )
         case 'static':
         default:
           return (
             <Input
               size="l"
               fullWidth
-              mono={o.source === 'json'}
-              placeholder={o.source === 'json' ? '$.order.reference' : 'Enter value'}
+              placeholder="Enter value"
               value={o.detail}
               onChange={(e) => setOutEdit({ ...o, detail: e.target.value })}
             />
@@ -1981,6 +2077,30 @@ const VariablesProto = () => {
               </label>
               {detailField()}
             </div>
+
+            {/* La valeur n'arrive qu'au run : un filet si la source ne rend rien. */}
+            <Checkbox
+              identifier="ov-default"
+              border={false}
+              label="Set a default value"
+              checked={o.fallback !== undefined}
+              onChange={(e) => setOutEdit({ ...o, fallback: e.target.checked ? '' : undefined })}
+            />
+            {o.fallback !== undefined && (
+              <div className={cv.cvField}>
+                <label className={cv.cvLabel} htmlFor="ov-default-value">
+                  Default value
+                </label>
+                <Input
+                  size="l"
+                  fullWidth
+                  name="ov-default-value"
+                  placeholder="Used if the source returns nothing"
+                  value={o.fallback}
+                  onChange={(e) => setOutEdit({ ...o, fallback: e.target.value })}
+                />
+              </div>
+            )}
           </div>
         </Modal.Content>
         <Modal.Footer>

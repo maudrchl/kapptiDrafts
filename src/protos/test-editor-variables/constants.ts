@@ -88,6 +88,37 @@ export const SOURCES: { value: Source; label: string }[] = [
 
 export const sourceLabel = (s: Source) => SOURCES.find((o) => o.value === s)?.label ?? s
 
+/* ---------------- dernière réponse (picker JSON attribute) ----------------
+ * De quoi choisir un attribut sans le taper : l'arbre de la dernière réponse,
+ * comme dans le proto `checks`.
+ */
+const SAMPLE_RESPONSE = {
+  access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MiJ9',
+  token_type: 'Bearer',
+  expires_in: 3600,
+  order: { reference: 'ORD-4417', total: 42.5, currency: 'EUR', status: 'paid' },
+  user: { id: 42, name: 'Ada Lovelace', email: 'ada@example.com' },
+}
+
+export type RespRow = { path: string; label: string; preview: string; depth: number; leaf: boolean }
+
+const fmt = (v: unknown): string => (typeof v === 'string' ? `"${v}"` : String(v))
+
+const buildRows = (obj: object, prefix = '$', depth = 0, out: RespRow[] = []): RespRow[] => {
+  Object.entries(obj).forEach(([k, v]) => {
+    const path = `${prefix}.${k}`
+    if (v && typeof v === 'object') {
+      out.push({ path, label: k, preview: '{ }', depth, leaf: false })
+      buildRows(v as object, path, depth + 1, out)
+    } else {
+      out.push({ path, label: k, preview: fmt(v), depth, leaf: true })
+    }
+  })
+  return out
+}
+
+export const RESPONSE_ROWS = buildRows(SAMPLE_RESPONSE)
+
 /** En-têtes proposés pour la source « Response header ». */
 export const RESPONSE_HEADERS = [
   'x-session-id',
@@ -248,7 +279,13 @@ export const RANDOM_VALUES = ['First name', 'Last name', 'City', 'Street address
  * `detail` porte ce que la source demande (chemin JSON, nom d'en-tête, script,
  * ou valeur statique).
  */
-export type StepOutput = { name: string; source: Source; detail: string }
+export type StepOutput = {
+  name: string
+  source: Source
+  detail: string
+  /** filet de sécurité : valeur retenue si la source ne rend rien */
+  fallback?: string
+}
 
 export type ApiStep = {
   id: string
