@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import { useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import {
   Banner,
   Breadcrumb,
@@ -42,16 +42,12 @@ import {
   IconStar,
   IconTrash,
   IconZap,
-} from "@kapptivate/ui-kit";
-import SlateInputTag from "../checks/slate/SlateInputTag";
-import type {
-  Color as TagColor,
-  Suggestions,
-  TagInputValue,
-} from "../checks/slate/SlateInputTag";
-import chrome from "../checks/checks.module.scss";
-import cv from "../checks/slate/input-tag.module.scss";
-import styles from "./variables.module.scss";
+} from '@kapptivate/ui-kit'
+import SlateInputTag from '../checks/slate/SlateInputTag'
+import type { Color as TagColor, Suggestions, TagInputValue } from '../checks/slate/SlateInputTag'
+import chrome from '../checks/checks.module.scss'
+import cv from '../checks/slate/input-tag.module.scss'
+import styles from './variables.module.scss'
 import {
   ACTION_GROUPS,
   GLOBALS,
@@ -68,8 +64,8 @@ import {
   groupOfAction,
   iconOfAction,
   setStepLabel,
-} from "./constants";
-import type { SetStep, Step, Target, Tint, VarNature } from "./constants";
+} from './constants'
+import type { SetStep, Step, Target, Tint, VarNature } from './constants'
 import {
   INITIAL_CONDITIONS,
   NUM_OPS,
@@ -79,8 +75,8 @@ import {
   predNeedsValue,
   predsFor,
   resetForKind,
-} from "../checks/constants";
-import type { Condition, Severity } from "../checks/constants";
+} from '../checks/constants'
+import type { Condition, Severity } from '../checks/constants'
 
 /**
  * ─────────────────────────────────────────────────────────────
@@ -106,38 +102,30 @@ import type { Condition, Severity } from "../checks/constants";
  * réutilisé tel quel depuis le proto `checks`, pour rester dans le vrai écran.
  */
 
-const toOptions = (arr: readonly string[]) =>
-  arr.map((v) => ({ label: v, value: v }));
+const toOptions = (arr: readonly string[]) => arr.map((v) => ({ label: v, value: v }))
 
 const TINT_CLASS: Record<Tint, string> = {
   orange: styles.tintOrange,
-  "light-blue": styles.tintLightBlue,
-  "dark-blue": styles.tintDarkBlue,
+  'light-blue': styles.tintLightBlue,
+  'dark-blue': styles.tintDarkBlue,
   neutral: styles.tintNeutral,
-};
+}
 
 /* Teinte d'une nature → couleur de tag dans l'input Slate du produit. */
 const TAG_COLOR: Record<Tint, TagColor> = {
-  orange: "primary",
-  "light-blue": "light-blue",
-  "dark-blue": "blue",
-  neutral: "tertiary",
-};
+  orange: 'primary',
+  'light-blue': 'light-blue',
+  'dark-blue': 'blue',
+  neutral: 'tertiary',
+}
 
 const RAIL_SECTIONS = [
   [IconMonitorCheck, IconEye, IconBell, IconGauge],
-  [
-    IconSmartphone,
-    IconMonitorSmartphone,
-    IconZap,
-    IconCheck,
-    IconHistory,
-    IconBraces,
-  ],
+  [IconSmartphone, IconMonitorSmartphone, IconZap, IconCheck, IconHistory, IconBraces],
   [IconSmartphone, IconChromium, IconBot],
-];
+]
 
-type LocalVar = { name: string; step: number };
+type LocalVar = { name: string; step: number }
 
 /**
  * Champ de valeur avec pastilles.
@@ -160,49 +148,49 @@ const VarField = ({
   borderless,
   onVariableCreated,
 }: {
-  initial: TagInputValue[];
-  onValue: (next: string) => void;
-  toText: (segs: TagInputValue[]) => string;
-  suggestions: Suggestions[];
-  placeholder: string;
-  borderless?: boolean;
-  onVariableCreated?: (v: { name: string; value: string }) => void;
+  initial: TagInputValue[]
+  onValue: (next: string) => void
+  toText: (segs: TagInputValue[]) => string
+  suggestions: Suggestions[]
+  placeholder: string
+  borderless?: boolean
+  onVariableCreated?: (v: { name: string; value: string }) => void
 }) => {
-  const [segs, setSegs] = useState<TagInputValue[]>(initial);
+  const [segs, setSegs] = useState<TagInputValue[]>(initial)
   return (
     <SlateInputTag
       fullWidth
       borderless={borderless}
       value={segs}
       onChange={(next) => {
-        const v = typeof next === "function" ? next(segs) : next;
-        setSegs(v);
-        onValue(toText(v));
+        const v = typeof next === 'function' ? next(segs) : next
+        setSegs(v)
+        onValue(toText(v))
       }}
       suggestions={suggestions}
       placeholder={placeholder}
       onVariableCreated={onVariableCreated}
     />
-  );
-};
+  )
+}
 
 const VariablesProto = () => {
-  const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS);
-  const [inputs, setInputs] = useState(INPUTS);
+  const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS)
+  const [inputs, setInputs] = useState(INPUTS)
   /** les globales s'éditent dans le panneau, et la modale du picker en crée */
-  const [globals, setGlobals] = useState(GLOBALS);
+  const [globals, setGlobals] = useState(GLOBALS)
   /** step sélectionné (null = panneau du test) */
-  const [sel, setSel] = useState<number | null>(null);
-  const [testTab, setTestTab] = useState("environment");
+  const [sel, setSel] = useState<number | null>(null)
+  const [testTab, setTestTab] = useState('environment')
   /** onglet du panneau d'un step (General / Variables / Checks / Advanced) */
-  const [stepTab, setStepTab] = useState("general");
-  const [flash, setFlash] = useState<number | null>(null);
+  const [stepTab, setStepTab] = useState('general')
+  const [flash, setFlash] = useState<number | null>(null)
   /** un seul step group déplié à la fois (null = tout replié) */
-  const [openGroup, setOpenGroup] = useState<number | null>(1);
+  const [openGroup, setOpenGroup] = useState<number | null>(1)
   /** menu d'actions : step ouvert, recherche, catégories dépliées */
-  const [actionOpen, setActionOpen] = useState<string | null>(null);
-  const [actionQuery, setActionQuery] = useState("");
-  const [openGroups, setOpenGroups] = useState<string[]>(["popular"]);
+  const [actionOpen, setActionOpen] = useState<string | null>(null)
+  const [actionQuery, setActionQuery] = useState('')
+  const [openGroups, setOpenGroups] = useState<string[]>(['popular'])
   /**
    * Checks du step, par id de step (un API Call en porte, un step de variable
    * n'en porte pas). Modèle et rendu repris du proto `checks` : ici ils servent
@@ -211,134 +199,111 @@ const VariablesProto = () => {
    */
   const [checks, setChecks] = useState<Record<string, Condition[]>>({
     s9: INITIAL_CONDITIONS,
-  });
+  })
   /** connecteur de chaque groupe (le 1er select pilote, les suivants héritent) */
-  const [failLogic, setFailLogic] = useState<"and" | "or">("and");
-  const [warnLogic, setWarnLogic] = useState<"and" | "or">("and");
+  const [failLogic, setFailLogic] = useState<'and' | 'or'>('and')
+  const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('and')
   /** dropdown « quelle variable mettre à jour » (Update variable) */
-  const [targetOpen, setTargetOpen] = useState<string | null>(null);
-  const [subjOpen, setSubjOpen] = useState<string | null>(null);
-  const [subjTab, setSubjTab] = useState("response");
+  const [targetOpen, setTargetOpen] = useState<string | null>(null)
+  const [subjOpen, setSubjOpen] = useState<string | null>(null)
+  const [subjTab, setSubjTab] = useState('response')
   /** modale « Create in-test variable » : ouverte depuis le picker, elle insère */
   const [newInput, setNewInput] = useState<{
-    insert: (value: string, color: TagColor) => void;
-    name: string;
-    value: string;
-    secret: boolean;
-  } | null>(null);
-  const [ignoreError, setIgnoreError] = useState(false);
-  const [skipRun, setSkipRun] = useState(false);
+    insert: (value: string, color: TagColor) => void
+    name: string
+    value: string
+    secret: boolean
+  } | null>(null)
+  const [ignoreError, setIgnoreError] = useState(false)
+  const [skipRun, setSkipRun] = useState(false)
 
   /** Un in-test input : renommage, valeur, ajout, suppression. */
   const patchInput = (i: number, next: Partial<(typeof INPUTS)[number]>) =>
-    setInputs((cur) => cur.map((x, j) => (j === i ? { ...x, ...next } : x)));
+    setInputs((cur) => cur.map((x, j) => (j === i ? { ...x, ...next } : x)))
   /** Une globale créée depuis la modale du picker rejoint Configurations. */
   const addGlobal = (v: { name: string; value: string }) =>
-    setGlobals((cur) =>
-      cur.some((g) => g.name === v.name) ? cur : [...cur, v],
-    );
+    setGlobals((cur) => (cur.some((g) => g.name === v.name) ? cur : [...cur, v]))
   const addInput = () =>
-    setInputs((cur) => [
-      ...cur,
-      { id: `in${cur.length + 1}-${cur.length}`, name: "", value: "" },
-    ]);
+    setInputs((cur) => [...cur, { id: `in${cur.length + 1}-${cur.length}`, name: '', value: '' }])
 
   const patchStep = (id: string, next: Partial<SetStep>) =>
     setSteps((cur) =>
-      cur.map((s) =>
-        s.id === id && s.kind === "set" ? ({ ...s, ...next } as SetStep) : s,
-      ),
-    );
-  const patchApi = (
-    id: string,
-    next: { url?: string; action?: string; outputs?: string[] },
-  ) =>
-    setSteps((cur) =>
-      cur.map((s) => (s.id === id && s.kind === "api" ? { ...s, ...next } : s)),
-    );
+      cur.map((s) => (s.id === id && s.kind === 'set' ? ({ ...s, ...next } as SetStep) : s)),
+    )
+  const patchApi = (id: string, next: { url?: string; action?: string; outputs?: string[] }) =>
+    setSteps((cur) => cur.map((s) => (s.id === id && s.kind === 'api' ? { ...s, ...next } : s)))
   const patchUi = (
     id: string,
     next: {
-      locator?: string;
-      value?: string;
-      action?: string;
-      outputs?: string[];
+      locator?: string
+      value?: string
+      action?: string
+      outputs?: string[]
     },
-  ) =>
-    setSteps((cur) =>
-      cur.map((s) => (s.id === id && s.kind === "ui" ? { ...s, ...next } : s)),
-    );
+  ) => setSteps((cur) => cur.map((s) => (s.id === id && s.kind === 'ui' ? { ...s, ...next } : s)))
 
   /**
    * Variables locales du test : celles qu'un Set variable crée (cible « new »).
    * On garde le step d'origine — c'est lui que porte le badge.
    */
   const locals = useMemo<LocalVar[]>(() => {
-    const out: LocalVar[] = [];
+    const out: LocalVar[] = []
     const push = (name: string, step: number) => {
-      if (name && !out.some((l) => l.name === name)) out.push({ name, step });
-    };
+      if (name && !out.some((l) => l.name === name)) out.push({ name, step })
+    }
     steps.forEach((s) => {
       // affectée par un step de variable…
-      if (s.kind === "set") {
-        if (s.target.kind === "local") push(s.name, s.n);
-        return;
+      if (s.kind === 'set') {
+        if (s.target.kind === 'local') push(s.name, s.n)
+        return
       }
       // …ou PRODUITE par un step qui lit la page ou une réponse
-      (s.outputs ?? []).forEach((name) => push(name, s.n));
-    });
-    return out;
-  }, [steps]);
+      ;(s.outputs ?? []).forEach((name) => push(name, s.n))
+    })
+    return out
+  }, [steps])
 
   /** Une locale n'existe qu'À PARTIR de son step : rien à proposer avant. */
-  const localsBefore = (n: number) => locals.filter((l) => l.step < n);
+  const localsBefore = (n: number) => locals.filter((l) => l.step < n)
 
   const natureOf = (name: string): VarNature =>
     globals.some((g) => g.name === name)
-      ? "global"
+      ? 'global'
       : locals.some((l) => l.name === name)
-        ? "local"
-        : "input";
+        ? 'local'
+        : 'input'
 
-  const tintOf = (name: string): Tint => NATURE_TINT[natureOf(name)];
+  const tintOf = (name: string): Tint => NATURE_TINT[natureOf(name)]
 
   /** Ce qu'un step peut citer : les in-test, les globales, et les locales déjà posées. */
-  const availableVars = (
-    n: number,
-  ): { name: string; nature: VarNature; step?: number }[] => [
-    ...inputs
-      .filter((v) => v.name)
-      .map((v) => ({ name: v.name, nature: "input" as VarNature })),
+  const availableVars = (n: number): { name: string; nature: VarNature; step?: number }[] => [
+    ...inputs.filter((v) => v.name).map((v) => ({ name: v.name, nature: 'input' as VarNature })),
     ...localsBefore(n).map((l) => ({
       name: l.name,
-      nature: "local" as VarNature,
+      nature: 'local' as VarNature,
       step: l.step,
     })),
-    ...globals.map((g) => ({ name: g.name, nature: "global" as VarNature })),
-  ];
-  const originStep = (name: string) =>
-    locals.find((l) => l.name === name)?.step;
+    ...globals.map((g) => ({ name: g.name, nature: 'global' as VarNature })),
+  ]
+  const originStep = (name: string) => locals.find((l) => l.name === name)?.step
 
   /** Va au step et le fait clignoter (depuis un badge « Step N »). */
   const gotoStep = (n: number) => {
-    setSel(n);
-    setFlash(n);
+    setSel(n)
+    setFlash(n)
     // le step visé peut être dans le groupe replié : on le déplie
-    const g = steps.find((s) => s.n === n)?.group;
-    if (g) setOpenGroup(g);
-    window.setTimeout(() => setFlash(null), 1200);
+    const g = steps.find((s) => s.n === n)?.group
+    if (g) setOpenGroup(g)
+    window.setTimeout(() => setFlash(null), 1200)
     window.requestAnimationFrame(() => {
       document
         .getElementById(`tev-step-${n}`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-  };
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+  }
 
   /* ---------------- pastille de variable ---------------- */
-  const pill = (
-    name: string,
-    opts?: { step?: number; clickable?: boolean },
-  ) => (
+  const pill = (name: string, opts?: { step?: number; clickable?: boolean }) => (
     <span className={`${styles.pill} ${TINT_CLASS[tintOf(name)]}`}>
       <IconBraces size={11} />
       <span className={styles.pillName}>{name}</span>
@@ -350,41 +315,40 @@ const VariablesProto = () => {
             type="button"
             className={styles.pillStep}
             onClick={(e) => {
-              e.stopPropagation();
-              gotoStep(opts.step as number);
+              e.stopPropagation()
+              gotoStep(opts.step as number)
             }}
           >
             Step {opts.step}
           </button>
         ))}
     </span>
-  );
+  )
 
   /* ---------------- valeur ↔ segments de l'input Slate ---------------- */
   const toSegments = (v: string): TagInputValue[] => {
-    const segs: TagInputValue[] = [];
-    const re = /\{\{([^}]+)\}\}/g;
-    let last = 0;
-    let i = 0;
-    let m: RegExpExecArray | null;
+    const segs: TagInputValue[] = []
+    const re = /\{\{([^}]+)\}\}/g
+    let last = 0
+    let i = 0
+    let m: RegExpExecArray | null
     while ((m = re.exec(v))) {
-      if (m.index > last)
-        segs.push({ type: "text", value: v.slice(last, m.index) });
-      const name = m[1];
+      if (m.index > last) segs.push({ type: 'text', value: v.slice(last, m.index) })
+      const name = m[1]
       segs.push({
-        type: "tag",
+        type: 'tag',
         value: name,
         color: TAG_COLOR[tintOf(name)],
         id: `seg${i++}`,
         technicalName: name,
-      });
-      last = m.index + m[0].length;
+      })
+      last = m.index + m[0].length
     }
-    if (last < v.length) segs.push({ type: "text", value: v.slice(last) });
-    return segs;
-  };
+    if (last < v.length) segs.push({ type: 'text', value: v.slice(last) })
+    return segs
+  }
   const fromSegments = (segs: TagInputValue[]): string =>
-    segs.map((s) => (s.type === "tag" ? `{{${s.value}}}` : s.value)).join("");
+    segs.map((s) => (s.type === 'tag' ? `{{${s.value}}}` : s.value)).join('')
 
   /** Champ de valeur avec pastilles + picker {} (composant du produit). */
   const varInput = (
@@ -403,14 +367,10 @@ const VariablesProto = () => {
         onVariableCreated={addGlobal}
       />
     </span>
-  );
+  )
 
   /* ---------------- picker {} : 3 onglets, 3 teintes ---------------- */
-  const optLabel = (
-    name: string,
-    nature: VarNature,
-    step?: number,
-  ): JSX.Element => (
+  const optLabel = (name: string, nature: VarNature, step?: number): JSX.Element => (
     <span className={styles.opt}>
       <span className={`${styles.optIcon} ${TINT_CLASS[NATURE_TINT[nature]]}`}>
         <IconBraces size={12} />
@@ -418,7 +378,7 @@ const VariablesProto = () => {
       <span className={styles.optName}>{name}</span>
       {step != null && <span className={styles.optBadge}>Step {step}</span>}
     </span>
-  );
+  )
 
   /**
    * Suggestions du picker pour le step `n`. Les locales n'apparaissent qu'ici,
@@ -435,39 +395,39 @@ const VariablesProto = () => {
    * 4e teinte au système de variables.
    */
   const globalGroup = (): Suggestions => ({
-    name: "Global",
-    key: "variables",
+    name: 'Global',
+    key: 'variables',
     suggestions: globals.map((v, i) => ({
       id: `gl${i}`,
-      label: optLabel(v.name, "global"),
-      color: TAG_COLOR["dark-blue"],
+      label: optLabel(v.name, 'global'),
+      color: TAG_COLOR['dark-blue'],
       value: v.name,
       technicalName: v.name,
     })),
-  });
+  })
 
   const randomGroup = (): Suggestions => ({
-    name: "Random",
-    key: "built_in",
-    suggestions: [...RANDOM_VALUES, "Custom"].map((label, i) => ({
+    name: 'Random',
+    key: 'built_in',
+    suggestions: [...RANDOM_VALUES, 'Custom'].map((label, i) => ({
       id: `rnd${i}`,
-      label: optLabel(label, "generated"),
+      label: optLabel(label, 'generated'),
       color: TAG_COLOR.neutral,
       // `custom` déclenche le séparateur et la modale de personnalisation du portage
-      value: label === "Custom" ? "custom" : label,
+      value: label === 'Custom' ? 'custom' : label,
       technicalName: label,
     })),
-  });
+  })
 
   const inputSuggestions = (skip?: string): Suggestions[] => [
     {
-      name: "In-test",
-      key: "test",
+      name: 'In-test',
+      key: 'test',
       suggestions: inputs
         .filter((v) => v.name && v.name !== skip)
         .map((v, i) => ({
           id: `oin${i}`,
-          label: optLabel(v.name, "input"),
+          label: optLabel(v.name, 'input'),
           color: TAG_COLOR.orange,
           value: v.name,
           technicalName: v.name,
@@ -480,10 +440,8 @@ const VariablesProto = () => {
           onClick={() =>
             setNewInput({
               insert,
-              name: /^[\w.]+$/.test(selectedText ?? "")
-                ? (selectedText as string)
-                : "",
-              value: "",
+              name: /^[\w.]+$/.test(selectedText ?? '') ? (selectedText as string) : '',
+              value: '',
               secret: false,
             })
           }
@@ -495,7 +453,7 @@ const VariablesProto = () => {
     },
     globalGroup(),
     randomGroup(),
-  ];
+  ]
 
   const suggestionsFor = (n: number): Suggestions[] => [
     {
@@ -505,22 +463,22 @@ const VariablesProto = () => {
        * une variable la question est « laquelle puis-je mettre ici », pas « de
        * quelle nature est-elle » : la teinte et le badge Step N le disent.
        */
-      name: "In-test",
-      key: "test",
+      name: 'In-test',
+      key: 'test',
       suggestions: [
         ...inputs
           .filter((v) => v.name)
           .map((v, i) => ({
             id: `in${i}`,
-            label: optLabel(v.name, "input"),
+            label: optLabel(v.name, 'input'),
             color: TAG_COLOR.orange,
             value: v.name,
             technicalName: v.name,
           })),
         ...localsBefore(n).map((l, i) => ({
           id: `loc${i}`,
-          label: optLabel(l.name, "local", l.step),
-          color: TAG_COLOR["light-blue"],
+          label: optLabel(l.name, 'local', l.step),
+          color: TAG_COLOR['light-blue'],
           value: l.name,
           technicalName: l.name,
         })),
@@ -533,10 +491,8 @@ const VariablesProto = () => {
           onClick={() =>
             setNewInput({
               insert,
-              name: /^[\w.]+$/.test(selectedText ?? "")
-                ? (selectedText as string)
-                : "",
-              value: "",
+              name: /^[\w.]+$/.test(selectedText ?? '') ? (selectedText as string) : '',
+              value: '',
               secret: false,
             })
           }
@@ -548,7 +504,7 @@ const VariablesProto = () => {
     },
     globalGroup(),
     randomGroup(),
-  ];
+  ]
 
   /* ---------------- la variable écrite ----------------
    * Deux formes, une seule grammaire de champ ({ } en boîtes grises) :
@@ -559,13 +515,10 @@ const VariablesProto = () => {
    *     teinte de la nature choisie : c'est elle qui dit où la valeur atterrit.
    */
   const nameField = (step: SetStep) => {
-    if (step.target.kind === "local") {
+    if (step.target.kind === 'local') {
       return (
-        <span
-          className={styles.targetSlot}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span className={styles.brace}>{"{"}</span>
+        <span className={styles.targetSlot} onClick={(e) => e.stopPropagation()}>
+          <span className={styles.brace}>{'{'}</span>
           <input
             className={styles.nameInput}
             placeholder="localName"
@@ -573,18 +526,15 @@ const VariablesProto = () => {
             value={step.name}
             onChange={(e) => patchStep(step.id, { name: e.target.value })}
           />
-          <span className={styles.brace}>{"}"}</span>
+          <span className={styles.brace}>{'}'}</span>
         </span>
-      );
+      )
     }
     const pick = (name: string) => {
-      patchStep(step.id, { name });
-      setTargetOpen(null);
-    };
-    const group = (
-      label: string,
-      list: { name: string; nature: VarNature }[],
-    ) =>
+      patchStep(step.id, { name })
+      setTargetOpen(null)
+    }
+    const group = (label: string, list: { name: string; nature: VarNature }[]) =>
       list.length ? (
         <div key={label}>
           <div className={styles.popGroup}>{label}</div>
@@ -592,9 +542,7 @@ const VariablesProto = () => {
             <button
               key={v.name}
               type="button"
-              className={
-                step.name === v.name ? styles.popItemOn : styles.popItem
-              }
+              className={step.name === v.name ? styles.popItemOn : styles.popItem}
               onClick={() => pick(v.name)}
             >
               {optLabel(v.name, v.nature)}
@@ -606,32 +554,29 @@ const VariablesProto = () => {
             </button>
           ))}
         </div>
-      ) : null;
+      ) : null
     /* Pas de locale ici : une locale s'écrit avec « Set local variable », et
        elle n'existe pas avant le step qui l'affecte. */
     const content = (
       <div className={styles.targetPop}>
         {group(
-          "In-test",
-          inputs
-            .filter((v) => v.name)
-            .map((v) => ({ name: v.name, nature: "input" as VarNature })),
+          'In-test',
+          inputs.filter((v) => v.name).map((v) => ({ name: v.name, nature: 'input' as VarNature })),
         )}
         {group(
-          "Global",
-          globals.map((g) => ({ name: g.name, nature: "global" as VarNature })),
+          'Global',
+          globals.map((g) => ({ name: g.name, nature: 'global' as VarNature })),
         )}
       </div>
-    );
+    )
     return (
       <span className={styles.targetSlot} onClick={(e) => e.stopPropagation()}>
-        <span className={styles.brace}>{"{"}</span>
+        {/* pas d'accolades grises ici : la pastille {} de la variable choisie dit
+            déjà de quoi il s'agit, et elle porte la teinte de sa nature. */}
         <span className={styles.slotName}>
           {step.name ? (
             <span className={styles.slotPick}>
-              <span
-                className={`${styles.optIcon} ${TINT_CLASS[tintOf(step.name)]}`}
-              >
+              <span className={`${styles.optIcon} ${TINT_CLASS[tintOf(step.name)]}`}>
                 <IconBraces size={12} />
               </span>
               {step.name}
@@ -640,7 +585,6 @@ const VariablesProto = () => {
             <span className={styles.slotEmpty}>Pick a variable</span>
           )}
         </span>
-        <span className={styles.brace}>{"}"}</span>
         <Popover
           trigger="click"
           placement="bottomLeft"
@@ -650,17 +594,13 @@ const VariablesProto = () => {
           setOpen={(o) => setTargetOpen(o ? step.id : null)}
           content={content}
         >
-          <button
-            type="button"
-            className={styles.slotChevron}
-            aria-label="Variable to update"
-          >
+          <button type="button" className={styles.slotChevron} aria-label="Variable to update">
             <IconChevronDown size={13} />
           </button>
         </Popover>
       </span>
-    );
-  };
+    )
+  }
 
   /* ---------------- valeur du step ----------------
    * Statique, et rien d'autre. Elle peut citer d'autres variables : c'est le
@@ -671,19 +611,17 @@ const VariablesProto = () => {
       step.value,
       (v) => patchStep(step.id, { value: v }),
       step.n,
-      "Type a value or insert a variable",
-    );
+      'Type a value or insert a variable',
+    )
 
   /** Ce que la variable écrite implique, dit une fois, sur le step. */
   const targetNote = (step: SetStep): ReactNode => {
-    if (step.target.kind === "local")
-      return "Available in the steps that follow this one.";
-    if (!step.name)
-      return "Pick the variable to update: an in-test input, or a global.";
-    return natureOf(step.name) === "global"
-      ? "Writes the value back to Configurations, for every test that uses this variable."
-      : "Overwrites the in-test input for the rest of this run.";
-  };
+    if (step.target.kind === 'local') return 'Available in the steps that follow this one.'
+    if (!step.name) return 'Pick the variable to update: an in-test input, or a global.'
+    return natureOf(step.name) === 'global'
+      ? 'Writes the value back to Configurations, for every test that uses this variable.'
+      : 'Overwrites the in-test input for the rest of this run.'
+  }
 
   /* ---------------- menu d'actions (popover produit) ---------------- */
   /**
@@ -696,28 +634,26 @@ const VariablesProto = () => {
     // variable doit gagner sa cible et sa valeur, pas juste un autre libellé.
     const next: Step =
       label === SET_LOCAL
-        ? step.kind === "set" && step.target.kind === "local"
+        ? step.kind === 'set' && step.target.kind === 'local'
           ? step
-          : toSetStep(step, { kind: "local" })
+          : toSetStep(step, { kind: 'local' })
         : label === UPDATE_VAR
-          ? toSetStep(step, { kind: "update" })
-          : label === "API Call"
+          ? toSetStep(step, { kind: 'update' })
+          : label === 'API Call'
             ? toApiStep(step)
-            : toUiStep(step, label);
-    setSteps((cur) => cur.map((s) => (s.id === step.id ? next : s)));
-    setActionOpen(null);
-    setActionQuery("");
-  };
+            : toUiStep(step, label)
+    setSteps((cur) => cur.map((s) => (s.id === step.id ? next : s)))
+    setActionOpen(null)
+    setActionQuery('')
+  }
 
   const actionMenu = (step: Step, current: string) => {
-    const q = actionQuery.trim().toLowerCase();
+    const q = actionQuery.trim().toLowerCase()
     const groups = ACTION_GROUPS.map((g) => ({
       ...g,
-      items: q
-        ? g.items.filter((i) => i.label.toLowerCase().includes(q))
-        : g.items,
-    })).filter((g) => g.items.length > 0);
-    const Current = iconOfAction(current);
+      items: q ? g.items.filter((i) => i.label.toLowerCase().includes(q)) : g.items,
+    })).filter((g) => g.items.length > 0)
+    const Current = iconOfAction(current)
     const content = (
       <div className={styles.actionPop}>
         {/* SearchInput du DS (dispo en 1.47) plutôt qu'un Input + icône à la main */}
@@ -751,11 +687,7 @@ const VariablesProto = () => {
                     <button
                       key={`${g.key}-${i.label}`}
                       type="button"
-                      className={
-                        i.label === current
-                          ? styles.actionItemOn
-                          : styles.actionItem
-                      }
+                      className={i.label === current ? styles.actionItemOn : styles.actionItem}
                       onClick={() => chooseAction(step, i.label)}
                     >
                       <i.icon size={14} />
@@ -768,7 +700,7 @@ const VariablesProto = () => {
           />
         </div>
       </div>
-    );
+    )
     return (
       <Popover
         trigger="click"
@@ -777,92 +709,72 @@ const VariablesProto = () => {
         arrow={false}
         open={actionOpen === step.id}
         setOpen={(o) => {
-          setActionOpen(o ? step.id : null);
+          setActionOpen(o ? step.id : null)
           if (o) {
-            setActionQuery("");
-            setOpenGroups([groupOfAction(current)]);
+            setActionQuery('')
+            setOpenGroups([groupOfAction(current)])
           }
         }}
         content={content}
       >
-        <button
-          type="button"
-          className={styles.actionBtn}
-          onClick={(e) => e.stopPropagation()}
-        >
+        <button type="button" className={styles.actionBtn} onClick={(e) => e.stopPropagation()}>
           <Current size={12} />
           <span className={styles.actionBtnLabel}>{current}</span>
           <IconChevronDown size={13} />
         </button>
       </Popover>
-    );
-  };
+    )
+  }
 
   /* ---------------- cartes de step ---------------- */
   const stepShell = (n: number, children: ReactNode) => (
     <div
       id={`tev-step-${n}`}
       className={`${sel === n ? chrome.stepBodySelected : chrome.stepBody} ${
-        flash === n ? styles.flash : ""
+        flash === n ? styles.flash : ''
       }`}
       onClick={(e) => {
-        e.stopPropagation();
-        setSel((cur) => (cur === n ? null : n));
+        e.stopPropagation()
+        setSel((cur) => (cur === n ? null : n))
       }}
     >
-      <div className={`${chrome.stepCard} ${styles.stepCardPad}`}>
-        {children}
-      </div>
+      <div className={`${chrome.stepCard} ${styles.stepCardPad}`}>{children}</div>
     </div>
-  );
+  )
 
-  const apiCard = (step: Step & { kind: "api" }) =>
+  const apiCard = (step: Step & { kind: 'api' }) =>
     stepShell(
       step.n,
       <>
         <div className={chrome.stepTop}>
-          <span
-            className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}
-          >
-            {step.n}
-          </span>
+          <span className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}>{step.n}</span>
           {actionMenu(step, step.action)}
           <Select
             size="s"
             width="110px"
-            options={toOptions(["GET", "POST", "PUT", "DELETE"])}
+            options={toOptions(['GET', 'POST', 'PUT', 'DELETE'])}
             value={step.method}
           />
         </div>
         {/* l'URL est sur sa propre ligne, sous l'action et la méthode */}
         <div className={styles.urlRow}>
-          {varInput(
-            step.url,
-            (v) => patchApi(step.id, { url: v }),
-            step.n,
-            "URL",
-          )}
+          {varInput(step.url, (v) => patchApi(step.id, { url: v }), step.n, 'URL')}
         </div>
-        {outputChips(step)}
-        {checksSummary(step)}
+        {cardChips(step)}
       </>,
-    );
+    )
 
   /**
    * Step d'interface. L'élément visé prend toute la largeur de la ligne, avec
    * la coche de résolution et le picker {} (comme dans l'éditeur), et la valeur
    * passe sur sa propre ligne quand l'action en prend une.
    */
-  const uiCard = (step: Step & { kind: "ui" }) =>
+  const uiCard = (step: Step & { kind: 'ui' }) =>
     stepShell(
       step.n,
       <>
         <div className={`${chrome.stepTop} ${styles.setRow}`}>
-          <span
-            className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}
-          >
-            {step.n}
-          </span>
+          <span className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}>{step.n}</span>
           {actionMenu(step, step.action)}
           <span className={styles.elBox}>
             <span className={styles.elCheck}>
@@ -880,45 +792,34 @@ const VariablesProto = () => {
           {/* la valeur reste sur la ligne, à côté de l'élément */}
           {step.value !== undefined && (
             <span className={styles.valBox}>
-              {varInput(
-                step.value,
-                (v) => patchUi(step.id, { value: v }),
-                step.n,
-                "Value",
-              )}
+              {varInput(step.value, (v) => patchUi(step.id, { value: v }), step.n, 'Value')}
             </span>
           )}
         </div>
-        {outputChips(step)}
+        {cardChips(step)}
       </>,
-    );
+    )
 
   const setCard = (step: SetStep) => {
-    const label = setStepLabel(step.target);
+    const label = setStepLabel(step.target)
     // Une seule ligne : l'action, le nom de la variable, sa valeur statique.
     return stepShell(
       step.n,
       <>
         <div className={`${chrome.stepTop} ${styles.setRow}`}>
-          <span
-            className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}
-          >
-            {step.n}
-          </span>
+          <span className={sel === step.n ? chrome.stepNumActive : chrome.stepNum}>{step.n}</span>
           {actionMenu(step, label)}
           {nameField(step)}
           <span className={styles.valBox}>{setValueField(step)}</span>
         </div>
       </>,
-    );
-  };
+    )
+  }
 
   /* ---------------- panneau : Environment ---------------- */
   /** Step qui met à jour cette globale (l'affectation reste sur le step). */
   const writerStep = (name: string) =>
-    steps.find(
-      (s) => s.kind === "set" && s.target.kind === "update" && s.name === name,
-    )?.n;
+    steps.find((s) => s.kind === 'set' && s.target.kind === 'update' && s.name === name)?.n
 
   /**
    * Mêmes tables que la tab Variables du proto `checks` (outTable / outHeadRow /
@@ -929,9 +830,7 @@ const VariablesProto = () => {
       <div className={chrome.varsSection}>
         <div className={chrome.outTable}>
           <div className={chrome.outHeadRow}>
-            <div className={chrome.outHeadCell}>
-              In-test inputs ({inputs.length})
-            </div>
+            <div className={chrome.outHeadCell}>In-test inputs ({inputs.length})</div>
             <div className={chrome.outHeadCell}>Values</div>
           </div>
           {inputs.map((v, i) => (
@@ -949,9 +848,7 @@ const VariablesProto = () => {
                   onChange={(e) => patchInput(i, { name: e.target.value })}
                 />
               </div>
-              <div
-                className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}
-              >
+              <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
                 {/* une valeur peut composer avec d'autres variables : {{URL}}/checkout */}
                 {v.secret ? (
                   <Input
@@ -988,23 +885,16 @@ const VariablesProto = () => {
       </div>
 
       <div className={chrome.outTable}>
-        <div className={chrome.gvHeadRow}>
-          Global variables ({globals.length})
-        </div>
+        <div className={chrome.gvHeadRow}>Global variables ({globals.length})</div>
         {globals.map((g, i) => {
-          const n = writerStep(g.name);
+          const n = writerStep(g.name)
           return (
-            <div
-              key={g.name}
-              className={`${chrome.outDataRow} ${styles.varRow}`}
-            >
+            <div key={g.name} className={`${chrome.outDataRow} ${styles.varRow}`}>
               <div className={chrome.outNameCell}>
                 <Tag color="dark-blue" size="sm" icon={IconBraces} />
                 <span className={chrome.outName}>{g.name}</span>
               </div>
-              <div
-                className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}
-              >
+              <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
                 <Input
                   size="s"
                   mono
@@ -1014,28 +904,22 @@ const VariablesProto = () => {
                   value={g.value}
                   onChange={(e) =>
                     setGlobals((cur) =>
-                      cur.map((x, j) =>
-                        j === i ? { ...x, value: e.target.value } : x,
-                      ),
+                      cur.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)),
                     )
                   }
                 />
                 {n != null && (
-                  <button
-                    type="button"
-                    className={styles.envLink}
-                    onClick={() => gotoStep(n)}
-                  >
+                  <button type="button" className={styles.envLink} onClick={() => gotoStep(n)}>
                     Updated at step {n}
                   </button>
                 )}
               </div>
             </div>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 
   /* ---------------- panneau : Checks ----------------
    * Porté du proto `checks` (même modèle de Condition, mêmes groupes Success
@@ -1046,26 +930,20 @@ const VariablesProto = () => {
    * Seul un step qui produit une réponse porte des checks (API Call) : un step
    * de variable n'a rien à vérifier.
    */
-  const hasChecks = (step: Step) => step.kind === "api";
+  const hasChecks = (step: Step) => step.kind === 'api'
 
-  const condsOf = (id: string) => checks[id] ?? [];
+  const condsOf = (id: string) => checks[id] ?? []
 
-  const patchCond = (
-    stepId: string,
-    condId: string,
-    next: Partial<Condition>,
-  ) =>
+  const patchCond = (stepId: string, condId: string, next: Partial<Condition>) =>
     setChecks((cur) => ({
       ...cur,
-      [stepId]: condsOf(stepId).map((c) =>
-        c.id === condId ? { ...c, ...next } : c,
-      ),
-    }));
+      [stepId]: condsOf(stepId).map((c) => (c.id === condId ? { ...c, ...next } : c)),
+    }))
 
   const addCond = (stepId: string, sev: Severity) =>
     setChecks((cur) => {
-      const list = cur[stepId] ?? [];
-      const id = `c${stepId}-${list.length + 1}-${sev}`;
+      const list = cur[stepId] ?? []
+      const id = `c${stepId}-${list.length + 1}-${sev}`
       return {
         ...cur,
         [stepId]: [
@@ -1073,25 +951,25 @@ const VariablesProto = () => {
           {
             id,
             sev,
-            ...(resetForKind("Status code") as Omit<Condition, "id" | "sev">),
+            ...(resetForKind('Status code') as Omit<Condition, 'id' | 'sev'>),
           },
         ],
-      };
-    });
+      }
+    })
 
   const removeCond = (stepId: string, condId: string) =>
     setChecks((cur) => ({
       ...cur,
       [stepId]: condsOf(stepId).filter((c) => c.id !== condId),
-    }));
+    }))
 
   /** Sujet du check : la réponse, ou une variable disponible à ce step. */
   const subjectPicker = (step: Step, c: Condition) => {
-    const isVar = c.subj.startsWith("{{");
+    const isVar = c.subj.startsWith('{{')
     const pick = (subj: string) => {
-      patchCond(step.id, c.id, resetForKind(subj));
-      setSubjOpen(null);
-    };
+      patchCond(step.id, c.id, resetForKind(subj))
+      setSubjOpen(null)
+    }
     const content = (
       <div className={chrome.subjPop}>
         <Tabs
@@ -1100,8 +978,8 @@ const VariablesProto = () => {
           onChange={setSubjTab}
           tabs={[
             {
-              key: "response",
-              label: "Response",
+              key: 'response',
+              label: 'Response',
               children: (
                 <div className={chrome.subjList}>
                   {SUBJECTS.map((sj) => (
@@ -1117,8 +995,8 @@ const VariablesProto = () => {
               ),
             },
             {
-              key: "variables",
-              label: "Variables",
+              key: 'variables',
+              label: 'Variables',
               children: (
                 <div className={chrome.subjList}>
                   {availableVars(step.n).map((v) => (
@@ -1136,8 +1014,8 @@ const VariablesProto = () => {
           ]}
         />
       </div>
-    );
-    const name = c.subj.replace(/^\{\{|\}\}$/g, "");
+    )
+    const name = c.subj.replace(/^\{\{|\}\}$/g, '')
     return (
       <Popover
         trigger="click"
@@ -1146,18 +1024,14 @@ const VariablesProto = () => {
         arrow={false}
         open={subjOpen === c.id}
         setOpen={(o) => {
-          setSubjOpen(o ? c.id : null);
-          if (o) setSubjTab(isVar ? "variables" : "response");
+          setSubjOpen(o ? c.id : null)
+          if (o) setSubjTab(isVar ? 'variables' : 'response')
         }}
         content={content}
       >
         <button
           type="button"
-          className={
-            isVar
-              ? `${chrome.subjTrigger} ${chrome.subjTriggerTag}`
-              : chrome.subjTrigger
-          }
+          className={isVar ? `${chrome.subjTrigger} ${chrome.subjTriggerTag}` : chrome.subjTrigger}
         >
           {isVar ? (
             /* même pastille que dans les champs : la teinte dit la nature */
@@ -1166,7 +1040,7 @@ const VariablesProto = () => {
                 <IconBraces size={12} />
               </span>
               {name}
-              {natureOf(name) === "local" && originStep(name) != null && (
+              {natureOf(name) === 'local' && originStep(name) != null && (
                 <span className={styles.optBadge}>Step {originStep(name)}</span>
               )}
             </span>
@@ -1176,26 +1050,26 @@ const VariablesProto = () => {
           <IconChevronDown size={14} />
         </button>
       </Popover>
-    );
-  };
+    )
+  }
 
   /** Valeur d'un check : le champ à pastilles, avec le picker du step. */
   const condValue = (step: Step, c: Condition) => (
     <div className={chrome.valCell}>
       <VarField
         borderless
-        initial={toSegments(c.val ?? "")}
+        initial={toSegments(c.val ?? '')}
         onValue={(v) => patchCond(step.id, c.id, { val: v })}
         toText={fromSegments}
         suggestions={suggestionsFor(step.n)}
         placeholder="Value"
       />
     </div>
-  );
+  )
 
   /** Opérateur + valeur, selon la famille du sujet (comme dans `checks`). */
   const condTail = (step: Step, c: Condition) => {
-    if (c.kind === "num" || c.kind === "time") {
+    if (c.kind === 'num' || c.kind === 'time') {
       return (
         <>
           <Select
@@ -1203,61 +1077,55 @@ const VariablesProto = () => {
             borderless
             popupClassName={chrome.selPopup}
             options={toOptions(NUM_OPS)}
-            value={c.op ?? "="}
-            onChange={(v: unknown) =>
-              patchCond(step.id, c.id, { op: String(v) })
-            }
+            value={c.op ?? '='}
+            onChange={(v: unknown) => patchCond(step.id, c.id, { op: String(v) })}
           />
           {condValue(step, c)}
-          {c.kind === "time" && (
+          {c.kind === 'time' && (
             <Select
               size="s"
               borderless
               popupClassName={chrome.selPopup}
               options={toOptions(UNITS)}
-              value={c.unit ?? "seconds"}
-              onChange={(v: unknown) =>
-                patchCond(step.id, c.id, { unit: String(v) })
-              }
+              value={c.unit ?? 'seconds'}
+              onChange={(v: unknown) => patchCond(step.id, c.id, { unit: String(v) })}
             />
           )}
         </>
-      );
+      )
     }
-    const preds = predsFor(c.kind);
-    const withValue = predNeedsValue(c.pred);
+    const preds = predsFor(c.kind)
+    const withValue = predNeedsValue(c.pred)
     return (
       <>
         <Select
           size="s"
           borderless
           popupClassName={chrome.selPopup}
-          {...(withValue || c.kind === "header" ? {} : { fullWidth: true })}
+          {...(withValue || c.kind === 'header' ? {} : { fullWidth: true })}
           options={toOptions(preds)}
           value={c.pred ?? preds[0]}
           onChange={(v: unknown) =>
             patchCond(step.id, c.id, {
               pred: String(v),
-              val: predNeedsValue(String(v)) ? (c.val ?? "") : null,
+              val: predNeedsValue(String(v)) ? (c.val ?? '') : null,
             })
           }
         />
-        {c.kind === "header" && (
+        {c.kind === 'header' && (
           <Input
             size="s"
             borderless
             width="118px"
             placeholder="Header name"
-            value={c.headerName ?? ""}
-            onChange={(e) =>
-              patchCond(step.id, c.id, { headerName: e.target.value })
-            }
+            value={c.headerName ?? ''}
+            onChange={(e) => patchCond(step.id, c.id, { headerName: e.target.value })}
           />
         )}
         {withValue && condValue(step, c)}
       </>
-    );
-  };
+    )
+  }
 
   /**
    * Un groupe = une expression and/or, la conséquence est portée par le groupe.
@@ -1267,15 +1135,13 @@ const VariablesProto = () => {
     step: Step,
     c: Condition,
     i: number,
-    logic: "and" | "or",
-    setLogic: (v: "and" | "or") => void,
+    logic: 'and' | 'or',
+    setLogic: (v: 'and' | 'or') => void,
     sev: Severity,
   ) => (
     <div key={c.id} className={chrome.cond}>
       {i === 0 ? (
-        <span className={chrome.checkIf}>
-          {sev === "fail" ? "Passes if" : "Warns if"}
-        </span>
+        <span className={chrome.checkIf}>{sev === 'fail' ? 'Passes if' : 'Warns if'}</span>
       ) : (
         <Select
           size="s"
@@ -1284,9 +1150,9 @@ const VariablesProto = () => {
           width="56px"
           minWidth="0"
           disabled={i > 1}
-          options={toOptions(["and", "or"])}
+          options={toOptions(['and', 'or'])}
           value={logic}
-          onChange={(v: unknown) => setLogic(String(v) as "and" | "or")}
+          onChange={(v: unknown) => setLogic(String(v) as 'and' | 'or')}
         />
       )}
       <span className={chrome.exprWrap}>
@@ -1304,29 +1170,23 @@ const VariablesProto = () => {
         <IconTrash size={12} />
       </button>
     </div>
-  );
+  )
 
   const checksGroup = (step: Step, sev: Severity) => {
-    const list = condsOf(step.id).filter((c) => c.sev === sev);
-    const logic = sev === "fail" ? failLogic : warnLogic;
-    const setLogic = sev === "fail" ? setFailLogic : setWarnLogic;
+    const list = condsOf(step.id).filter((c) => c.sev === sev)
+    const logic = sev === 'fail' ? failLogic : warnLogic
+    const setLogic = sev === 'fail' ? setFailLogic : setWarnLogic
     return (
       <div className={chrome.grp}>
         <div className={chrome.grpHead}>
-          <span
-            className={
-              sev === "fail" ? chrome.grpBadgeFail : chrome.grpBadgeWarn
-            }
-          >
-            <span
-              className={sev === "fail" ? chrome.dotFail : chrome.dotWarn}
-            />
-            {sev === "fail" ? "Success conditions" : "Warnings"}
+          <span className={sev === 'fail' ? chrome.grpBadgeFail : chrome.grpBadgeWarn}>
+            <span className={sev === 'fail' ? chrome.dotFail : chrome.dotWarn} />
+            {sev === 'fail' ? 'Success conditions' : 'Warnings'}
           </span>
           <span className={chrome.grpNote}>
-            {sev === "fail"
-              ? "the step passes when these are met"
-              : "the step still passes, but flags a warning when these happen"}
+            {sev === 'fail'
+              ? 'the step passes when these are met'
+              : 'the step still passes, but flags a warning when these happen'}
           </span>
         </div>
         <div className={chrome.condList}>
@@ -1334,31 +1194,27 @@ const VariablesProto = () => {
             list.map((c, i) => condRow(step, c, i, logic, setLogic, sev))
           ) : (
             <div className={chrome.grpEmpty}>
-              {sev === "fail" ? "No success conditions" : "No warnings"}
+              {sev === 'fail' ? 'No success conditions' : 'No warnings'}
             </div>
           )}
         </div>
         <div className={chrome.grpAdd}>
-          <Button
-            color="secondary"
-            size="s"
-            onClick={() => addCond(step.id, sev)}
-          >
+          <Button color="secondary" size="s" onClick={() => addCond(step.id, sev)}>
             <Button.Icon icon={IconPlus} />
-            {sev === "fail" ? "Add condition" : "Add warning"}
+            {sev === 'fail' ? 'Add condition' : 'Add warning'}
           </Button>
         </div>
       </div>
-    );
-  };
+    )
+  }
 
   const stepChecksTab = (step: Step) => (
     <div className={chrome.checksBody}>
-      {checksGroup(step, "fail")}
+      {checksGroup(step, 'fail')}
       <div className={chrome.grpDivider} />
-      {checksGroup(step, "warn")}
+      {checksGroup(step, 'warn')}
     </div>
-  );
+  )
 
   /**
    * Variables PRODUITES par le step, sur la carte : même chip que le récap de
@@ -1366,10 +1222,9 @@ const VariablesProto = () => {
    * elles suivent la teinte des locales). Le clic ouvre l'onglet Variables.
    */
   const outputChips = (step: Step) => {
-    const outs = step.kind === "set" ? [] : (step.outputs ?? []);
-    if (!outs.length) return null;
+    const outs = step.kind === 'set' ? [] : (step.outputs ?? [])
     return (
-      <div className={chrome.fmBar}>
+      <>
         {outs.map((name) => (
           <button
             key={name}
@@ -1377,9 +1232,9 @@ const VariablesProto = () => {
             className={`${chrome.chip} ${styles.outChip}`}
             title="Variable produced by this step"
             onClick={(e) => {
-              e.stopPropagation();
-              setSel(step.n);
-              setStepTab("variables");
+              e.stopPropagation()
+              setSel(step.n)
+              setStepTab('variables')
             }}
           >
             <span className={`${styles.optIcon} ${styles.tintLightBlue}`}>
@@ -1388,75 +1243,86 @@ const VariablesProto = () => {
             {name}
           </button>
         ))}
-      </div>
-    );
-  };
+      </>
+    )
+  }
 
   /** Récap des checks sur la carte : une ligne de chips, le clic ouvre l'onglet. */
-  const checksSummary = (step: Step) => {
-    const list = condsOf(step.id);
-    if (!list.length) return null;
+  const checksChips = (step: Step) => {
+    const list = condsOf(step.id)
+    return (
+      <>
+        {[...list.filter((c) => c.sev === 'fail'), ...list.filter((c) => c.sev === 'warn')].map(
+          (c) => (
+            <button
+              key={c.id}
+              type="button"
+              className={chrome.chip}
+              title="Edit checks"
+              onClick={(e) => {
+                e.stopPropagation()
+                setSel(step.n)
+                setStepTab('checks')
+              }}
+            >
+              <span className={c.sev === 'warn' ? chrome.dotWarn : chrome.dotFail} />
+              {conditionText(c)}
+            </button>
+          ),
+        )}
+      </>
+    )
+  }
+
+  /**
+   * Un seul bandeau sous le formulaire du step : ce que le step PRODUIT d'abord,
+   * puis ce qu'il VÉRIFIE. Même ligne, mêmes chips.
+   */
+  const cardChips = (step: Step) => {
+    const outs = step.kind === 'set' ? [] : (step.outputs ?? [])
+    if (!outs.length && !condsOf(step.id).length) return null
     return (
       <div className={chrome.fmBar}>
-        {[
-          ...list.filter((c) => c.sev === "fail"),
-          ...list.filter((c) => c.sev === "warn"),
-        ].map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            className={chrome.chip}
-            title="Edit checks"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSel(step.n);
-              setStepTab("checks");
-            }}
-          >
-            <span
-              className={c.sev === "warn" ? chrome.dotWarn : chrome.dotFail}
-            />
-            {conditionText(c)}
-          </button>
-        ))}
+        {outputChips(step)}
+        {checksChips(step)}
       </div>
-    );
-  };
+    )
+  }
 
   /* ---------------- panneau : step sélectionné ---------------- */
   const stepPanel = (n: number) => {
-    const step = steps.find((s) => s.n === n);
-    if (!step) return null;
+    const step = steps.find((s) => s.n === n)
+    if (!step) return null
     const title =
-      step.kind === "set"
+      step.kind === 'set'
         ? setStepLabel(step.target)
-        : step.kind === "api"
+        : step.kind === 'api'
           ? `${step.action} · ${step.method}`
-          : step.action;
+          : step.action
     /**
      * Un step de variable n'a pas d'onglet Variables : ce qu'il affecte est déjà
      * tout l'objet du step, et General le porte.
      */
     const tabs = [
-      { key: "general", label: "General", children: stepGeneralTab(step) },
-      ...(step.kind === "set"
+      { key: 'general', label: 'General', children: stepGeneralTab(step) },
+      ...(step.kind === 'set'
         ? []
         : [
             {
-              key: "variables",
-              label: "Variables",
+              key: 'variables',
+              label: 'Variables',
               children: stepVariablesTab(step),
             },
           ]),
       ...(hasChecks(step)
-        ? [{ key: "checks", label: "Checks", children: stepChecksTab(step) }]
+        ? [{ key: 'checks', label: 'Checks', children: stepChecksTab(step) }]
         : []),
       {
-        key: "advanced",
-        label: "Advanced settings",
+        key: 'advanced',
+        label: 'Advanced settings',
         children: stepAdvancedTab(),
       },
-    ];
+    ]
     return (
       <>
         <div className={chrome.panelHeader}>
@@ -1471,13 +1337,13 @@ const VariablesProto = () => {
         <Tabs
           className={chrome.panelTabs}
           type="card"
-          activeKey={tabs.some((t) => t.key === stepTab) ? stepTab : "general"}
+          activeKey={tabs.some((t) => t.key === stepTab) ? stepTab : 'general'}
           onChange={setStepTab}
           tabs={tabs}
         />
       </>
-    );
-  };
+    )
+  }
 
   /**
    * General : un step de variable se règle ENTIÈREMENT sur sa ligne (le nom, la
@@ -1487,7 +1353,7 @@ const VariablesProto = () => {
    */
   const stepGeneralTab = (step: Step) => (
     <>
-      {step.kind === "set" && (
+      {step.kind === 'set' && (
         <div className={styles.defBlock}>
           {/* `invisible` = le gris neutre du DS, `secondary` tire sur le vert. */}
           <div className={styles.noteBanner}>
@@ -1499,7 +1365,7 @@ const VariablesProto = () => {
       )}
       {/* pas de capture de référence pour un step de variable : il ne touche
           pas la page, il n'y a rien à montrer. */}
-      {step.kind !== "set" && (
+      {step.kind !== 'set' && (
         <div className={styles.refBlock}>
           <div className={styles.refLabel}>Reference screenshot</div>
           {/* EmptyState du DS */}
@@ -1509,7 +1375,7 @@ const VariablesProto = () => {
         </div>
       )}
     </>
-  );
+  )
 
   /**
    * Variables : ce que le step affecte, en lecture. C'est la réponse à
@@ -1519,18 +1385,17 @@ const VariablesProto = () => {
   /** Variables citées par un step, dans l'ordre d'apparition. */
   const usedVars = (step: Step): string[] => {
     const texts =
-      step.kind === "ui"
-        ? [step.locator, step.value ?? ""]
-        : step.kind === "api"
+      step.kind === 'ui'
+        ? [step.locator, step.value ?? '']
+        : step.kind === 'api'
           ? [step.url]
-          : [step.value];
-    const out: string[] = [];
+          : [step.value]
+    const out: string[] = []
     texts.forEach((t) => {
-      for (const m of t.matchAll(/\{\{([^}]+)\}\}/g))
-        if (!out.includes(m[1])) out.push(m[1]);
-    });
-    return out;
-  };
+      for (const m of t.matchAll(/\{\{([^}]+)\}\}/g)) if (!out.includes(m[1])) out.push(m[1])
+    })
+    return out
+  }
 
   /**
    * Variables : ce dont CE step dépend, et d'où ça vient. Même table que le
@@ -1542,20 +1407,18 @@ const VariablesProto = () => {
    * s'écrit pas : elle sort du run.
    */
   const outputsSection = (step: Step) => {
-    const outs = step.kind === "set" ? [] : (step.outputs ?? []);
-    if (!outs.length) return null;
+    const outs = step.kind === 'set' ? [] : (step.outputs ?? [])
+    if (!outs.length) return null
     const setOut = (i: number, name: string) => {
-      const next = outs.map((o, j) => (j === i ? name : o));
-      if (step.kind === "api") patchApi(step.id, { outputs: next });
-      else patchUi(step.id, { outputs: next });
-    };
+      const next = outs.map((o, j) => (j === i ? name : o))
+      if (step.kind === 'api') patchApi(step.id, { outputs: next })
+      else patchUi(step.id, { outputs: next })
+    }
     return (
       <div className={chrome.varsSection}>
         <div className={chrome.outTable}>
           <div className={chrome.outHeadRow}>
-            <div className={chrome.outHeadCell}>
-              Output variables ({outs.length})
-            </div>
+            <div className={chrome.outHeadCell}>Output variables ({outs.length})</div>
             <div className={chrome.outHeadCell}>Last values</div>
           </div>
           {outs.map((name, i) => (
@@ -1575,26 +1438,20 @@ const VariablesProto = () => {
                 />
               </div>
               <div className={`${chrome.outValCell} ${styles.valCell}`}>
-                <span className={styles.sumEmpty}>
-                  Produced when this step runs
-                </span>
+                <span className={styles.sumEmpty}>Produced when this step runs</span>
               </div>
             </div>
           ))}
         </div>
       </div>
-    );
-  };
+    )
+  }
 
   const stepVariablesTab = (step: Step) => {
-    const used = usedVars(step);
-    const outs = step.kind === "set" ? [] : (step.outputs ?? []);
+    const used = usedVars(step)
+    const outs = step.kind === 'set' ? [] : (step.outputs ?? [])
     if (!used.length && !outs.length) {
-      return (
-        <div className={chrome.tabPlaceholder}>
-          This step does not use a variable
-        </div>
-      );
+      return <div className={chrome.tabPlaceholder}>This step does not use a variable</div>
     }
     return (
       <div className={chrome.varsPane}>
@@ -1602,46 +1459,35 @@ const VariablesProto = () => {
         {used.length > 0 && (
           <div className={chrome.outTable}>
             <div className={chrome.outHeadRow}>
-              <div className={chrome.outHeadCell}>
-                Variables used ({used.length})
-              </div>
+              <div className={chrome.outHeadCell}>Variables used ({used.length})</div>
               <div className={chrome.outHeadCell}>Values</div>
             </div>
             {used.map((name) => {
-              const nature = natureOf(name);
-              const inputIndex = inputs.findIndex((v) => v.name === name);
-              const globalIndex = globals.findIndex((g) => g.name === name);
-              const from = originStep(name);
+              const nature = natureOf(name)
+              const inputIndex = inputs.findIndex((v) => v.name === name)
+              const globalIndex = globals.findIndex((g) => g.name === name)
+              const from = originStep(name)
               return (
-                <div
-                  key={name}
-                  className={`${chrome.outDataRow} ${styles.varRow}`}
-                >
+                <div key={name} className={`${chrome.outDataRow} ${styles.varRow}`}>
                   <div className={chrome.outNameCell}>
                     <Tag
                       color={
-                        nature === "input"
-                          ? "orange"
-                          : nature === "global"
-                            ? "dark-blue"
-                            : "blue"
+                        nature === 'input' ? 'orange' : nature === 'global' ? 'dark-blue' : 'blue'
                       }
                       size="sm"
                       icon={IconBraces}
                     />
                     <span className={chrome.outName}>{name}</span>
                   </div>
-                  <div
-                    className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}
-                  >
-                    {nature === "local" ? (
+                  <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
+                    {nature === 'local' ? (
                       /* une locale n'a pas de valeur ici : elle vient de son step */
                       <button
                         type="button"
                         className={styles.envLink}
                         onClick={() => from != null && gotoStep(from)}
                       >
-                        <IconBraces size={11} /> Set at step {from ?? "?"}
+                        <IconBraces size={11} /> Set at step {from ?? '?'}
                       </button>
                     ) : inputIndex >= 0 ? (
                       <Input
@@ -1649,11 +1495,9 @@ const VariablesProto = () => {
                         mono
                         fullWidth
                         borderless
-                        type={inputs[inputIndex].secret ? "password" : "text"}
+                        type={inputs[inputIndex].secret ? 'password' : 'text'}
                         value={inputs[inputIndex].value}
-                        onChange={(e) =>
-                          patchInput(inputIndex, { value: e.target.value })
-                        }
+                        onChange={(e) => patchInput(inputIndex, { value: e.target.value })}
                       />
                     ) : globalIndex >= 0 ? (
                       <Input
@@ -1665,27 +1509,23 @@ const VariablesProto = () => {
                         onChange={(e) =>
                           setGlobals((cur) =>
                             cur.map((x, j) =>
-                              j === globalIndex
-                                ? { ...x, value: e.target.value }
-                                : x,
+                              j === globalIndex ? { ...x, value: e.target.value } : x,
                             ),
                           )
                         }
                       />
                     ) : (
-                      <span className={styles.sumEmpty}>
-                        Generated when the run starts
-                      </span>
+                      <span className={styles.sumEmpty}>Generated when the run starts</span>
                     )}
                   </div>
                 </div>
-              );
+              )
             })}
           </div>
         )}
       </div>
-    );
-  };
+    )
+  }
 
   const stepAdvancedTab = () => (
     <div className={styles.stepPane}>
@@ -1707,7 +1547,7 @@ const VariablesProto = () => {
         />
       </div>
     </div>
-  );
+  )
 
   /**
    * Création d'une in-test depuis le picker : jumelle de la modale des globales
@@ -1715,11 +1555,11 @@ const VariablesProto = () => {
    * les surcharges et le CSV se jouent à la confirmation du run.
    */
   const createInputModal = () => {
-    if (!newInput) return null;
-    const close = () => setNewInput(null);
+    if (!newInput) return null
+    const close = () => setNewInput(null)
     const create = () => {
-      const name = newInput.name.trim();
-      if (!name) return;
+      const name = newInput.name.trim()
+      if (!name) return
       setInputs((curr) => [
         ...curr,
         {
@@ -1728,19 +1568,17 @@ const VariablesProto = () => {
           value: newInput.value,
           secret: newInput.secret,
         },
-      ]);
-      newInput.insert(name, TAG_COLOR.orange);
-      close();
-    };
+      ])
+      newInput.insert(name, TAG_COLOR.orange)
+      close()
+    }
     return (
       <Modal open width={620} title="Create in-test variable" onCancel={close}>
         <Modal.Content>
           <div className={cv.cvBody}>
             <div className={styles.noteBanner}>
               <Banner variant="invisible">
-                <Banner.Description>
-                  Available in this test only.
-                </Banner.Description>
+                <Banner.Description>Available in this test only.</Banner.Description>
               </Banner>
             </div>
             <div className={cv.cvField}>
@@ -1748,7 +1586,7 @@ const VariablesProto = () => {
                 Name
               </label>
               <span className={cv.cvName}>
-                <span className={cv.cvBrace}>{"{"}</span>
+                <span className={cv.cvBrace}>{'{'}</span>
                 <input
                   id="ci-name"
                   className={cv.cvNameInput}
@@ -1758,15 +1596,13 @@ const VariablesProto = () => {
                   onChange={(e) =>
                     setNewInput({
                       ...newInput,
-                      name: e.target.value.replace(/\s/g, ""),
+                      name: e.target.value.replace(/\s/g, ''),
                     })
                   }
                 />
-                <span className={cv.cvBrace}>{"}"}</span>
+                <span className={cv.cvBrace}>{'}'}</span>
               </span>
-              <span className={cv.cvHint}>
-                No spaces or other special characters allowed.
-              </span>
+              <span className={cv.cvHint}>No spaces or other special characters allowed.</span>
             </div>
             <div className={cv.cvField}>
               <label className={cv.cvLabel} htmlFor="ci-value">
@@ -1777,11 +1613,9 @@ const VariablesProto = () => {
                 fullWidth
                 name="ci-value"
                 placeholder="Enter value"
-                type={newInput.secret ? "password" : "text"}
+                type={newInput.secret ? 'password' : 'text'}
                 value={newInput.value}
-                onChange={(e) =>
-                  setNewInput({ ...newInput, value: e.target.value })
-                }
+                onChange={(e) => setNewInput({ ...newInput, value: e.target.value })}
               />
             </div>
             <Checkbox
@@ -1789,9 +1623,7 @@ const VariablesProto = () => {
               border={false}
               label="Hide this value"
               checked={newInput.secret}
-              onChange={(e) =>
-                setNewInput({ ...newInput, secret: e.target.checked })
-              }
+              onChange={(e) => setNewInput({ ...newInput, secret: e.target.checked })}
             />
           </div>
         </Modal.Content>
@@ -1800,18 +1632,14 @@ const VariablesProto = () => {
             <Button color="invisible" onClick={close}>
               Cancel
             </Button>
-            <Button
-              color="primary"
-              disabled={!newInput.name.trim()}
-              onClick={create}
-            >
+            <Button color="primary" disabled={!newInput.name.trim()} onClick={create}>
               Create
             </Button>
           </div>
         </Modal.Footer>
       </Modal>
-    );
-  };
+    )
+  }
 
   /* ---------------- rendu ---------------- */
   return (
@@ -1819,11 +1647,7 @@ const VariablesProto = () => {
       {/* ---------- rail ---------- */}
       <nav className={chrome.rail}>
         <div className={chrome.railLogo}>
-          <img
-            src="/logo-yellow.svg"
-            alt="Kapptivate"
-            className={chrome.railLogoImg}
-          />
+          <img src="/logo-yellow.svg" alt="Kapptivate" className={chrome.railLogoImg} />
         </div>
         <div className={chrome.railWorkspace}>
           <button className={chrome.railWsMode} aria-label="Workspace mode">
@@ -1839,9 +1663,7 @@ const VariablesProto = () => {
               {section.map((Icon, i) => (
                 <button
                   key={`s${s}i${i}`}
-                  className={
-                    Icon === IconZap ? chrome.railItemActive : chrome.railItem
-                  }
+                  className={Icon === IconZap ? chrome.railItemActive : chrome.railItem}
                 >
                   <Icon size={16} />
                 </button>
@@ -1901,7 +1723,7 @@ const VariablesProto = () => {
                   <span className={chrome.canvasField}>
                     <SlateInputTag
                       fullWidth
-                      value={toSegments("{{URL}}")}
+                      value={toSegments('{{URL}}')}
                       onChange={() => undefined}
                       suggestions={suggestionsFor(1)}
                       placeholder="Starting URL"
@@ -1912,24 +1734,24 @@ const VariablesProto = () => {
 
               {/* deux groupes, en accordéon : ouvrir l'un replie l'autre */}
               {STEP_GROUPS.map((g) => {
-                const groupSteps = steps.filter((s) => s.group === g.n);
-                const open = openGroup === g.n;
+                const groupSteps = steps.filter((s) => s.group === g.n)
+                const open = openGroup === g.n
                 return (
                   <div key={g.n} className={styles.groupWrap}>
                     <span className={chrome.connector} />
                     <div className={chrome.stepGroup}>
                       <div
-                        className={`${chrome.stepGroupHead} ${open ? "" : styles.groupHeadClosed}`}
+                        className={`${chrome.stepGroupHead} ${open ? '' : styles.groupHeadClosed}`}
                         onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenGroup(open ? null : g.n);
+                          e.stopPropagation()
+                          setOpenGroup(open ? null : g.n)
                           // un step replié ne doit pas rester sélectionné
                           if (
                             open &&
                             sel != null &&
                             steps.some((s) => s.n === sel && s.group === g.n)
                           ) {
-                            setSel(null);
+                            setSel(null)
                           }
                         }}
                         role="button"
@@ -1940,13 +1762,11 @@ const VariablesProto = () => {
                         </span>
                         <div>
                           <div className={chrome.stepGroupTitle}>{g.title}</div>
-                          <div className={chrome.stepGroupSub}>
-                            {groupSteps.length} steps
-                          </div>
+                          <div className={chrome.stepGroupSub}>{groupSteps.length} steps</div>
                         </div>
                         <span className={styles.groupActions}>
                           <span
-                            className={`${styles.groupCaret} ${open ? styles.groupCaretOpen : ""}`}
+                            className={`${styles.groupCaret} ${open ? styles.groupCaretOpen : ''}`}
                           >
                             <IconChevronDown size={18} />
                           </span>
@@ -1964,9 +1784,9 @@ const VariablesProto = () => {
                           {groupSteps.map((s, i) => (
                             <div key={s.id}>
                               {i > 0 && <div className={chrome.stepSep} />}
-                              {s.kind === "api"
+                              {s.kind === 'api'
                                 ? apiCard(s)
-                                : s.kind === "ui"
+                                : s.kind === 'ui'
                                   ? uiCard(s)
                                   : setCard(s)}
                             </div>
@@ -1986,7 +1806,7 @@ const VariablesProto = () => {
                       )}
                     </div>
                   </div>
-                );
+                )
               })}
 
               <span className={chrome.connector} />
@@ -2008,32 +1828,24 @@ const VariablesProto = () => {
                 onChange={setTestTab}
                 tabs={[
                   {
-                    key: "preview",
-                    label: "Preview",
-                    children: (
-                      <div className={chrome.tabPlaceholder}>Preview</div>
-                    ),
+                    key: 'preview',
+                    label: 'Preview',
+                    children: <div className={chrome.tabPlaceholder}>Preview</div>,
                   },
                   {
-                    key: "environment",
-                    label: "Environment",
+                    key: 'environment',
+                    label: 'Environment',
                     children: environmentTab(),
                   },
                   {
-                    key: "settings",
-                    label: "Test settings",
-                    children: (
-                      <div className={chrome.tabPlaceholder}>Test settings</div>
-                    ),
+                    key: 'settings',
+                    label: 'Test settings',
+                    children: <div className={chrome.tabPlaceholder}>Test settings</div>,
                   },
                   {
-                    key: "history",
-                    label: "Version history",
-                    children: (
-                      <div className={chrome.tabPlaceholder}>
-                        Version history
-                      </div>
-                    ),
+                    key: 'history',
+                    label: 'Version history',
+                    children: <div className={chrome.tabPlaceholder}>Version history</div>,
                   },
                 ]}
               />
@@ -2044,7 +1856,7 @@ const VariablesProto = () => {
 
       {createInputModal()}
     </div>
-  );
-};
+  )
+}
 
-export default VariablesProto;
+export default VariablesProto

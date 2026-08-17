@@ -439,8 +439,12 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
 .outChip {
   font-family: $mono;
   font-size: 12px;
+  /* pas de fond sur la pastille : seule la flèche porte le bleu ciel, comme les
+     points de sévérité des chips de check à côté. */
   .optIcon {
     margin-right: -2px;
+    background: transparent;
+    border-color: transparent;
   }
 }
 
