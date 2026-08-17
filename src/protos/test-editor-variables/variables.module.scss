@@ -162,7 +162,12 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
 .elBox {
   display: flex;
   align-items: center;
-  gap: 6px;
+  /* le champ Slate porte déjà sa gouttière à gauche : ajoutée au gap, l'écart
+     entre la coche et le texte devenait énorme. */
+  gap: 0;
+  [class*='inputContainer'] > div {
+    padding-left: 4px;
+  }
   /* base 0 : sinon flex-wrap renvoie la valeur à la ligne avant de rétrécir */
   flex: 3 1 0;
   min-width: 150px;
@@ -429,19 +434,32 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
 
 /* ===================== dropdown de variable (Update variable) ===================== */
 .targetPop {
-  width: 316px;
-  padding: 6px;
-  max-height: 380px;
+  /* le conteneur vient du picker (cv.popOverContainer) ; on ne fixe que la
+     largeur, pour que les deux dropdowns tombent pareil. */
+  width: 300px;
+}
+/* liste d'un onglet : mêmes gouttières resserrées que la liste du picker */
+.targetList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px 6px;
+  max-height: 300px;
   overflow-y: auto;
 }
-/* Tag « variable produite par ce step » : le chip du récap de checks, mais avec
-   l'icône d'output en bleu ciel à la place de la pastille de sévérité. */
+/* Tag « in-test variable définie par ce step » : le chip du récap de checks,
+   avec l'icône bleu ciel à la place de la pastille de sévérité. */
 .outChip {
-  font-family: $mono;
+  /* Geist normal, comme les noms de variable du dropdown : le mono faisait
+     bande à part sur une ligne de chips. */
   font-size: 12px;
   /* pas de fond sur la pastille : seule la flèche porte le bleu ciel, comme les
      points de sévérité des chips de check à côté. */
+  /* la pastille de 22px rendrait le chip plus haut que ceux des checks : ici
+     l'icône se comporte comme leur point de sévérité. */
   .optIcon {
+    width: auto;
+    height: 14px;
     margin-right: -2px;
     background: transparent;
     border-color: transparent;

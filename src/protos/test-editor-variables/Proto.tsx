@@ -205,6 +205,7 @@ const VariablesProto = () => {
   const [warnLogic, setWarnLogic] = useState<'and' | 'or'>('and')
   /** dropdown « quelle variable mettre à jour » (Update variable) */
   const [targetOpen, setTargetOpen] = useState<string | null>(null)
+  const [targetTab, setTargetTab] = useState('in-test')
   const [subjOpen, setSubjOpen] = useState<string | null>(null)
   const [subjTab, setSubjTab] = useState('response')
   /** modale « Create in-test variable » : ouverte depuis le picker, elle insère */
@@ -534,39 +535,55 @@ const VariablesProto = () => {
       patchStep(step.id, { name })
       setTargetOpen(null)
     }
-    const group = (label: string, list: { name: string; nature: VarNature }[]) =>
-      list.length ? (
-        <div key={label}>
-          <div className={styles.popGroup}>{label}</div>
-          {list.map((v) => (
-            <button
-              key={v.name}
-              type="button"
-              className={step.name === v.name ? styles.popItemOn : styles.popItem}
-              onClick={() => pick(v.name)}
-            >
-              {optLabel(v.name, v.nature)}
-              {step.name === v.name && (
-                <span className={styles.popCheck}>
-                  <IconCheck size={14} />
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      ) : null
-    /* Pas de locale ici : une locale s'écrit avec « Set local variable », et
-       elle n'existe pas avant le step qui l'affecte. */
+    const list = (vars: { name: string; nature: VarNature }[]) => (
+      <div className={styles.targetList}>
+        {vars.map((v) => (
+          <button
+            key={v.name}
+            type="button"
+            className={step.name === v.name ? styles.popItemOn : styles.popItem}
+            onClick={() => pick(v.name)}
+          >
+            {optLabel(v.name, v.nature)}
+            {step.name === v.name && (
+              <span className={styles.popCheck}>
+                <IconCheck size={14} />
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+    )
+    /**
+     * Même dropdown que le picker {} : onglets par nature, mêmes lignes
+     * (pastille teintée + nom), même conteneur. Deux onglets seulement : pas de
+     * Random (un générateur ne s'écrit pas) et pas de locale (une locale
+     * s'écrit avec « Set local variable », et elle n'existe pas encore ici).
+     */
     const content = (
-      <div className={styles.targetPop}>
-        {group(
-          'In-test',
-          inputs.filter((v) => v.name).map((v) => ({ name: v.name, nature: 'input' as VarNature })),
-        )}
-        {group(
-          'Global',
-          globals.map((g) => ({ name: g.name, nature: 'global' as VarNature })),
-        )}
+      <div className={`${cv.popOverContainer} ${styles.targetPop}`}>
+        <Tabs
+          className={cv.suggestionTabs}
+          type="card"
+          activeKey={targetTab}
+          onChange={setTargetTab}
+          tabs={[
+            {
+              key: 'in-test',
+              label: 'In-test',
+              children: list(
+                inputs
+                  .filter((v) => v.name)
+                  .map((v) => ({ name: v.name, nature: 'input' as VarNature })),
+              ),
+            },
+            {
+              key: 'global',
+              label: 'Global',
+              children: list(globals.map((g) => ({ name: g.name, nature: 'global' as VarNature }))),
+            },
+          ]}
+        />
       </div>
     )
     return (
@@ -591,7 +608,11 @@ const VariablesProto = () => {
           noPadding
           arrow={false}
           open={targetOpen === step.id}
-          setOpen={(o) => setTargetOpen(o ? step.id : null)}
+          setOpen={(o) => {
+            setTargetOpen(o ? step.id : null)
+            // s'ouvre sur l'onglet de la variable déjà choisie
+            if (o) setTargetTab(step.name && natureOf(step.name) === 'global' ? 'global' : 'in-test')
+          }}
           content={content}
         >
           <button type="button" className={styles.slotChevron} aria-label="Variable to update">
@@ -1217,9 +1238,11 @@ const VariablesProto = () => {
   )
 
   /**
-   * Variables PRODUITES par le step, sur la carte : même chip que le récap de
-   * checks, avec l'icône d'output en bleu ciel (elles naissent au runtime, donc
-   * elles suivent la teinte des locales). Le clic ouvre l'onglet Variables.
+   * Variables que le step DÉFINIT, sur la carte : même chip que le récap de
+   * checks, icône en bleu ciel (elles naissent au runtime, d'où la teinte des
+   * locales). Vocabulaire : on dit « in-test variable », jamais « output
+   * variable » — côté produit le champ s'appelle `output_variables`, mais ça ne
+   * remonte pas dans l'UI. Le clic ouvre l'onglet Variables.
    */
   const outputChips = (step: Step) => {
     const outs = step.kind === 'set' ? [] : (step.outputs ?? [])
@@ -1230,7 +1253,7 @@ const VariablesProto = () => {
             key={name}
             type="button"
             className={`${chrome.chip} ${styles.outChip}`}
-            title="Variable produced by this step"
+            title="In-test variable set at this step"
             onClick={(e) => {
               e.stopPropagation()
               setSel(step.n)
@@ -1379,8 +1402,8 @@ const VariablesProto = () => {
 
   /**
    * Variables : ce que le step affecte, en lecture. C'est la réponse à
-   * « où est passée la table Output variables ? » — l'affectation est éditée
-   * sur le step, le panneau ne fait que la refléter.
+   * « où est passée la table des variables du step ? » — l'affectation est
+   * éditée sur le step, le panneau ne fait que la refléter.
    */
   /** Variables citées par un step, dans l'ordre d'apparition. */
   const usedVars = (step: Step): string[] => {
@@ -1402,9 +1425,8 @@ const VariablesProto = () => {
    * panneau du test, réduite aux variables citées par le step.
    */
   /**
-   * Ce que le step PRODUIT : même table que les Output variables du proto
-   * `checks`, icône d'output en bleu ciel. Le nom s'édite ici, la valeur ne
-   * s'écrit pas : elle sort du run.
+   * Ce que le step DÉFINIT : même table que celle du proto `checks`, icône en
+   * bleu ciel. Le nom s'édite ici ; la valeur, non : elle arrive avec le run.
    */
   const outputsSection = (step: Step) => {
     const outs = step.kind === 'set' ? [] : (step.outputs ?? [])
@@ -1418,7 +1440,7 @@ const VariablesProto = () => {
       <div className={chrome.varsSection}>
         <div className={chrome.outTable}>
           <div className={chrome.outHeadRow}>
-            <div className={chrome.outHeadCell}>Output variables ({outs.length})</div>
+            <div className={chrome.outHeadCell}>In-test variables ({outs.length})</div>
             <div className={chrome.outHeadCell}>Last values</div>
           </div>
           {outs.map((name, i) => (
@@ -1438,7 +1460,7 @@ const VariablesProto = () => {
                 />
               </div>
               <div className={`${chrome.outValCell} ${styles.valCell}`}>
-                <span className={styles.sumEmpty}>Produced when this step runs</span>
+                <span className={styles.sumEmpty}>Set when this step runs</span>
               </div>
             </div>
           ))}

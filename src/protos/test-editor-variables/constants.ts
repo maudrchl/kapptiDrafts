@@ -216,9 +216,11 @@ export type ApiStep = {
   method: string
   url: string
   /**
-   * Variables PRODUITES par le step (extraites de la réponse). Elles naissent
-   * au runtime, donc elles se lisent comme des locales : bleu ciel, badge
-   * « Step N », disponibles dans les steps qui suivent.
+   * Variables que le step DÉFINIT (extraites de la réponse). Elles naissent au
+   * runtime, donc elles se lisent comme des locales : bleu ciel, badge
+   * « Step N », disponibles dans les steps qui suivent. Dans l'UI on les
+   * appelle des in-test variables ; « output variable » ne se dit pas, même si
+   * le champ du produit s'appelle `output_variables`.
    */
   outputs?: string[]
 }
@@ -237,7 +239,7 @@ export type UiStep = {
   locator: string
   /** absent = l'action ne prend pas de valeur (ex. Click) */
   value?: string
-  /** variables produites par le step (ex. « Get text or value ») */
+  /** variables définies par le step (ex. « Get text or value ») */
   outputs?: string[]
 }
 
