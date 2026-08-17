@@ -662,14 +662,14 @@ const VariablesProto = () => {
   const targetNote = (step: SetStep): ReactNode => {
     switch (step.target.kind) {
       case 'new':
-        return `This local variable exists from step ${step.n} on, in the value picker of the steps that follow.`
+        return 'Available in the steps that follow this one.'
       case 'local':
-        return `Reassigns the local variable created at step ${
+        return `Overwrites the variable set at step ${
           originStep(step.target.name) ?? '?'
-        }. Same action, only the target changes.`
+        }, for the steps that follow.`
       case 'global':
       default:
-        return 'Updates the global variable in Configurations, for every test that uses it.'
+        return 'Writes the value back to Configurations, for every test that uses this variable.'
     }
   }
 
