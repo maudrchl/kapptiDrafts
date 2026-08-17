@@ -602,10 +602,8 @@ const VariablesProto = () => {
           onClick={(e) => e.stopPropagation()}
         >
           {step.name ? (
-            <span className={styles.slotPick}>
-              <span className={`${styles.optIcon} ${TINT_CLASS[tintOf(step.name)]}`}>
-                <IconBraces size={12} />
-              </span>
+            /* même pastille que dans les champs : fond teinté, nom coloré */
+            <span className={`${styles.slotPick} ${TINT_CLASS[tintOf(step.name)]}`}>
               {step.name}
             </span>
           ) : (
@@ -875,7 +873,7 @@ const VariablesProto = () => {
 
   /** Le bouton qui ouvre la modale de création, sous la table des in-test. */
   const createInTestButton = () => (
-    <div className={chrome.addWrap}>
+    <div>
       <Button color="secondary" size="s" onClick={openCreateInput}>
         <Button.Icon icon={IconPlus} />
         Create in-test variable
@@ -896,55 +894,67 @@ const VariablesProto = () => {
         </div>
       </div>
 
-      <div className={chrome.outTable}>
-        <div className={chrome.outHeadRow}>
-          <div className={chrome.outHeadCell}>In-test variables ({inputs.length})</div>
-          <div className={chrome.outHeadCell}>Values</div>
-        </div>
-        {inputs.map((v, i) => (
-          <div key={v.id} className={`${chrome.outDataRow} ${styles.varRow}`}>
-            <div className={`${chrome.outNameCell} ${styles.editable}`}>
-              <Tag color="orange" size="sm" icon={IconBraces} />
-              {/* le nom s'édite : c'est ce qui rend la création utile */}
-              <Input
-                size="s"
-                mono
-                fullWidth
-                borderless
-                placeholder="variableName"
-                value={v.name}
-                onChange={(e) => patchInput(i, { name: e.target.value })}
-              />
-            </div>
-            <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
-              {/* une valeur peut composer avec d'autres variables : {{URL}}/checkout */}
-              {v.secret ? (
+      <div className={styles.varsGroup}>
+        <div className={chrome.outTable}>
+          <div className={chrome.outHeadRow}>
+            <div className={chrome.outHeadCell}>In-test variables ({inputs.length})</div>
+            <div className={chrome.outHeadCell}>Values</div>
+          </div>
+          {inputs.map((v, i) => (
+            <div key={v.id} className={`${chrome.outDataRow} ${styles.varRow}`}>
+              <div className={`${chrome.outNameCell} ${styles.editable}`}>
+                <Tag color="orange" size="sm" icon={IconBraces} />
+                {/* le nom s'édite : c'est ce qui rend la création utile */}
                 <Input
                   size="s"
                   mono
                   fullWidth
                   borderless
-                  placeholder="Enter value…"
-                  type="password"
-                  value={v.value}
-                  onChange={(e) => patchInput(i, { value: e.target.value })}
+                  placeholder="variableName"
+                  value={v.name}
+                  onChange={(e) => patchInput(i, { name: e.target.value })}
                 />
-              ) : (
-                <VarField
-                  borderless
-                  initial={toSegments(v.value)}
-                  onValue={(val) => patchInput(i, { value: val })}
-                  toText={fromSegments}
-                  suggestions={inputSuggestions(v.name)}
-                  placeholder="Enter value…"
-                  onVariableCreated={addGlobal}
-                />
-              )}
+              </div>
+              <div className={`${chrome.outValCell} ${styles.valCell} ${styles.editable}`}>
+                {/* une valeur peut composer avec d'autres variables : {{URL}}/checkout */}
+                {v.secret ? (
+                  /* valeur masquée : pas de picker (on ne compose pas à l'aveugle),
+                   mais on garde le bloc {} pour que la colonne ne se décale pas */
+                  <>
+                    <Input
+                      size="s"
+                      mono
+                      fullWidth
+                      borderless
+                      placeholder="Enter value…"
+                      type="password"
+                      value={v.value}
+                      onChange={(e) => patchInput(i, { value: e.target.value })}
+                    />
+                    <span
+                      className={styles.suffixGhost}
+                      title="Reveal the value to insert a variable"
+                    >
+                      <IconBraces size={12} />
+                    </span>
+                  </>
+                ) : (
+                  <VarField
+                    borderless
+                    initial={toSegments(v.value)}
+                    onValue={(val) => patchInput(i, { value: val })}
+                    toText={fromSegments}
+                    suggestions={inputSuggestions(v.name)}
+                    placeholder="Enter value…"
+                    onVariableCreated={addGlobal}
+                  />
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        {createInTestButton()}
       </div>
-      {createInTestButton()}
     </div>
   )
 
@@ -1467,7 +1477,7 @@ const VariablesProto = () => {
         )}
 
         {defined.length + usedInTest.length > 0 && (
-          <>
+          <div className={styles.varsGroup}>
             <div className={chrome.outTable}>
               <div className={chrome.outHeadRow}>
                 <div className={chrome.outHeadCell}>
@@ -1545,7 +1555,7 @@ const VariablesProto = () => {
               })}
             </div>
             {createInTestButton()}
-          </>
+          </div>
         )}
       </div>
     )

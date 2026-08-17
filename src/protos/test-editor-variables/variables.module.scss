@@ -401,12 +401,29 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
     width: 100%;
     max-width: none;
   }
-  :global(.ant-tabs-nav-list) {
+  /* deux onglets seulement : ils se partagent la largeur au lieu de laisser un
+     tiers vide, et le clic ne laisse pas l'anneau de focus du DS. */
+  /* la largeur ne descend que si TOUTE la chaîne antd est étirée */
+  > div > div:first-child {
     width: 100%;
   }
+  :global(.ant-tabs),
+  :global(.ant-tabs-nav),
+  :global(.ant-tabs-nav-wrap),
+  :global(.ant-tabs-nav-list) {
+    width: 100% !important;
+  }
   :global(.ant-tabs-tab) {
-    flex: 1 1 0;
+    flex: 1 1 0 !important;
     justify-content: center;
+    margin: 0 !important;
+  }
+  :global(.ant-tabs-tab):focus,
+  :global(.ant-tabs-tab):focus-visible,
+  :global(.ant-tabs-tab-btn):focus,
+  :global(.ant-tabs-tab-btn):focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
   }
 }
 
@@ -420,6 +437,28 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
     padding: 10px 24px;
   }
 }
+/* Bloc {} d'une valeur masquée : la grammaire du champ est là, mais il n'y a
+   rien à composer tant que la valeur est cachée. */
+.suffixGhost {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  padding: 1px 5px;
+  border-left: 1px solid $border;
+  background: var(--color-grey-200, #f5f5f8);
+  color: $faint;
+}
+
+/* Une table et son bouton forment un groupe : 8px entre les deux, pas les 22px
+   qui séparent deux groupes du panneau. */
+.varsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* Nom éditable dans une table : l'Input du DS ajoute sa propre gouttière, ce qui
    décale le texte par rapport aux lignes non éditables (une globale, p. ex.). */
 .nameCellTight input {
@@ -463,11 +502,13 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
     border-color: $border-focus;
   }
 }
-/* la variable choisie : pastille teintée + nom */
+/* la variable choisie, lue comme une pastille de champ : fond teinté, nom coloré */
 .slotPick {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 5px;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -607,6 +648,15 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
    ici on n'ajoute que la cellule de valeur (input + chip d'origine à droite). */
 .valCell {
   gap: 8px;
+  /* le bloc {} touche le bord de la ligne : ni gouttière à droite, ni bord
+     arrondi, et il prend toute la hauteur de la cellule. */
+  padding-right: 0;
+  [class*='suffix'],
+  .suffixGhost {
+    align-self: stretch;
+    height: auto;
+    border-radius: 0;
+  }
 }
 .envLink {
   flex: none;
