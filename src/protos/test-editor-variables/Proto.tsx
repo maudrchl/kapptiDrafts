@@ -1576,17 +1576,19 @@ const VariablesProto = () => {
      * définition complète, la corbeille retire la variable.
      */
     const sourceSummary = (o: StepOutput) => {
+      /* même grammaire que la ligne URL d'un API Call : préfixe gris = ce qu'on
+         lit, puis en mono ce qu'on vise. Un mot suivi d'un chemin, sans boîte,
+         ne se lisait pas comme une paire. */
       const detail =
-        o.source === 'script' ? '' : o.source === 'header' ? o.detail : o.detail
+        o.source === 'script' ? (o.detail.split('\n')[0] ?? '') : o.detail
       return (
         <Tooltip>
           <Tooltip.Trigger>
-            <span className={styles.srcSummary}>
-              <span className={styles.srcName}>{sourceLabel(o.source)}</span>
-              {detail && <span className={styles.srcPath}>{detail}</span>}
-              {!detail && o.source === 'script' && (
-                <span className={styles.srcPath}>{o.detail ? 'script' : 'not set'}</span>
-              )}
+            <span className={styles.srcBox}>
+              <span className={styles.srcKind}>{sourceLabel(o.source)}</span>
+              <span className={detail ? styles.srcDetail : styles.srcDetailEmpty}>
+                {detail || 'not set'}
+              </span>
             </span>
           </Tooltip.Trigger>
           <Tooltip.Content>
