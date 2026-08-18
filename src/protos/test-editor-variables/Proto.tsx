@@ -1576,8 +1576,8 @@ const VariablesProto = () => {
      * définition complète, la corbeille retire la variable.
      */
     const sourceSummary = (o: StepOutput) => {
-      /* ce qu'on vise d'abord, en mono, puis un tag court qui dit la source :
-         même grammaire que le bloc {} d'un champ, filet de séparation compris. */
+      /* ce qu'on vise se lit comme du texte (secondaire), et un tag court dit la
+         source, calé à droite de la cellule. */
       const detail =
         o.source === 'script' ? (o.detail.split('\n')[0] ?? '') : o.detail
       return (
@@ -1585,9 +1585,10 @@ const VariablesProto = () => {
           <Tooltip.Trigger>
             <span className={styles.srcBox}>
               <span className={detail ? styles.srcDetail : styles.srcDetailEmpty}>
-                {detail || 'not set'}
+                {detail || 'Not set'}
               </span>
-              <span className={styles.srcKind}>{SOURCE_SHORT[o.source]}</span>
+              {/* le tag de source se cale tout à droite de la cellule */}
+              <span className={styles.srcTag}>{SOURCE_SHORT[o.source]}</span>
             </span>
           </Tooltip.Trigger>
           <Tooltip.Content>
