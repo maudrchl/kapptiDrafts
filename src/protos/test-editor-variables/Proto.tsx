@@ -1991,7 +1991,7 @@ const VariablesProto = () => {
           <div className={styles.cvBanner}>
             <Banner variant="invisible">
               <Banner.Description>
-                Produced by this step, then available in the steps that follow it.
+                This step fills it during the run. Every step after it can use it.
               </Banner.Description>
             </Banner>
           </div>
