@@ -527,15 +527,34 @@ $light-blue-soft: var(--color-accent-light-blue, rgba(5, 119, 255, 0.06));
 /* Empty state d'une tab du panneau : l'icône et la phrase du DS, puis l'action.
    Même gabarit que la tab Checks du produit. */
 .outEmpty {
-  padding: 28px 16px 32px;
+  padding: 26px 16px 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  /* l'EmptyState du DS est calibré pour une page vide (pastille 40px, gouttière
+     de 40px) : ici c'est une tab de panneau, donc tout est resserré. */
+  [class*='wrapper'] {
+    padding: 0;
+    gap: 8px;
+  }
+  [class*='circle'] {
+    width: 28px;
+    height: 28px;
+  }
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+  span,
+  div {
+    font-size: 12.5px;
+  }
   /* le bouton est un enfant flex : sans align-self il suit l'étirement du
      panneau et se colle à gauche. */
   > button {
     align-self: center;
+    font-size: 13px;
   }
 }
 
