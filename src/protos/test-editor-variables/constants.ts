@@ -285,6 +285,8 @@ export type StepOutput = {
   detail: string
   /** filet de sécurité : valeur retenue si la source ne rend rien */
   fallback?: string
+  /** dernière valeur observée (dernier run), pour le survol */
+  last?: string
 }
 
 export type ApiStep = {
@@ -455,7 +457,9 @@ export const INITIAL_STEPS: Step[] = [
     action: 'API Call',
     method: 'POST',
     url: '{{URL}}/orders',
-    outputs: [{ name: 'orderRef', source: 'json', detail: '$.order.reference' }],
+    outputs: [
+      { name: 'orderRef', source: 'json', detail: '$.order.reference', last: 'ORD-4417' },
+    ],
   },
   // Update variable : la variable écrite se choisit parmi celles qui existent.
   // Ici une globale, donc la référence sort du test et sert aux suivants.

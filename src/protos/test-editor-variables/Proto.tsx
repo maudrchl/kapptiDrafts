@@ -36,7 +36,9 @@ import {
   IconMonitor,
   IconMonitorCheck,
   IconMonitorSmartphone,
+  IconMinusCircle,
   IconMoreHorizontal,
+  IconPencil,
   IconPlay,
   IconPlus,
   IconSave,
@@ -61,6 +63,7 @@ import {
   RESPONSE_HEADERS,
   RESPONSE_ROWS,
   SOURCES,
+  sourceLabel,
   STEP_GROUPS,
   SET_LOCAL,
   UPDATE_VAR,
@@ -1561,94 +1564,39 @@ const VariablesProto = () => {
       return <div className={chrome.tabPlaceholder}>This step does not use a variable</div>
     }
 
-    const patchDefined = (i: number, next: Partial<StepOutput>) => {
-      const outs = defined.map((o, j) => (j === i ? { ...o, ...next } : o))
+    const setOutputs = (outs: StepOutput[]) => {
       if (step.kind === 'api') patchApi(step.id, { outputs: outs })
       else if (step.kind === 'ui') patchUi(step.id, { outputs: outs })
     }
+    const removeDefined = (i: number) => setOutputs(defined.filter((_, j) => j !== i))
 
     /**
-     * COMMENT le step remplit la variable. C'est le seul endroit où la source
-     * existe : une in-test déclarée en amont ne peut être que statique, et un
-     * step de variable ne prend qu'une valeur statique.
+     * La source, en lecture : c'est une définition, pas un champ à remplir dans
+     * un tableau. Le survol donne la dernière valeur observée, le crayon ouvre la
+     * définition complète, la corbeille retire la variable.
      */
-    const sourceField = (o: StepOutput, i: number) => {
-      const control = () => {
-        switch (o.source) {
-          case 'header':
-            return (
-              <Select
-                size="s"
-                fullWidth
-                searchable
-                placeholder="Header…"
-                options={toOptions(RESPONSE_HEADERS)}
-                value={o.detail || undefined}
-                onChange={(next: unknown) => patchDefined(i, { detail: String(next) })}
-              />
-            )
-          case 'script':
-            return (
-              <button
-                type="button"
-                className={styles.scriptLink}
-                onClick={() =>
-                  setOutEdit({
-                    stepId: step.id,
-                    index: i,
-                    name: o.name,
-                    source: o.source,
-                    detail: o.detail,
-                    fallback: o.fallback,
-                  })
-                }
-              >
-                <IconCode size={12} />
-                {o.detail ? 'Edit script' : 'Write a script'}
-              </button>
-            )
-          case 'json':
-            return (
-              <>
-                <Input
-                  size="s"
-                  mono
-                  fullWidth
-                  borderless
-                  placeholder="$.order.reference"
-                  value={o.detail}
-                  onChange={(e) => patchDefined(i, { detail: e.target.value })}
-                />
-                {jsonPicker(`${step.id}-${i}`, (path) => patchDefined(i, { detail: path }))}
-              </>
-            )
-          case 'static':
-          default:
-            return (
-              <Input
-                size="s"
-                fullWidth
-                borderless
-                placeholder="Value"
-                value={o.detail}
-                onChange={(e) => patchDefined(i, { detail: e.target.value })}
-              />
-            )
-        }
-      }
+    const sourceSummary = (o: StepOutput) => {
+      const detail =
+        o.source === 'script' ? '' : o.source === 'header' ? o.detail : o.detail
       return (
-        <div className={styles.srcCell}>
-          <Select
-            size="s"
-            width="140px"
-            options={SOURCES.map((x) => ({ label: x.label, value: x.value }))}
-            value={o.source}
-            onChange={(next: unknown) =>
-              patchDefined(i, { source: (String(next) || 'static') as Source, detail: '' })
-            }
-          />
-          <span className={styles.srcDetail}>{control()}</span>
-        </div>
+        <Tooltip>
+          <Tooltip.Trigger>
+            <span className={styles.srcSummary}>
+              <span className={styles.srcName}>{sourceLabel(o.source)}</span>
+              {detail && <span className={styles.srcPath}>{detail}</span>}
+              {!detail && o.source === 'script' && (
+                <span className={styles.srcPath}>{o.detail ? 'script' : 'not set'}</span>
+              )}
+            </span>
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            {o.last
+              ? `Last run: ${o.last}`
+              : o.fallback !== undefined
+                ? `No value yet · default ${o.fallback || '(empty)'}`
+                : 'No value from the last run'}
+          </Tooltip.Content>
+        </Tooltip>
       )
     }
 
@@ -1716,26 +1664,41 @@ const VariablesProto = () => {
               </div>
 
               {defined.map((o, i) => (
-                <div key={`def-${i}`} className={`${chrome.outDataRow} ${styles.varRow}`}>
-                  <div
-                    className={`${chrome.outNameCell} ${styles.editable} ${styles.nameCellTight}`}
-                  >
+                <div key={`def-${i}`} className={chrome.outDataRow}>
+                  <div className={chrome.outNameCell}>
                     <span className={`${styles.optIcon} ${styles.tintLightBlue}`}>
                       <IconArrowRightFromLine size={12} />
                     </span>
-                    {/* Geist, et la même gouttière que la ligne d'une globale */}
-                    <Input
-                      size="s"
-                      fullWidth
-                      borderless
-                      placeholder="variableName"
-                      value={o.name}
-                      onChange={(e) => patchDefined(i, { name: e.target.value })}
-                    />
+                    <span className={chrome.outName}>{o.name || 'variable'}</span>
+                    <button
+                      type="button"
+                      className={chrome.outEdit}
+                      aria-label="Edit output variable"
+                      onClick={() =>
+                        setOutEdit({
+                          stepId: step.id,
+                          index: i,
+                          name: o.name,
+                          source: o.source,
+                          detail: o.detail,
+                          fallback: o.fallback,
+                        })
+                      }
+                    >
+                      <IconPencil size={12} />
+                    </button>
                   </div>
                   <div className={`${chrome.outValCell} ${styles.valCell}`}>
-                    {sourceField(o, i)}
+                    {sourceSummary(o)}
                   </div>
+                  <button
+                    type="button"
+                    className={chrome.outDelCell}
+                    aria-label="Remove output variable"
+                    onClick={() => removeDefined(i)}
+                  >
+                    <IconMinusCircle size={12} />
+                  </button>
                 </div>
               ))}
 
