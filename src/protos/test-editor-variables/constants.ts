@@ -278,6 +278,20 @@ export const groupOfAction = (label: string) =>
 export const iconOfAction = (label: string): IconComp =>
   ACTION_GROUPS.flatMap((g) => g.items).find((i) => i.label === label)?.icon ?? IconBolt
 
+/* ---------------- sujets de check d'un step d'interface ----------------
+ * Les sujets « réponse » (status, latence) n'ont de sens que sur un API Call.
+ * Sur un Click ou un Fill input, ce qu'on vérifie est la page : à confirmer avec
+ * les devs, la liste v2 n'est pas figée.
+ */
+export const UI_SUBJECTS: { label: string; kind: 'text' | 'presence' | 'ai' }[] = [
+  { label: 'Element', kind: 'presence' },
+  { label: 'Element text', kind: 'text' },
+  { label: 'Element value', kind: 'text' },
+  { label: 'Page URL', kind: 'text' },
+  { label: 'Page title', kind: 'text' },
+  { label: 'Verify with AI', kind: 'ai' },
+]
+
 /** Générateurs de l'onglet Random du picker produit. */
 export const RANDOM_VALUES = ['First name', 'Last name', 'City', 'Street address']
 

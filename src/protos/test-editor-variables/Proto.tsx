@@ -21,6 +21,7 @@ import {
   IconBot,
   IconBraces,
   IconCheck,
+  IconCheckCheck,
   IconCheckCircle2,
   IconCode,
   IconChevronDown,
@@ -66,6 +67,7 @@ import {
   SOURCE_SHORT,
   STEP_GROUPS,
   SET_LOCAL,
+  UI_SUBJECTS,
   UPDATE_VAR,
   toApiStep,
   toSetStep,
@@ -1069,7 +1071,9 @@ const VariablesProto = () => {
    * Seul un step qui produit une réponse porte des checks (API Call) : un step
    * de variable n'a rien à vérifier.
    */
-  const hasChecks = (step: Step) => step.kind === 'api'
+  /* Un step de variable n'a rien à vérifier ; tout le reste, oui — un Click comme
+     un API Call, avec des sujets différents. */
+  const hasChecks = (step: Step) => step.kind !== 'set'
 
   const condsOf = (id: string) => checks[id] ?? []
 
@@ -1102,11 +1106,32 @@ const VariablesProto = () => {
       [stepId]: condsOf(stepId).filter((c) => c.id !== condId),
     }))
 
-  /** Sujet du check : la réponse, ou une variable disponible à ce step. */
+  /** Ce qu'un step permet de vérifier : sa réponse, ou la page. */
+  const subjectsOf = (step: Step) =>
+    step.kind === 'api'
+      ? SUBJECTS.map((s) => s.label)
+      : UI_SUBJECTS.map((s) => s.label)
+
+  /** Sujet du check : la réponse ou la page, ou une variable disponible ici. */
   const subjectPicker = (step: Step, c: Condition) => {
     const isVar = c.subj.startsWith('{{')
     const pick = (subj: string) => {
-      patchCond(step.id, c.id, resetForKind(subj))
+      const ui = UI_SUBJECTS.find((s) => s.label === subj)
+      patchCond(
+        step.id,
+        c.id,
+        ui
+          ? {
+              subj,
+              kind: ui.kind,
+              op: null,
+              headerName: null,
+              unit: null,
+              pred: ui.kind === 'presence' ? 'is present' : ui.kind === 'ai' ? null : 'is exactly',
+              val: ui.kind === 'presence' ? null : '',
+            }
+          : resetForKind(subj),
+      )
       setSubjOpen(null)
     }
     const content = (
@@ -1118,16 +1143,12 @@ const VariablesProto = () => {
           tabs={[
             {
               key: 'response',
-              label: 'Response',
+              label: step.kind === 'api' ? 'Response' : 'Page',
               children: (
                 <div className={chrome.subjList}>
-                  {SUBJECTS.map((sj) => (
-                    <button
-                      key={sj.label}
-                      className={chrome.subjItem}
-                      onClick={() => pick(sj.label)}
-                    >
-                      {sj.label}
+                  {subjectsOf(step).map((label) => (
+                    <button key={label} className={chrome.subjItem} onClick={() => pick(label)}>
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -1347,13 +1368,23 @@ const VariablesProto = () => {
     )
   }
 
-  const stepChecksTab = (step: Step) => (
-    <div className={chrome.checksBody}>
-      {checksGroup(step, 'fail')}
-      <div className={chrome.grpDivider} />
-      {checksGroup(step, 'warn')}
-    </div>
-  )
+  const stepChecksTab = (step: Step) =>
+    condsOf(step.id).length === 0 ? (
+      /* Même empty state que dans le produit : icône centrée, une phrase, l'action */
+      <div className={styles.outEmpty}>
+        <EmptyState icon={<IconCheckCheck size={18} />} text="No checks have been set up yet" />
+        <Button color="secondary" size="s" onClick={() => addCond(step.id, 'fail')}>
+          <Button.Icon icon={IconPlus} />
+          Add check
+        </Button>
+      </div>
+    ) : (
+      <div className={chrome.checksBody}>
+        {checksGroup(step, 'fail')}
+        <div className={chrome.grpDivider} />
+        {checksGroup(step, 'warn')}
+      </div>
+    )
 
   /**
    * Variables que le step DÉFINIT, sur la carte : même chip que le récap de
@@ -1655,7 +1686,28 @@ const VariablesProto = () => {
 
         {/* Output variables : celles que CE step produit (nom + source), et celles
             qu'un step plus haut a produites et que celui-ci cite. */}
-        {(defined.length > 0 || usedOutputs.length > 0 || step.kind !== 'set') && (
+        {defined.length + usedOutputs.length === 0 ? (
+          /* Rien de produit : le même empty state que la tab Checks — icône
+             centrée, une phrase, et l'action juste en dessous. */
+          step.kind !== 'set' && (
+            <div className={styles.outEmpty}>
+              <EmptyState
+                icon={<IconArrowRightFromLine size={18} />}
+                text="No output variables have been set up yet"
+              />
+              <Button
+                color="secondary"
+                size="s"
+                onClick={() =>
+                  setOutEdit({ stepId: step.id, index: null, name: '', source: 'json', detail: '' })
+                }
+              >
+                <Button.Icon icon={IconPlus} />
+                Create output variable
+              </Button>
+            </div>
+          )
+        ) : (
           <div className={styles.varsGroup}>
             <div className={chrome.outTable}>
               <div className={chrome.outHeadRow}>
@@ -1690,9 +1742,7 @@ const VariablesProto = () => {
                       <IconPencil size={12} />
                     </button>
                   </div>
-                  <div className={`${chrome.outValCell} ${styles.valCell}`}>
-                    {sourceSummary(o)}
-                  </div>
+                  <div className={`${chrome.outValCell} ${styles.valCell}`}>{sourceSummary(o)}</div>
                   <button
                     type="button"
                     className={chrome.outDelCell}
@@ -1725,15 +1775,6 @@ const VariablesProto = () => {
                   </div>
                 )
               })}
-
-              {defined.length + usedOutputs.length === 0 && (
-                <div className={`${chrome.outDataRow} ${styles.varRow}`}>
-                  <div className={chrome.outNameCell}>
-                    <span className={styles.sumEmpty}>Nothing produced by this step</span>
-                  </div>
-                  <div className={`${chrome.outValCell} ${styles.valCell}`} />
-                </div>
-              )}
             </div>
             {step.kind !== 'set' && createOutputButton(step.id)}
           </div>
