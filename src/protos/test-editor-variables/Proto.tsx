@@ -63,7 +63,7 @@ import {
   RESPONSE_HEADERS,
   RESPONSE_ROWS,
   SOURCES,
-  sourceLabel,
+  SOURCE_SHORT,
   STEP_GROUPS,
   SET_LOCAL,
   UPDATE_VAR,
@@ -1576,19 +1576,18 @@ const VariablesProto = () => {
      * définition complète, la corbeille retire la variable.
      */
     const sourceSummary = (o: StepOutput) => {
-      /* même grammaire que la ligne URL d'un API Call : préfixe gris = ce qu'on
-         lit, puis en mono ce qu'on vise. Un mot suivi d'un chemin, sans boîte,
-         ne se lisait pas comme une paire. */
+      /* ce qu'on vise d'abord, en mono, puis un tag court qui dit la source :
+         même grammaire que le bloc {} d'un champ, filet de séparation compris. */
       const detail =
         o.source === 'script' ? (o.detail.split('\n')[0] ?? '') : o.detail
       return (
         <Tooltip>
           <Tooltip.Trigger>
             <span className={styles.srcBox}>
-              <span className={styles.srcKind}>{sourceLabel(o.source)}</span>
               <span className={detail ? styles.srcDetail : styles.srcDetailEmpty}>
                 {detail || 'not set'}
               </span>
+              <span className={styles.srcKind}>{SOURCE_SHORT[o.source]}</span>
             </span>
           </Tooltip.Trigger>
           <Tooltip.Content>

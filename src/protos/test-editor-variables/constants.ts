@@ -88,6 +88,14 @@ export const SOURCES: { value: Source; label: string }[] = [
 
 export const sourceLabel = (s: Source) => SOURCES.find((o) => o.value === s)?.label ?? s
 
+/** Libellé court, pour le tag qui suit la valeur visée. */
+export const SOURCE_SHORT: Record<Source, string> = {
+  static: 'Static',
+  json: 'JSON',
+  header: 'Header',
+  script: 'Script',
+}
+
 /* ---------------- dernière réponse (picker JSON attribute) ----------------
  * De quoi choisir un attribut sans le taper : l'arbre de la dernière réponse,
  * comme dans le proto `checks`.
