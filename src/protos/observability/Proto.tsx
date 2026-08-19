@@ -104,9 +104,9 @@ import PersesView from './PersesView'
 import LineChart from './LineChart'
 import { toast, ToastMount } from './toast'
 import { dashboardStore } from './dashboardStore'
-import { interpretPrompt, TRACE_OVERVIEW_PANELS, makePanel, K8S_CPU_PANEL, K8S_MEM_PANEL, emptyPanel, rangeShortcuts, rangeKeyFromMinutes, rangeFactor, panelForRange, withPrevious } from './perses'
-import type { PanelSpec } from './perses'
-import type { ExploreTab, OtlpPlatform, PodEntry, PodPhase, DeployResource, SignalKey, TraceEntry, ServiceNode, LogEntry, AlertItem, DestinationItem, IncidentItem, DestinationType } from './constants'
+import { interpretPrompt, TRACE_OVERVIEW_PANELS, makePanel, K8S_CPU_PANEL, K8S_MEM_PANEL, emptyPanel, rangeShortcuts, rangeKeyFromMinutes, rangeFactor, panelForRange, withPrevious, PALETTE, X_LABELS } from './perses'
+import type { PanelSpec, Panel as PanelSpecFull } from './perses'
+import type { ExploreTab, OtlpPlatform, PodEntry, PodPhase, DeployResource, SignalKey, TraceEntry, ServiceNode, LogEntry, AlertItem, DestinationItem, IncidentItem, DestinationType, MetricEntry, MetricType } from './constants'
 import {
   EXPLORE_TABS,
   PAGE_META,
@@ -136,6 +136,15 @@ import {
   otlpSnippet,
   otlpK8sSnippet,
   otlpTestCurl,
+  METRICS as ALL_METRICS,
+  METRIC_TOTALS,
+  metricPoints,
+  metricRate,
+  rateUnit,
+  isCumulative,
+  metricTrend,
+  fmtMetric,
+  svcColor,
   RETENTION_LABELS,
   ALERT_SEVERITIES,
   ALERT_OPERATORS,
@@ -190,6 +199,7 @@ const NAV_EXPLORE: { section: string; items: { key: ExploreTab; icon: React.Comp
     items: [
       { key: 'logs', icon: IconFile, label: 'Logs explorer' },
       { key: 'traces', icon: IconBookOpen, label: 'Traces' },
+      { key: 'metrics', icon: IconGauge, label: 'Metrics' },
       { key: 'perses', icon: IconGlobe, label: 'Traces (Perses)' },
       { key: 'svcmap', icon: IconNetwork, label: 'Service map' },
       { key: 'k8s', icon: IconWrench, label: 'Kubernetes' },
@@ -447,9 +457,10 @@ const LogsView = ({
   const liveSeq = useRef(0)
 
   const q = search.trim().toLowerCase()
+  const levels = level.split(',').filter(Boolean)
   const filtered = rows.filter(
     (l) =>
-      (level === 'all' || l.level === level) &&
+      (levels.length === 0 || levels.includes(l.level)) &&
       (q === '' || `${l.msg} ${l.svc} ${l.level}`.toLowerCase().includes(q)),
   )
 
@@ -555,20 +566,7 @@ const LogsView = ({
         </span>
       </div>
 
-      {filtered.length === 0 ? (
-        <div className={styles.emptyBlock}>
-          <EmptyState
-            icon={<IconSearchX />}
-            text={empty ? 'No logs yet' : 'No logs match your filters'}
-            description={
-              empty
-                ? 'This table fills up on its own as soon as your services start exporting logs.'
-                : 'Try a broader search or reset the level filter.'
-            }
-          />
-        </div>
-      ) : (
-        <div className={styles.logTable}>
+      <div className={styles.logTable}>
           <div className={styles.logTableHead}>
             {/* Le filtre vit dans la colonne qu'il filtre, comme partout ailleurs
                 dans le produit, plutôt qu'en Select détaché au-dessus. */}
@@ -581,14 +579,11 @@ const LogsView = ({
                 open={levelFilterOpen}
                 setOpen={setLevelFilterOpen}
                 content={
+                  <div className={styles.filterMenu}>
                   <TableFilter
                     selectedFilters={level}
-                    setFilter={(v) => {
-                      setLevel(v)
-                      setLevelFilterOpen(false)
-                    }}
+                    setFilter={setLevel}
                     items={[
-                      { label: 'All levels', key: 'all' },
                       // Mêmes pastilles que dans le tableau : la couleur de la
                       // sévérité doit se lire au moment où on la choisit.
                       { label: 'Error', key: 'error', icon: <span className={styles.miniDot} style={{ background: SEV_COLOR.error }} /> },
@@ -597,11 +592,12 @@ const LogsView = ({
                       { label: 'Debug', key: 'debug', icon: <span className={styles.miniDot} style={{ background: SEV_COLOR.debug }} /> },
                     ]}
                   />
+                  </div>
                 }
               >
                 <button
                   type="button"
-                  className={level === 'all' ? styles.headFilterBtn : styles.headFilterBtnOn}
+                  className={levels.length === 0 ? styles.headFilterBtn : styles.headFilterBtnOn}
                   aria-label="Filter by severity"
                 >
                   <IconListFilter size={13} />
@@ -613,6 +609,22 @@ const LogsView = ({
             <span>Body</span>
             <span>Trace</span>
           </div>
+        {filtered.length === 0 ? (
+          // L'entête reste monté : sinon le filtre disparaît avec les lignes
+          // et on ne peut plus le retirer. Impasse classique.
+          <div className={styles.emptyInTable}>
+            <EmptyState
+              icon={<IconSearchX />}
+              text={empty ? 'No logs yet' : 'No logs match your filters'}
+              description={
+                empty
+                  ? 'This table fills up on its own as soon as your services start exporting logs.'
+                  : 'Try a broader search or reset the level filter.'
+              }
+            />
+          </div>
+        ) : (
+          <>
           {filtered.map((l) => {
             const tr = l.traceKey ? TRACES.find((t) => t.key === l.traceKey) : undefined
             return (
@@ -646,8 +658,9 @@ const LogsView = ({
               </div>
             )
           })}
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </>
   )
 }
@@ -737,8 +750,11 @@ const TracesView = ({
 
   const q = search.trim().toLowerCase()
   const source = [...incoming, ...TRACES]
+  const svcs = svc.split(',').filter(Boolean)
   const filtered = source.filter(
-    (t) => (svc === 'all' || t.svc === svc) && (q === '' || `${t.name} ${t.svc}`.toLowerCase().includes(q)),
+    (t) =>
+      (svcs.length === 0 || svcs.includes(t.svc)) &&
+      (q === '' || `${t.name} ${t.svc}`.toLowerCase().includes(q)),
   )
   // Légende bornée : une légende qui énumère tous les services ne tient pas à
   // 300 services. On classe par poids réel (temps cumulé sur les traces filtrées),
@@ -901,20 +917,7 @@ const TracesView = ({
         )}
       </div>
 
-      {filtered.length === 0 ? (
-        <div className={styles.emptyBlock}>
-          <EmptyState
-            icon={<IconSearchX />}
-            text={empty ? 'No traces yet' : 'No traces match your filters'}
-            description={
-              empty
-                ? 'Spans land here as soon as your services start exporting traces.'
-                : 'Try a broader search or pick another service.'
-            }
-          />
-        </div>
-      ) : (
-        <div className={styles.traceList}>
+      <div className={styles.traceList}>
         {/* Entête de colonnes, comme sur les logs : le filtre de service vit dans
             la colonne qu'il filtre, plus de Select détaché au-dessus. */}
         <div className={styles.traceListHead}>
@@ -927,24 +930,25 @@ const TracesView = ({
               open={svcFilterOpen}
               setOpen={setSvcFilterOpen}
               content={
+                <div className={styles.filterMenu}>
                 <TableFilter
                   selectedFilters={svc}
-                  setFilter={(v) => {
-                    setSvc(v)
-                    setSvcFilterOpen(false)
-                  }}
+                  setFilter={setSvc}
                   items={[
-                    { label: 'All services', key: 'all' },
-                    { label: 'demo-site', key: 'demo-site' },
-                    { label: 'payment-service', key: 'payment-service' },
-                    { label: 'postgres', key: 'postgres' },
+                    // Même couleur de service que dans la légende et les barres.
+                    ...['demo-site', 'payment-service', 'postgres'].map((sv) => ({
+                      label: sv,
+                      key: sv,
+                      icon: <span className={styles.miniDot} style={{ background: svcColor(sv) }} />,
+                    })),
                   ]}
                 />
+                </div>
               }
             >
               <button
                 type="button"
-                className={svc === 'all' ? styles.headFilterBtn : styles.headFilterBtnOn}
+                className={svcs.length === 0 ? styles.headFilterBtn : styles.headFilterBtnOn}
                 aria-label="Filter by service"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -958,6 +962,22 @@ const TracesView = ({
             <span className={styles.traceHeadBar}>Time by service</span>
           </span>
         </div>
+        {filtered.length === 0 ? (
+          // Entête monté même à zéro résultat : sinon le filtre de service
+          // disparaît avec les lignes et devient impossible à retirer.
+          <div className={styles.emptyInTable}>
+            <EmptyState
+              icon={<IconSearchX />}
+              text={empty ? 'No traces yet' : 'No traces match your filters'}
+              description={
+                empty
+                  ? 'Spans land here as soon as your services start exporting traces.'
+                  : 'Try a broader search or reset the service filter.'
+              }
+            />
+          </div>
+        ) : (
+          <>
         {filtered.map((t) => {
           return (
             <div
@@ -994,8 +1014,9 @@ const TracesView = ({
             </div>
           )
         })}
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </>
   )
 }
@@ -2421,6 +2442,334 @@ const OtlpOnboardingView = ({
   )
 }
 
+/* ─── Metrics ───
+ * Catalogue des métriques OTLP du workspace. Ce que la vraie page ne fait pas et
+ * qu'on corrige ici : l'unité est LISIBLE (25 GB, pas 25000000000), chaque ligne
+ * montre déjà sa forme (sparkline) pour ne pas avoir à ouvrir 100 drawers, le
+ * type n'est pas en bleu, et la liste comme les graphes couvrent la MÊME plage
+ * (le vrai produit annonce en petit que les deux divergent, ce qui est un piège).
+ */
+const METRIC_TONE: Record<MetricType, 'dark-green' | 'green' | 'orange'> = {
+  gauge: 'dark-green',
+  sum: 'green',
+  histogram: 'orange',
+}
+
+const metricPanel = (m: MetricEntry, rate = false): PanelSpecFull => {
+  const raw = rate ? metricRate(m) : metricPoints(m)
+  const unit = rate ? rateUnit(m.unit) : m.unit
+  const pts = raw.map((v) => (v === null ? null : Math.round(v * 1000) / 1000))
+  const nums = pts.filter((v): v is number => v !== null)
+  const max = Math.max(...nums, 0)
+  // Enveloppe min/max : la dispersion du bucket. Une moyenne seule laisse croire
+  // à une valeur stable, c'est ce que fait l'aire claire du vrai produit.
+  const band = {
+    lo: pts.map((v) => (v === null ? null : Math.round(v * 0.55 * 1000) / 1000)),
+    hi: pts.map((v) => (v === null ? null : Math.round(v * 1.35 * 1000) / 1000)),
+  }
+  return {
+    id: `metric_${m.key}${rate ? '_rate' : ''}`,
+    ...makePanel({
+      name: m.name,
+      unit,
+      series: [{ name: m.name, color: svcColor(m.service), points: pts, band }],
+      yMin: 0,
+      yMax: Math.max(1, Math.ceil(max * 1.5)),
+      yTicks: 5,
+      yFmt: (v: number) => fmtMetric(v, unit),
+      xLabels: X_LABELS['24h'],
+    }),
+  }
+}
+
+const MetricsView = ({
+  search,
+  setSearch,
+  empty,
+}: {
+  search: string
+  setSearch: (v: string) => void
+  empty?: boolean
+}) => {
+  const METRICS = empty ? [] : ALL_METRICS
+  const totals = empty
+    ? { total: 0, gauge: 0, sum: 0, histogram: 0 }
+    : METRIC_TOTALS
+  const [typeFilterOpen, setTypeFilterOpen] = useState(false)
+  const [type, setType] = useState('')
+  const [svcFilter, setSvcFilter] = useState('')
+  const [svcFilterOpen, setSvcFilterOpen] = useState(false)
+  const [detail, setDetail] = useState<MetricEntry | null>(null)
+  // Compteur cumulatif : on l'affiche en taux par seconde, seul mode qui informe.
+  const [rate, setRate] = useState(false)
+
+  const q = search.trim().toLowerCase()
+  // `type:gauge` tapé dans la recherche vaut le filtre de colonne : une seule
+  // grammaire, deux façons de l'exprimer.
+  const typed = /type:(gauge|sum|histogram)/.exec(q)?.[1]
+  const svcTyped = /service:([\w-]+)/.exec(q)?.[1]
+  const free = q.replace(/(type|service):[\w-]+/g, '').trim()
+  const types = type.split(',').filter(Boolean)
+  const svcs = svcFilter.split(',').filter(Boolean)
+  const filtered = METRICS.filter(
+    (m) =>
+      (types.length === 0 || types.includes(m.type)) &&
+      (svcs.length === 0 || svcs.includes(m.service)) &&
+      (!typed || m.type === typed) &&
+      (!svcTyped || m.service === svcTyped) &&
+      (free === '' || `${m.name} ${m.service} ${m.unit}`.toLowerCase().includes(free)),
+  )
+
+  const cols = [
+    {
+      // « Name » ne dit pas de quoi : chaque ligne EST une metrique.
+      title: 'Metric',
+      dataIndex: 'name',
+      key: 'name',
+      render: (v: string) => <span className={styles.mono}>{v}</span>,
+    },
+    {
+      title: (
+        <span className={styles.logHeadFilter}>
+          Service
+          <Popover
+            trigger="click"
+            placement="bottomLeft"
+            noPadding
+            open={svcFilterOpen}
+            setOpen={setSvcFilterOpen}
+            content={
+              <div className={styles.filterMenu}>
+                <TableFilter
+                  selectedFilters={svcFilter}
+                  setFilter={setSvcFilter}
+                  items={[...new Set(ALL_METRICS.map((m) => m.service))].map((sv) => ({
+                    label: sv,
+                    key: sv,
+                    icon: <span className={styles.miniDot} style={{ background: svcColor(sv) }} />,
+                  }))}
+                />
+              </div>
+            }
+          >
+            <button
+              type="button"
+              className={svcs.length === 0 ? styles.headFilterBtn : styles.headFilterBtnOn}
+              aria-label="Filter by service"
+            >
+              <IconListFilter size={13} />
+            </button>
+          </Popover>
+        </span>
+      ),
+      dataIndex: 'service',
+      key: 'service',
+      width: 190,
+      // Même couleur de service que sur les traces et la service map.
+      render: (v: string) => (
+        <span className={styles.metricSvc}>
+          <span className={styles.miniDot} style={{ background: svcColor(v) }} />
+          <span className={styles.mono}>{v}</span>
+        </span>
+      ),
+    },
+    {
+      // Le filtre vit dans l'entête de SA colonne, comme sur les logs et les traces.
+      title: (
+        <span className={styles.logHeadFilter}>
+          Type
+          <Popover
+            trigger="click"
+            placement="bottomLeft"
+            noPadding
+            open={typeFilterOpen}
+            setOpen={setTypeFilterOpen}
+            content={
+              <div className={styles.filterMenu}>
+              <TableFilter
+                selectedFilters={type}
+                setFilter={setType}
+                items={[
+                  { label: 'gauge', key: 'gauge', icon: <span className={styles.miniDot} style={{ background: '#1C4A47' }} /> },
+                  { label: 'sum', key: 'sum', icon: <span className={styles.miniDot} style={{ background: '#12b76a' }} /> },
+                  { label: 'histogram', key: 'histogram', icon: <span className={styles.miniDot} style={{ background: '#ED7846' }} /> },
+                ]}
+              />
+              </div>
+            }
+          >
+            <button
+              type="button"
+              className={types.length === 0 ? styles.headFilterBtn : styles.headFilterBtnOn}
+              aria-label="Filter by type"
+            >
+              <IconListFilter size={13} />
+            </button>
+          </Popover>
+        </span>
+      ),
+      dataIndex: 'type',
+      key: 'type',
+      width: 130,
+      render: (v: MetricType) => (
+        <Tag color={METRIC_TONE[v]} mono smallPadding size="xs">
+          {v}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Unit',
+      dataIndex: 'unit',
+      key: 'unit',
+      width: 90,
+      render: (v: string) => <span className={styles.metricUnit}>{v}</span>,
+    },
+    {
+      title: 'Last value',
+      key: 'last',
+      width: 120,
+      render: (_v: unknown, m: MetricEntry) => {
+        const pts = metricPoints(m)
+        return <span className={styles.metricLast}>{fmtMetric(pts[pts.length - 1], m.unit)}</span>
+      },
+    },
+    {
+      title: 'Change',
+      key: 'trend',
+      width: 130,
+      // Une variation se compare et se trie d'une ligne à l'autre, une courbe de
+      // 96px non : la forme, elle, vit dans le drawer où elle a de la place.
+      render: (_v: unknown, m: MetricEntry) => {
+        const t = metricTrend(m)
+        return <TrendTag current={t.cur} previous={t.prev} invertColor={m.unit === 'ms'} />
+      },
+    },
+  ]
+
+  return (
+    <>
+      <div className={styles.kpiRow}>
+        <CounterCardGroup>
+          <CounterCard title="Metrics" value={String(totals.total)} />
+          <CounterCard title="Gauges" value={String(totals.gauge)} />
+          <CounterCard title="Sums" value={String(totals.sum)} />
+          <CounterCard title="Histograms" value={String(totals.histogram)} />
+        </CounterCardGroup>
+      </div>
+
+      <div className={styles.searchRow}>
+        <div className={styles.searchFlex}>
+          <SmartSearch
+            value={search}
+            onChange={setSearch}
+            placeholder="Search metrics, e.g. type:gauge service:demo-site"
+            schema={{
+              type: ['gauge', 'sum', 'histogram'],
+              service: ['demo-site', 'payment-service', 'postgres', 'rabbitmq', 'obs-agent'],
+            }}
+          />
+        </div>
+      </div>
+
+      <div className={styles.resultBar}>
+        <span className={styles.resultCount}>
+          <span>
+            Showing {filtered.length} of {totals.total} metrics
+          </span>
+        </span>
+      </div>
+
+      {/* Le Table du DS reste monté avec son propre état vide (prop emptyState) :
+          l'entête et ses filtres restent accessibles même à zéro résultat. */}
+      <div className={styles.metricTable}>
+      <Table
+        rowKey="key"
+        columns={cols}
+        data={filtered}
+        showHeader
+        compact
+        emptyState={{
+          icon: <IconGauge color="var(--color-text-secondary)" />,
+          text: empty ? 'No metrics yet' : 'No metrics match your filters',
+          description: empty
+            ? 'Metrics appear here as soon as your services or the Kubernetes agent start emitting them.'
+            : 'Try a broader search, or clear the type and service filters in the header.',
+        }}
+        onClickRow={(m: MetricEntry) => {
+          setDetail(m)
+          setRate(isCumulative(m))
+        }}
+      />
+      </div>
+
+      <Drawer open={!!detail} onClose={() => setDetail(null)} width={720} title={detail?.name ?? ''}>
+        {detail && (
+          <div className={styles.metricDrawer}>
+            <div className={styles.metricTags}>
+              <Tag color={METRIC_TONE[detail.type]} mono smallPadding size="xs">
+                {detail.type}
+              </Tag>
+              <Tag mono smallPadding size="xs">
+                {detail.unit}
+              </Tag>
+              <span className={styles.metricSvc}>
+                <span className={styles.miniDot} style={{ background: svcColor(detail.service) }} />
+                <span className={styles.mono}>{detail.service}</span>
+              </span>
+            </div>
+            {/* Les stats d'abord : sans elles, une courbe seule ne répond à rien. */}
+            <CounterCardGroup>
+              {(() => {
+                // Les statistiques décrivent ce qui est affiché : en mode taux,
+                // elles parlent en taux, sinon elles mentiraient sur le graphe.
+                const pts = (rate ? metricRate(detail) : metricPoints(detail)).filter(
+                  (v): v is number => v !== null,
+                )
+                const u = rate ? rateUnit(detail.unit) : detail.unit
+                const last = pts[pts.length - 1]
+                const min = Math.min(...pts)
+                const max = Math.max(...pts)
+                const avg = pts.reduce((a, b) => a + b, 0) / pts.length
+                return (
+                  <>
+                    <CounterCard title="Last" value={fmtMetric(last, u)} />
+                    <CounterCard title="Min" value={fmtMetric(min, u)} />
+                    <CounterCard title="Max" value={fmtMetric(max, u)} />
+                    <CounterCard title="Avg" value={fmtMetric(avg, u)} />
+                  </>
+                )
+              })()}
+            </CounterCardGroup>
+            <Card className={`${styles.overviewCard} ${styles.drawerCard}`}>
+              <div className={styles.overviewTitle}>
+                <span>
+                  {detail.name}
+                  {detail.unit ? ` (${rate ? rateUnit(detail.unit) : detail.unit})` : ''}
+                </span>
+                {/* Un compteur cumulatif se lit en pente : on propose les deux
+                    lectures, sur la carte qu'elles changent. */}
+                {isCumulative(detail) && (
+                  <Segmented<'total' | 'rate'>
+                    value={rate ? 'rate' : 'total'}
+                    onChange={(v) => setRate(v === 'rate')}
+                    options={[
+                      { label: 'Total', value: 'total' },
+                      { label: 'Rate (per second)', value: 'rate' },
+                    ]}
+                  />
+                )}
+              </div>
+              <div className={styles.metricChart}>
+                <LineChart panel={metricPanel(detail, rate)} height={240} />
+              </div>
+            </Card>
+          </div>
+        )}
+      </Drawer>
+    </>
+  )
+}
+
 /* ─── État vide d'une page télémétrie avant le setup ───
  * Un seul écran porte le guide (Ingestion). Ici, chaque page dit ce qui lui
  * manque à elle, en une ligne, et propose la seule action qui débloque tout.
@@ -2428,6 +2777,7 @@ const OtlpOnboardingView = ({
 const GATE_ICON: Partial<Record<ExploreTab, ComponentType<{ color?: string }>>> = {
   logs: IconFile,
   traces: IconBookOpen,
+  metrics: IconGauge,
   perses: IconGlobe,
   svcmap: IconNetwork,
   k8s: IconWrench,
@@ -2435,6 +2785,7 @@ const GATE_ICON: Partial<Record<ExploreTab, ComponentType<{ color?: string }>>> 
 const GATE_TITLE: Partial<Record<ExploreTab, string>> = {
   logs: 'No logs yet',
   traces: 'No traces yet',
+  metrics: 'No metrics yet',
   perses: 'No trace data yet',
   svcmap: 'No service map yet',
   k8s: 'No cluster data yet',
@@ -3227,9 +3578,11 @@ const ExploreTabsProto = () => {
 
   // lifted view state (needed by header actions)
   const [logSearch, setLogSearch] = useState('')
-  const [logLevel, setLogLevel] = useState('all')
+  // Filtres de colonne = multiselect du DS : chaîne de clés séparées par des
+  // virgules, et vide veut dire « tout », donc pas d'option « All … » à cocher.
+  const [logLevel, setLogLevel] = useState('')
   const [traceSearch, setTraceSearch] = useState('')
-  const [traceSvc, setTraceSvc] = useState('all')
+  const [traceSvc, setTraceSvc] = useState('')
   const [traceDetail, setTraceDetail] = useState<TraceEntry | null>(null)
   const [logDetail, setLogDetail] = useState<LogEntry | null>(null)
 
@@ -3343,7 +3696,7 @@ const ExploreTabsProto = () => {
   }, [pendingScreen, clearPendingScreen])
 
   // Vues télémétrie : sans data, elles affichent l'empty state à la place de leur contenu.
-  const TELEMETRY_TABS: ExploreTab[] = ['logs', 'traces', 'svcmap', 'perses', 'k8s']
+  const TELEMETRY_TABS: ExploreTab[] = ['logs', 'traces', 'metrics', 'svcmap', 'perses', 'k8s']
   // Une seule destination d'ingestion : sans data, la page Ingestion porte le
   // guide elle aussi (au lieu d'une 2e page de setup), et reste la seule entrée
   // de la nav qui n'est pas atténuée.
@@ -3358,6 +3711,7 @@ const ExploreTabsProto = () => {
   // affichable, comme dans le vrai produit : on ne la montre qu'à l'émission.
   // Plages de temps des pages : elles vivent ici parce que le sélecteur est dans
   // l'en-tête de page, à droite du titre, et qu'il porte tout le contenu.
+  const [metricSearch, setMetricSearch] = useState('')
   const [logRange, setLogRange] = useState('24h')
   const [traceRange, setTraceRange] = useState('1h')
   // Comparaison de périodes : attribut de la plage, donc piloté depuis l'en-tête.
@@ -3424,8 +3778,8 @@ const ExploreTabsProto = () => {
     const signal: 'logs' | 'traces' = tab === 'traces' ? 'traces' : 'logs'
     const query =
       signal === 'traces'
-        ? `service:${traceSvc === 'all' ? '*' : traceSvc} ${traceSearch}`.trim()
-        : `level:${logLevel} ${logSearch}`.trim()
+        ? `service:${traceSvc || '*'} ${traceSearch}`.trim()
+        : `level:${logLevel || '*'} ${logSearch}`.trim()
     setAlertDraft({ ...emptyAlert, signal, query, name: signal === 'traces' ? 'High trace error rate' : 'High log error rate' })
     setAlertOpen(true)
   }
@@ -3594,7 +3948,7 @@ const ExploreTabsProto = () => {
           <ServiceMapView
             empty={noData}
             onGoToLogs={(svc) => {
-              setLogLevel('all')
+              setLogLevel('')
               setLogSearch(svc)
               setTab('logs')
             }}
@@ -3605,6 +3959,8 @@ const ExploreTabsProto = () => {
             }}
           />
         )
+      case 'metrics':
+        return <MetricsView search={metricSearch} setSearch={setMetricSearch} empty={noData} />
       case 'k8s':
         return <KubernetesView empty={noData} />
       case 'usage':
@@ -3692,15 +4048,17 @@ const ExploreTabsProto = () => {
 
       {/* Content */}
       <div className={styles.content}>
-        {ingestState && tab !== 'usage' && (
+        {ingestState && (
           <StateBand
             tone={ingestState.tone}
             icon={bandIcon}
             text={ingestState.band}
             action={
-              <Button color="secondary" size="s" onClick={() => setTab('usage')}>
-                {obsState === 'connected' ? 'Check your setup' : 'Open setup'}
-              </Button>
+              tab === 'usage' ? undefined : (
+                <Button color="secondary" size="s" onClick={() => setTab('usage')}>
+                  {obsState === 'connected' ? 'Check your setup' : 'Open setup'}
+                </Button>
+              )
             }
           />
         )}
@@ -3714,7 +4072,7 @@ const ExploreTabsProto = () => {
               <div className={styles.contentActions}>
                 {/* La plage de temps porte TOUT le contenu de la page : elle vit donc
                     dans l'en-tête, à droite du titre, pas dans une carte. */}
-                {(tab === 'logs' || tab === 'traces') && obsState !== 'empty' && (
+                {(tab === 'logs' || tab === 'traces' || tab === 'metrics') && obsState !== 'empty' && (
                   <DateRangePicker
                     size="m"
                     defaultValue={tab === 'logs' ? 3 : 1}
@@ -3726,7 +4084,7 @@ const ExploreTabsProto = () => {
                       )
                       const key = rangeKeyFromMinutes(mins)
                       if (tab === 'logs') setLogRange(key)
-                      else setTraceRange(key)
+                      else if (tab === 'traces') setTraceRange(key)
                     }}
                   />
                 )}
@@ -3757,17 +4115,6 @@ const ExploreTabsProto = () => {
               </div>
             )}
           </div>
-          {ingestState && tab === 'usage' && (
-            <div className={`${styles.stateBanner} ${styles.pageHeadNarrow}`}>
-              <Banner
-                variant={ingestState.tone === 'success' ? 'success' : ingestState.tone === 'warning' ? 'warning' : 'secondary'}
-              >
-                <Banner.Icon>{bandIcon}</Banner.Icon>
-                <Banner.Description>{ingestState.title}</Banner.Description>
-                <Banner.SubDescription>{ingestState.sub}</Banner.SubDescription>
-              </Banner>
-            </div>
-          )}
           {renderView()}
         </div>
       </div>

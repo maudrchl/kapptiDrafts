@@ -1,6 +1,7 @@
 export type ExploreTab =
   | 'logs'
   | 'traces'
+  | 'metrics'
   | 'svcmap'
   | 'k8s'
   | 'usage'
@@ -12,6 +13,7 @@ export type ExploreTab =
 export const EXPLORE_TABS: { key: ExploreTab; label: string }[] = [
   { key: 'logs', label: 'Logs explorer' },
   { key: 'traces', label: 'Traces' },
+  { key: 'metrics', label: 'Metrics' },
   { key: 'svcmap', label: 'Service map' },
   { key: 'k8s', label: 'Kubernetes' },
   { key: 'usage', label: 'Ingestion' },
@@ -35,6 +37,11 @@ export const PAGE_META: Record<
   traces: {
     title: 'Traces',
     sub: 'Distributed tracing to follow requests across your microservices',
+    actions: [],
+  },
+  metrics: {
+    title: 'Metrics',
+    sub: 'Browse and chart the metrics your services emit',
     actions: [],
   },
   svcmap: {
@@ -172,6 +179,7 @@ node --require @opentelemetry/auto-instrumentations-node/register app.js`
 export const GATE_PROMISE: Partial<Record<ExploreTab, string>> = {
   logs: 'Your logs will land here, live, the moment a service starts exporting them.',
   traces: 'Your spans will land here as soon as your services start exporting traces.',
+  metrics: 'Every metric your services emit shows up here, with its type and its unit.',
   perses: 'Trace dashboards are built on trace data, so this page needs spans first.',
   svcmap: 'The map draws itself from your traces, so it needs spans before it can show anything.',
   k8s: 'Cluster health arrives with the Kubernetes agent, alongside your services telemetry.',
@@ -452,14 +460,19 @@ const GROUP_SPECS: Record<string, GroupSpec> = {
   g22: { name: 'GET /api/menu', durMs: 1, status: 'ok', svcs: ['demo-site', 'redis'] },
 }
 
-const SVC_COLOR: Record<string, string> = {
+/** Un service = une couleur, la même sur toutes les pages (barres de traces,
+ *  service map, métriques). Exportée pour qu'aucune page n'en réinvente. */
+export const SVC_COLOR: Record<string, string> = {
   'demo-site': '#6366f1',
   'payment-service': '#1fae7e',
   stripe: '#a78bfa',
   postgres: '#f59e0b',
   redis: '#06b6d4',
   auth: '#60a5fa',
+  rabbitmq: '#e879a8',
+  'obs-agent': '#14b8a6',
 }
+export const svcColor = (svc: string) => SVC_COLOR[svc] ?? '#94a3b8'
 const BAR_LAYOUT = [
   { left: 0, width: 100 },
   { left: 18, width: 60 },
@@ -692,16 +705,39 @@ export const METRIC_TOTALS = {
   histogram: METRICS.filter((m) => m.type === 'histogram').length,
 }
 
-/** Points d'une métrique : déterministes à partir de son nom. */
+/** Points d'une métrique : déterministes à partir de son nom, et de FORME propre
+ *  au type, sinon toutes les courbes se ressemblent et n'apprennent rien.
+ *  - sum : compteur cumulatif, donc croissant ;
+ *  - gauge : oscille autour d'un niveau ;
+ *  - histogram : bruité, avec des pics. */
 export const metricPoints = (m: MetricEntry, n = 24): number[] => {
   let h = 0
   for (let i = 0; i < m.name.length; i++) h = (h * 31 + m.name.charCodeAt(i)) % 9973
+  const noise = (i: number, k = 1) => (((h + i * 37 * k) % 23) / 23 - 0.5)
   return Array.from({ length: n }, (_, i) => {
-    const wave = Math.sin((i / n) * Math.PI * 2 + (h % 7)) * 0.18
-    const jitter = (((h + i * 37) % 23) / 23 - 0.5) * 0.08
-    const base = m.type === 'gauge' ? 0.72 : 0.55
-    return Math.max(0, m.scale * (base + wave + jitter))
+    const t = i / (n - 1)
+    if (m.type === 'sum') {
+      // Cumul : monte, avec une pente propre à la métrique.
+      const slope = 0.55 + ((h % 40) / 100)
+      return Math.max(0, m.scale * (0.25 + t * slope + noise(i) * 0.03))
+    }
+    if (m.type === 'histogram') {
+      const spike = (h + i * 13) % 9 === 0 ? 0.42 : 0
+      return Math.max(0, m.scale * (0.45 + noise(i, 3) * 0.28 + spike))
+    }
+    // Gauge : niveau stable et respiration lente, amplitude variable par métrique.
+    const amp = 0.06 + ((h % 17) / 100)
+    return Math.max(0, m.scale * (0.7 + Math.sin(t * Math.PI * 2 + (h % 7)) * amp + noise(i) * 0.04))
   })
+}
+
+/** Variation entre le premier et le dernier tiers de la fenêtre : comparable
+ *  d'une métrique à l'autre, et triable, ce qu'une sparkline n'est pas. */
+export const metricTrend = (m: MetricEntry) => {
+  const pts = metricPoints(m)
+  const k = Math.max(1, Math.floor(pts.length / 3))
+  const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length
+  return { prev: avg(pts.slice(0, k)), cur: avg(pts.slice(-k)) }
 }
 
 /** Unité lisible : on n'affiche pas 25 000 000 000 quand on peut dire 25 GB. */
@@ -722,3 +758,18 @@ export const fmtMetric = (v: number, unit: string): string => {
   if (v >= 1000) return `${(v / 1000).toFixed(v >= 10_000 ? 0 : 1)}k`
   return v < 10 ? v.toFixed(2) : String(Math.round(v))
 }
+
+/** Un compteur cumulatif (type `sum`) ne se lit pas en valeur absolue : ce qui
+ *  informe, c'est sa pente. On dérive donc la série en taux par seconde.
+ *  Fenêtre par défaut : 24 points sur 24 h, soit un bucket d'une heure. */
+export const metricRate = (m: MetricEntry, bucketSeconds = 3600): (number | null)[] => {
+  const pts = metricPoints(m)
+  return pts.map((v, i) => (i === 0 ? null : Math.max(0, (v - pts[i - 1]) / bucketSeconds)))
+}
+
+/** Unité d'un taux. `s/s` n'a pas de sens pour un lecteur : du temps CPU par
+ *  seconde, ce sont des cores. */
+export const rateUnit = (unit: string) => (unit === 's' ? 'cores' : `${unit}/s`)
+
+/** La métrique se lit-elle en taux ? Seuls les compteurs cumulatifs. */
+export const isCumulative = (m: MetricEntry) => m.type === 'sum'

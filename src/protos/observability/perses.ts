@@ -22,6 +22,10 @@ export type Series = {
   points: (number | null)[]
   dash?: boolean
   opacity?: number
+  /** Enveloppe min/max autour de la courbe : la dispersion du bucket, tracée en
+   *  aire très peu opaque sous la moyenne. Sans elle, une moyenne seule laisse
+   *  croire à une valeur stable. */
+  band?: { lo: (number | null)[]; hi: (number | null)[] }
 }
 
 export type Panel = {
@@ -345,6 +349,9 @@ export const makePanel = (spec: PanelSpec): Omit<Panel, 'id'> => ({
   xLabels: spec.xLabels ?? X_LABELS['1h'],
   span: spec.span ?? 1,
   series: spec.series ?? [{ name: 'demo-site', color: SERIES_PINK, points: [4, 7, 9, 12, 15, null, null] }],
+  /* yFmt était perdu ici, d'où des axes en valeurs brutes (33266240084 au lieu
+     de 31 GB) dès qu'on passait par makePanel. */
+  yFmt: spec.yFmt,
 })
 
 const ramp = (min: number, max: number, n = 5): (number | null)[] => {

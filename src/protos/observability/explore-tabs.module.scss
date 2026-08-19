@@ -1,3 +1,8 @@
+/* Hauteur de ligne commune aux trois tableaux (logs, traces, metrics). Une seule
+   valeur : c'est la seule façon d'être sûr qu'ils restent identiques. */
+$row-h: 38px;
+$head-h: 34px;
+
 .page {
   display: flex;
   height: 100vh;
@@ -333,15 +338,20 @@
 }
 
 /* En-tête du tableau : « Time by service » + légende, fond blanc, filet en bas. */
-/* Entête de colonnes (même rôle que .logTableHead). Tailles = tokens du DS. */
+/* Entête de colonnes : MÊME écriture que .logTableHead (fond gris, 12px medium,
+   texte secondaire, padding 9px 16px), pour que les deux tableaux se lisent
+   pareil d'une page à l'autre. */
 .traceListHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 11px 16px;
+  min-height: $head-h;
+  padding: 0 16px;
+  background: var(--color-surface-grey, #fafafb);
   border-bottom: 1px solid var(--color-border-grey, #e4e4e7);
-  font-size: var(--text-xs, 11px);
+  font-size: var(--text-s, 12px);
+  font-weight: 500;
   color: var(--color-text-secondary, #667085);
 }
 
@@ -352,8 +362,12 @@
   gap: 6px 16px;
 }
 
+/* Même hauteur exacte que .logRow et que les lignes du Table DS. */
 .traceRow {
-  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  min-height: $row-h;
+  padding: 0 16px;
   cursor: pointer;
   transition: background 0.12s;
   border-bottom: 1px solid var(--color-border-grey, #e4e4e7);
@@ -372,6 +386,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  /* .traceRow est devenu flex (hauteur commune) : sans ça la ligne ne prend plus
+     toute la largeur. */
+  flex: 1;
+  min-width: 0;
 }
 
 .traceName {
@@ -456,9 +474,9 @@
 }
 
 .traceNameText {
-  font-size: 13px;
-  font-weight: 600;
-  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: var(--text-s, 12px);
+  font-weight: 500;
+  font-family: var(--font-mono, 'Geist Mono'), ui-monospace, monospace;
   color: var(--color-text-primary, #101828);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -470,6 +488,36 @@
   gap: 14px;
   align-items: center;
   flex-shrink: 0;
+}
+
+/* Largeurs des colonnes de droite déclarées UNE SEULE FOIS pour l'entête et la
+   cellule : deux règles séparées finissent toujours par dériver. Élargies pour
+   que « Duration » et « Spans » ne soient pas à l'étroit. */
+/* display: inline-block OBLIGATOIRE : une width sur un <span> inline est ignorée,
+   donc l'entête et la cellule prenaient chacun la largeur de leur texte et les
+   colonnes ne pouvaient pas s'aligner. */
+.traceSpans,
+.traceHeadSpans {
+  display: inline-block;
+  width: 84px;
+  text-align: left;
+}
+
+.traceDur,
+.traceHeadDur {
+  display: inline-block;
+  width: 84px;
+  text-align: left;
+}
+
+.traceHeadBar {
+  display: inline-block;
+  text-align: left;
+}
+
+.traceMiniBar,
+.traceHeadBar {
+  width: 132px;
 }
 
 /* Colonnes de l'entête, alignées sur les largeurs des cellules de la ligne. */
@@ -484,21 +532,6 @@
   align-items: center;
   gap: 14px;
   flex-shrink: 0;
-}
-
-.traceHeadSpans {
-  width: 72px;
-  text-align: right;
-}
-
-.traceHeadDur {
-  width: 68px;
-  text-align: right;
-}
-
-.traceHeadBar {
-  width: 132px;
-  text-align: right;
 }
 
 /* Reste de la légende : liste dépliable, scrollable, bornée en hauteur. Une
@@ -529,10 +562,10 @@
   }
 }
 
-/* Mini répartition du temps par service, calée à droite de la ligne. */
+/* Mini répartition du temps par service (largeur déclarée plus haut, groupée
+   avec l'entête de colonne). */
 .traceMiniBar {
   display: flex;
-  width: 132px;
   height: 8px;
   gap: 2px;
   border-radius: 4px;
@@ -540,22 +573,20 @@
   flex-shrink: 0;
 }
 
-/* Colonnes de droite à largeur fixe pour s'aligner d'une ligne à l'autre. */
-/* Durée = info dominante de la card. */
+/* Typographie seule : la géométrie des colonnes (largeur + alignement) est
+   déclarée UNE fois plus haut, groupée avec celle de l'entête. Ne pas remettre
+   de width ni de text-align ici, elles écraseraient l'alignement. */
 .traceDur {
-  font-size: 13px;
-  font-weight: 600;
-  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: var(--text-s, 12px);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono, 'Geist Mono'), ui-monospace, monospace;
   color: var(--color-text-primary, #101828);
-  width: 68px;
-  text-align: right;
 }
 
 .traceSpans {
-  font-size: 11.5px;
+  font-size: var(--text-xs, 11px);
   color: var(--color-text-secondary, #667085);
-  width: 72px;
-  text-align: right;
 }
 
 /* Trace ID : relégué, peu lu en scan. */
@@ -1737,6 +1768,8 @@
   background: var(--color-surface-white, #fff);
   border: 1px solid var(--color-border-grey, #e4e4e7);
   border-radius: var(--radius-md, 6px);
+  /* Sans ça le fond de l'entête dépasse des coins arrondis (comme sur .traceList). */
+  overflow: hidden;
 }
 
 .logTableHead,
@@ -1749,6 +1782,7 @@
 }
 
 .logTableHead {
+  min-height: $head-h;
   background: var(--color-surface-grey, #fafafb);
   border-bottom: 1px solid var(--color-border-grey, #e4e4e7);
   font-size: 12px;
@@ -1757,6 +1791,7 @@
 }
 
 .logRow {
+  min-height: $row-h;
   border-bottom: 1px solid var(--color-grey-100, #f3f3f3);
   font-family: 'Geist Mono', ui-monospace, monospace;
   font-size: 12px;
@@ -2063,8 +2098,9 @@
 
 .mono {
   font-variant-numeric: tabular-nums;
-  font-family: 'Geist Mono', ui-monospace, monospace;
-  font-size: 12px;
+  font-family: var(--font-mono, 'Geist Mono'), ui-monospace, monospace;
+  font-size: var(--text-s, 12px);
+  font-weight: 500;
 }
 
 .detailRow {
@@ -2145,6 +2181,104 @@
   composes: cardAction;
   color: var(--color-primary, #ed7846);
   background: color-mix(in srgb, var(--color-primary, #ed7846) 10%, transparent);
+}
+
+/* ===== METRICS ===== */
+/* Le Table du DS aligné sur .logTable et .traceList : même entête (fond gris,
+   --text-s medium secondaire), MÊME padding horizontal en tête et en corps (le
+   mode compact met 12 et 6, d'où des colonnes décalées), même typo de corps
+   (mono --text-s), même survol. Trois tableaux, une seule écriture. */
+.metricTable {
+  /* Sélecteurs assez spécifiques pour passer devant les règles du mode compact
+     du DS (._compact_ .ant-table .ant-table-tbody > tr > td), qui gagnaient et
+     laissaient 6px de padding, d'où la première colonne collée au bord. */
+  :global(.ant-table .ant-table-thead > tr > th) {
+    height: $head-h;
+    padding: 0 16px;
+    background: var(--color-surface-grey, #fafafb);
+    border-bottom: 1px solid var(--color-border-grey, #e4e4e7);
+    font-size: var(--text-s, 12px);
+    font-weight: 500;
+    color: var(--color-text-secondary, #667085);
+  }
+
+  :global(.ant-table .ant-table-tbody > tr > td) {
+    height: $row-h;
+    padding: 0 16px;
+    font-family: var(--font-mono, 'Geist Mono'), ui-monospace, monospace;
+    font-size: var(--text-s, 12px);
+    font-weight: 500;
+    color: var(--color-text-primary, #101828);
+    border-bottom: 1px solid var(--color-grey-100, #f3f3f3);
+  }
+
+  :global(.ant-table .ant-table-row) {
+    height: $row-h;
+  }
+
+  :global(.ant-table .ant-table-tbody > tr:hover > td) {
+    background: var(--color-surface-grey, #fafafb);
+  }
+}
+
+/* Service dans la table : pastille de couleur + nom, comme les légendes. */
+.metricSvc {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Unité et dernière valeur : mono, l'unité en retrait, la valeur lisible. */
+.metricUnit {
+  font-family: var(--font-mono, 'Geist Mono'), ui-monospace, monospace;
+  font-size: var(--text-xs, 11px);
+  color: var(--color-text-secondary, #667085);
+}
+
+.metricLast {
+  font-family: var(--font-mono, 'Geist Mono'), ui-monospace, monospace;
+  font-size: var(--text-s, 12px);
+  color: var(--color-text-primary, #101828);
+}
+
+.metricDrawer {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+
+  /* Aucun bloc ne doit être compressé en hauteur, ni imposer sa largeur. */
+  > * {
+    flex-shrink: 0;
+    min-width: 0;
+  }
+}
+
+/* Le SVG porte lui-même sa hauteur (attribut height du LineChart) : ce conteneur
+   ne fait que garantir la pleine largeur, sans déformer. */
+.metricChart {
+  width: 100%;
+  min-width: 0;
+}
+
+/* La Card du DS est écrite pour une grille : `flex: 1 0 0` + `height: 100%` +
+   `overflow: hidden`. Dans une colonne flex en hauteur automatique, sa base de
+   flex à 0 la fait s'effondrer et le contenu est coupé. On la remet en hauteur
+   de contenu quand elle vit dans un drawer. */
+.drawerCard {
+  flex: none;
+  height: auto;
+  align-self: stretch;
+  /* min-width: 0 sinon la légende (noms de métriques longs) impose sa largeur
+     min-content et la carte dépasse du drawer. */
+  min-width: 0;
+  overflow: hidden;
+}
+
+.metricTags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Compteur + indicateur live groupés à gauche : quand le live s'allume, il pousse
@@ -2723,6 +2857,31 @@
     border-radius: 4px;
     background: var(--color-surface-grey, #fafafb);
   }
+}
+
+/* Menu de filtre : mono ET même taille que le corps du tableau qu'il filtre
+   (--text-s), sinon le menu écrit plus gros que la donnée. Le composant DS
+   n'expose ni la famille ni la taille, on les force ici. */
+.filterMenu {
+  font-family: var(--font-mono, 'Geist Mono'), ui-monospace, monospace;
+  font-size: var(--text-s, 12px);
+
+  :global(*) {
+    font-family: inherit;
+    font-size: inherit;
+  }
+}
+
+/* Sortie de secours sous un état vide : revenir en arrière sans deviner. */
+.emptyAction {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+/* État vide DANS le tableau : l'entête et ses filtres restent accessibles. */
+.emptyInTable {
+  padding: 56px 24px;
 }
 
 /* En-tête de colonne qui porte son filtre : le contrôle suit le libellé. */

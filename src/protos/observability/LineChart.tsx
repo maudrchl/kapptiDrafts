@@ -14,7 +14,14 @@ const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) =
   const [measured, setMeasured] = useState<number | null>(null)
   useEffect(() => {
     const el = wrapRef.current
-    if (!el || typeof ResizeObserver === 'undefined') return
+    if (!el) return
+    // Mesure immédiate : dans un Drawer ou un panneau qui vient d'être monté,
+    // l'observer peut ne rien émettre alors que la largeur est déjà connue. Sans
+    // ça, le viewBox reste étroit et le SVG réclame une hauteur énorme (il est
+    // dimensionné par son ratio), donc il se fait écraser à zéro par le parent.
+    const first = Math.round(el.getBoundingClientRect().width)
+    if (first > 0) setMeasured(first)
+    if (typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver((entries) => {
       const w = Math.round(entries[0].contentRect.width)
       if (w > 0) setMeasured(w)
@@ -72,7 +79,22 @@ const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) =
     hover === null
       ? ''
       : xLabels[Math.round((hover / Math.max(1, pointCount - 1)) * (xLabels.length - 1))] ?? ''
-  const ttLines = hover === null ? [] : [hoverLabel, ...hoverRows.map((r) => `${r.name}: ${fmtVal(r.value)}${unit && !panel.yFmt ? ` ${unit}` : ''}`)]
+  const suffix = unit && !panel.yFmt ? ` ${unit}` : ''
+  const ttLines =
+    hover === null
+      ? []
+      : [
+          hoverLabel,
+          ...hoverRows.flatMap((r) => {
+            const s = series.find((x) => x.name === r.name)
+            const lo = s?.band?.lo[hover]
+            const hi = s?.band?.hi[hover]
+            const head = `${s?.band ? 'avg' : r.name}: ${fmtVal(r.value)}${suffix}`
+            return s?.band && lo != null && hi != null
+              ? [head, `min: ${fmtVal(lo)}${suffix}`, `max: ${fmtVal(hi)}${suffix}`]
+              : [head]
+          }),
+        ]
   const ttW = Math.max(72, ...ttLines.map((l) => l.length * 5.6 + 16))
   const ttH = ttLines.length * 14 + 10
   const ttX = hover === null ? 0 : Math.min(Math.max(xFor(hover) + 10, padL), W - padR - ttW)
@@ -80,7 +102,16 @@ const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) =
 
   return (
     <div className={styles.chartWrap} ref={wrapRef}>
-      <svg className={styles.chartSvg} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={panel.name}>
+      {/* height en pixels + viewBox mesuré à la largeur réelle = échelle 1:1 et
+          hauteur garantie. Sans hauteur explicite, le SVG dépend de son ratio et
+          peut tomber à zéro ; avec height:100% en CSS il se retrouve letterboxé. */}
+      <svg
+        className={styles.chartSvg}
+        viewBox={`0 0 ${W} ${H}`}
+        height={H}
+        role="img"
+        aria-label={panel.name}
+      >
         {ticks.map((t, i) => {
           const y = yFor(t)
           return (
@@ -93,6 +124,27 @@ const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) =
         {xLabels.map((lbl, i) => (
           <text key={lbl + i} className={styles.axisText} x={xForLabel(i)} y={H - 7} textAnchor="middle">{lbl}</text>
         ))}
+        {/* Enveloppe min/max d'abord, sous la courbe : aire de la couleur de la
+            série, très peu opaque. */}
+        {series.map((s) =>
+          s.band ? (
+            <polygon
+              key={`band-${s.name}`}
+              points={[
+                ...s.band.lo.map((v, i) => (v === null ? null : `${xFor(i).toFixed(1)},${yFor(v).toFixed(1)}`)),
+                ...[...s.band.hi].reverse().map((v, i) => {
+                  const idx = s.band!.hi.length - 1 - i
+                  return v === null ? null : `${xFor(idx).toFixed(1)},${yFor(v).toFixed(1)}`
+                }),
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              fill={s.color}
+              opacity={0.14}
+              stroke="none"
+            />
+          ) : null,
+        )}
         {series.map((s) =>
           segmentsFor(s.points).map((pts, i) => (
             <polyline key={s.name + i} points={pts} fill="none" stroke={s.color} strokeWidth={1.6} strokeDasharray={s.dash ? '4 4' : undefined} opacity={s.opacity ?? 1} strokeLinejoin="round" strokeLinecap="round" />
