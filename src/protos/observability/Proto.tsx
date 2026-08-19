@@ -430,11 +430,16 @@ const LogsView = ({
   onOpenTrace,
   empty,
   range,
+  svc,
+  setSvc,
 }: {
   search: string
   setSearch: (v: string) => void
   level: string
   setLevel: (v: string) => void
+  /** Filtre de la colonne Resource, multiselect comme la sévérité. */
+  svc: string
+  setSvc: (v: string) => void
   onOpenLog: (l: LogEntry) => void
   onOpenTrace: (t: TraceEntry) => void
   /** Connecté mais sans télémétrie : la page reste entière, les données sont vides. */
@@ -449,6 +454,7 @@ const LogsView = ({
   const TRACES = empty ? [] : ALL_TRACES
   const [live, setLive] = useState(false)
   const [levelFilterOpen, setLevelFilterOpen] = useState(false)
+  const [svcFilterOpen, setSvcFilterOpen] = useState(false)
   // Live tail : `rows` = flux courant (initialisé aux logs mockés), `newKeys` =
   // lignes fraîchement arrivées (pour le fondu), refs = horloge + compteur.
   const [rows, setRows] = useState<LogEntry[]>(LOGS)
@@ -458,9 +464,11 @@ const LogsView = ({
 
   const q = search.trim().toLowerCase()
   const levels = level.split(',').filter(Boolean)
+  const svcs = svc.split(',').filter(Boolean)
   const filtered = rows.filter(
     (l) =>
       (levels.length === 0 || levels.includes(l.level)) &&
+      (svcs.length === 0 || svcs.includes(l.svc)) &&
       (q === '' || `${l.msg} ${l.svc} ${l.level}`.toLowerCase().includes(q)),
   )
 
@@ -605,7 +613,37 @@ const LogsView = ({
               </Popover>
             </span>
             <span>Time</span>
-            <span>Resource</span>
+            <span className={styles.logHeadFilter}>
+              Resource
+              <Popover
+                trigger="click"
+                placement="bottomLeft"
+                noPadding
+                open={svcFilterOpen}
+                setOpen={setSvcFilterOpen}
+                content={
+                  <div className={styles.filterMenu}>
+                    <TableFilter
+                      selectedFilters={svc}
+                      setFilter={setSvc}
+                      items={[...new Set(ALL_LOGS.map((l) => l.svc))].map((sv) => ({
+                        label: sv,
+                        key: sv,
+                        icon: <span className={styles.miniDot} style={{ background: svcColor(sv) }} />,
+                      }))}
+                    />
+                  </div>
+                }
+              >
+                <button
+                  type="button"
+                  className={svcs.length === 0 ? styles.headFilterBtn : styles.headFilterBtnOn}
+                  aria-label="Filter by resource"
+                >
+                  <IconListFilter size={13} />
+                </button>
+              </Popover>
+            </span>
             <span>Body</span>
             <span>Trace</span>
           </div>
@@ -1257,6 +1295,34 @@ const SmartSearch = ({
       // « {} » séparé pour découvrir la syntaxe, elle s'offre dans le champ.
       onFocus={() => setOpen(true)}
       onKeyDown={(e) => {
+        // Effacement par JETON, pas par caractère, sur les filtres `clé:valeur`.
+        // Deux temps, parce que le geste le plus fréquent est de changer la valeur
+        // sans retaper la clé : 1re pression = la valeur (et la liste se réouvre),
+        // 2e = la clé. Le texte libre garde le comportement normal.
+        if (e.key === 'Backspace') {
+          const input = wrapRef.current?.querySelector('input')
+          const atEnd =
+            !input ||
+            (input.selectionStart === input.selectionEnd && input.selectionStart === value.length)
+          if (atEnd) {
+            const withValue = /([\w.-]+):([^\s]+)\s?$/.exec(value)
+            if (withValue) {
+              e.preventDefault()
+              onChange(value.slice(0, withValue.index) + `${withValue[1]}:`)
+              setOpen(true)
+              setHi(0)
+              return
+            }
+            const keyOnly = /([\w.-]+):\s?$/.exec(value)
+            if (keyOnly) {
+              e.preventDefault()
+              onChange(value.slice(0, keyOnly.index))
+              setOpen(true)
+              setHi(0)
+              return
+            }
+          }
+        }
         if (!open || !shown.length) return
         if (e.key === 'ArrowDown') {
           e.preventDefault()
@@ -1297,7 +1363,7 @@ const SmartSearch = ({
             </button>
           ))}
           <div className={styles.ssFoot}>
-            <kbd>Tab</kbd> or <kbd>Enter</kbd> to complete
+            <kbd>Tab</kbd> or <kbd>Enter</kbd> to complete, <kbd>Backspace</kbd> clears the value
           </div>
         </div>
       )}
@@ -3578,6 +3644,7 @@ const ExploreTabsProto = () => {
 
   // lifted view state (needed by header actions)
   const [logSearch, setLogSearch] = useState('')
+  const [logSvc, setLogSvc] = useState('')
   // Filtres de colonne = multiselect du DS : chaîne de clés séparées par des
   // virgules, et vide veut dire « tout », donc pas d'option « All … » à cocher.
   const [logLevel, setLogLevel] = useState('')
@@ -3930,7 +3997,20 @@ const ExploreTabsProto = () => {
   const renderTabView = () => {
     switch (tab) {
       case 'logs':
-        return <LogsView search={logSearch} setSearch={setLogSearch} level={logLevel} setLevel={setLogLevel} onOpenLog={openLog} onOpenTrace={setTraceDetail} empty={noData} range={logRange} />
+        return (
+          <LogsView
+            search={logSearch}
+            setSearch={setLogSearch}
+            level={logLevel}
+            setLevel={setLogLevel}
+            svc={logSvc}
+            setSvc={setLogSvc}
+            onOpenLog={openLog}
+            onOpenTrace={setTraceDetail}
+            empty={noData}
+            range={logRange}
+          />
+        )
       case 'traces':
         return (
           <TracesView
@@ -3948,8 +4028,11 @@ const ExploreTabsProto = () => {
           <ServiceMapView
             empty={noData}
             onGoToLogs={(svc) => {
+              // On pose le filtre de la colonne, pas une recherche plein texte :
+              // c'est ce que l'utilisateur pourra ensuite retirer d'un clic.
               setLogLevel('')
-              setLogSearch(svc)
+              setLogSearch('')
+              setLogSvc(svc)
               setTab('logs')
             }}
             onGoToTraces={(svc) => {
