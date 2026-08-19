@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import styles from './perses.module.scss'
 import type { Panel } from './perses'
 
@@ -7,7 +7,22 @@ import type { Panel } from './perses'
    Survol : ligne guide + marqueurs + tooltip valeur au point (tout en SVG,
    pas de dépendance scss pour rester robuste). */
 const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) => {
-  const W = panel.span === 3 ? 1040 : 360
+  // Le SVG est étiré à 100% de son conteneur, donc un viewBox plus étroit que le
+  // rendu grossit TOUT (texte des axes, épaisseurs). On mesure la largeur réelle
+  // pour travailler à l'échelle 1:1 : les axes gardent leur taille voulue.
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const [measured, setMeasured] = useState<number | null>(null)
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver((entries) => {
+      const w = Math.round(entries[0].contentRect.width)
+      if (w > 0) setMeasured(w)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const W = measured ?? (panel.span === 3 ? 1040 : 360)
   const H = height
   const padL = panel.yFmt ? 56 : 34
   const padR = 6
@@ -20,7 +35,11 @@ const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) =
   const [hover, setHover] = useState<number | null>(null)
 
   const yFor = (v: number) => padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH
-  const xFor = (i: number) => padL + (xLabels.length === 1 ? 0 : (i / (xLabels.length - 1)) * plotW)
+  // Nombre de points de la série la plus dense : c'est lui qui définit la grille
+  // en X. Les étiquettes gardent leur propre espacement (6 ticks, 24 points…).
+  const pointCount = Math.max(1, ...series.map((s) => s.points.length))
+  const xFor = (i: number) => padL + (pointCount === 1 ? 0 : (i / (pointCount - 1)) * plotW)
+  const xForLabel = (i: number) => padL + (xLabels.length === 1 ? 0 : (i / (xLabels.length - 1)) * plotW)
   const ticks = Array.from({ length: yTicks }, (_, i) => yMin + ((yMax - yMin) / (yTicks - 1)) * i)
 
   const segmentsFor = (points: (number | null)[]) => {
@@ -49,14 +68,18 @@ const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) =
   const fmtVal = (v: number) => (panel.yFmt ? panel.yFmt(v) : Number.isInteger(v) ? String(v) : v.toFixed(1))
 
   // Tooltip : dimensions + position clampée dans la zone de tracé.
-  const ttLines = hover === null ? [] : [xLabels[hover], ...hoverRows.map((r) => `${r.name}: ${fmtVal(r.value)}${unit && !panel.yFmt ? ` ${unit}` : ''}`)]
+  const hoverLabel =
+    hover === null
+      ? ''
+      : xLabels[Math.round((hover / Math.max(1, pointCount - 1)) * (xLabels.length - 1))] ?? ''
+  const ttLines = hover === null ? [] : [hoverLabel, ...hoverRows.map((r) => `${r.name}: ${fmtVal(r.value)}${unit && !panel.yFmt ? ` ${unit}` : ''}`)]
   const ttW = Math.max(72, ...ttLines.map((l) => l.length * 5.6 + 16))
   const ttH = ttLines.length * 14 + 10
   const ttX = hover === null ? 0 : Math.min(Math.max(xFor(hover) + 10, padL), W - padR - ttW)
   const ttY = padT + 2
 
   return (
-    <div className={styles.chartWrap}>
+    <div className={styles.chartWrap} ref={wrapRef}>
       <svg className={styles.chartSvg} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={panel.name}>
         {ticks.map((t, i) => {
           const y = yFor(t)
@@ -68,7 +91,7 @@ const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) =
           )
         })}
         {xLabels.map((lbl, i) => (
-          <text key={lbl + i} className={styles.axisText} x={xFor(i)} y={H - 7} textAnchor="middle">{lbl}</text>
+          <text key={lbl + i} className={styles.axisText} x={xForLabel(i)} y={H - 7} textAnchor="middle">{lbl}</text>
         ))}
         {series.map((s) =>
           segmentsFor(s.points).map((pts, i) => (
@@ -103,11 +126,11 @@ const LineChart = ({ panel, height = 160 }: { panel: Panel; height?: number }) =
         )}
 
         {/* Zones de survol invisibles (une bande par point) */}
-        {xLabels.map((lbl, i) => {
-          const band = xLabels.length === 1 ? plotW : plotW / (xLabels.length - 1)
+        {Array.from({ length: pointCount }, (_, i) => i).map((i) => {
+          const band = pointCount === 1 ? plotW : plotW / (pointCount - 1)
           return (
             <rect
-              key={`hit-${lbl}-${i}`}
+              key={`hit-${i}`}
               x={xFor(i) - band / 2}
               y={padT}
               width={band}

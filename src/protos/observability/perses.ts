@@ -49,6 +49,13 @@ export type Panel = {
   yFmt?: (v: number) => string
 }
 
+/** Panel vidé : les axes et l'unité restent, la courbe n'existe pas (points null).
+ *  Sert à l'état « connecté mais aucune télémétrie » : le graphe est prêt, vide. */
+export const emptyPanel = (p: Panel): Panel => ({
+  ...p,
+  series: p.series.map((se) => ({ ...se, points: se.points.map(() => null) })),
+})
+
 export type PanelGroup = {
   id: string
   name: string
@@ -100,6 +107,30 @@ export const TIME_RANGE_OPTIONS: { label: string; value: string }[] = [
   { label: 'Last 24 hours', value: '24h' },
   { label: 'Last 7 days', value: '7d' },
 ]
+
+/** Durée de chaque raccourci, en minutes : le DateRangePicker du DS attend des
+ *  bornes réelles, pas une clé. Sert aussi à retrouver la clé après un choix. */
+export const RANGE_MINUTES: Record<string, number> = {
+  '15m': 15,
+  '1h': 60,
+  '6h': 360,
+  '24h': 1440,
+  '7d': 10080,
+}
+
+/** Options prêtes pour <DateRangePicker options=…>, calculées à l'ouverture. */
+export const rangeShortcuts = (keys: string[] = Object.keys(RANGE_MINUTES)) =>
+  keys.map((k) => ({
+    label: TIME_RANGE_OPTIONS.find((o) => o.value === k)?.label ?? k,
+    value: {
+      start: new Date(Date.now() - RANGE_MINUTES[k] * 60_000).toISOString(),
+      end: new Date().toISOString(),
+    },
+  }))
+
+/** Clé de plage la plus proche d'une durée en minutes (sinon 'custom'). */
+export const rangeKeyFromMinutes = (mins: number) =>
+  Object.entries(RANGE_MINUTES).find(([, m]) => mins <= m)?.[0] ?? 'custom'
 
 /** Étiquettes d'axe X selon la plage temporelle sélectionnée. */
 export const X_LABELS: Record<string, string[]> = {
@@ -433,3 +464,79 @@ export const interpretPrompt = (raw: string): AiProposal => {
     panels: [{ name: raw.slice(0, 40) || 'New panel', queryType: 'clickhouse-sql', sql: SQL_TIMESERIES('count()'), yMin: 0, yMax: 20, yTicks: 5, series: series(ramp(4, 15)) }],
   }
 }
+
+/* ─────────────────────────────────────────────
+ *  Effet de la plage de temps sur les données (démo).
+ *  Un proto doit MONTRER ce que le contrôle change : sans ça on ne comprend pas
+ *  la portée du date picker. Les compteurs (volumes) suivent la durée, les taux
+ *  et les latences non : ce sont des moyennes, elles ne se cumulent pas.
+ * ───────────────────────────────────────────── */
+
+/** Facteur de volume par rapport à la référence 1 heure. */
+export const rangeFactor = (range: string) => (RANGE_MINUTES[range] ?? 60) / 60
+
+/** Nombre de points tracés par plage : c'est ce qui rend l'effet du date picker
+ *  VISIBLE (une fenêtre courte est dense et nerveuse, une longue est lissée).
+ *  Les étiquettes d'axe restent au nombre de ticks, les points sont indépendants. */
+const RANGE_POINTS: Record<string, number> = {
+  '15m': 15,
+  '1h': 12,
+  '6h': 18,
+  '24h': 24,
+  '7d': 28,
+}
+
+/** Rééchantillonne un panel sur la plage choisie : densité de points, étiquettes
+ *  d'axe, et lissage croissant avec la durée (une longue fenêtre gomme les creux). */
+export const panelForRange = (p: Panel, range: string): Panel => {
+  const labels = X_LABELS[range] ?? p.xLabels
+  const n = RANGE_POINTS[range] ?? labels.length
+  const f = rangeFactor(range)
+  const smooth = Math.min(0.7, Math.max(0, Math.log10(Math.max(1, f)) / 2.4))
+  return {
+    ...p,
+    xLabels: labels,
+    series: p.series.map((s, si) => {
+      const src = s.points.filter((v): v is number => v !== null && v !== undefined)
+      if (!src.length) return { ...s, points: Array.from({ length: n }, () => null) }
+      const avg = src.reduce((a, b) => a + b, 0) / src.length
+      return {
+        ...s,
+        points: Array.from({ length: n }, (_, i) => {
+          // Interpolation linéaire entre les points d'origine, puis tirage vers la
+          // moyenne selon la durée, plus une ondulation propre à la plage pour que
+          // deux fenêtres ne se ressemblent jamais.
+          const t = (i / Math.max(1, n - 1)) * (src.length - 1)
+          const a = src[Math.floor(t)]
+          const b = src[Math.min(src.length - 1, Math.ceil(t))]
+          const base = a + (b - a) * (t - Math.floor(t))
+          const wave = Math.sin((i / n) * Math.PI * 2 * (1 + si * 0.3) + f) * avg * 0.08
+          const v = base * (1 - smooth) + avg * smooth + wave
+          return Math.round(Math.max(0, v) * 10) / 10
+        }),
+      }
+    }),
+  }
+}
+
+/** Ajoute la période précédente EN PLUS, sur le même graphe : une courbe grise
+ *  en pointillés sous la courbe courante. Comparer ne doit rien restructurer,
+ *  juste superposer un repère. */
+export const withPrevious = (p: Panel): Panel => ({
+  ...p,
+  showLegend: true,
+  series: [
+    ...p.series.map((s) => ({ ...s, name: s.name === p.name ? 'Current period' : s.name })),
+    ...p.series.slice(0, 1).map((s) => ({
+      ...s,
+      name: 'Previous period',
+      color: '#98a2b3',
+      dash: true,
+      opacity: 0.55,
+      // Décalage léger et lissage : un repère, pas une deuxième lecture exacte.
+      points: s.points.map((v, i) =>
+        v === null || v === undefined ? null : Math.round(v * (0.86 + ((i % 5) * 0.04)) * 10) / 10,
+      ),
+    })),
+  ],
+})

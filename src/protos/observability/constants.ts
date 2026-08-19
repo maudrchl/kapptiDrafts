@@ -14,7 +14,7 @@ export const EXPLORE_TABS: { key: ExploreTab; label: string }[] = [
   { key: 'traces', label: 'Traces' },
   { key: 'svcmap', label: 'Service map' },
   { key: 'k8s', label: 'Kubernetes' },
-  { key: 'usage', label: 'Usage & ingestion' },
+  { key: 'usage', label: 'Ingestion' },
   { key: 'perses', label: 'Traces (Perses)' },
   { key: 'alerts', label: 'Alerts' },
   { key: 'incidents', label: 'Incidents' },
@@ -28,18 +28,14 @@ export const PAGE_META: Record<
   logs: {
     title: 'Logs explorer',
     sub: 'Search, filter and analyze logs across all services in real time',
-    actions: [
-      { label: 'Pin as panel', primary: false },
-      { label: 'Create alert', primary: true },
-    ],
+    // Pin as panel et Create alert retirés : le pin reste incohérent et l'alerting
+    // est hors périmètre pour l'instant (section retirée de la nav).
+    actions: [],
   },
   traces: {
     title: 'Traces',
     sub: 'Distributed tracing to follow requests across your microservices',
-    actions: [
-      { label: 'Pin as panel', primary: false },
-      { label: 'Create alert', primary: true },
-    ],
+    actions: [],
   },
   svcmap: {
     title: 'Service map',
@@ -55,8 +51,8 @@ export const PAGE_META: Record<
     ],
   },
   usage: {
-    title: 'Usage & ingestion',
-    sub: 'Ingestion volume, quota, retention and OTLP access for this workspace',
+    title: 'Ingestion',
+    sub: 'Connection details, volume, quota and retention for this workspace',
     actions: [
       { label: 'Read docs', primary: false },
       { label: 'Adjust quota', primary: true },
@@ -87,10 +83,99 @@ export const PAGE_META: Record<
 /* ─────────────────────────────────────────────
  *  Usage & ingestion (mock) - vue "Usage & ingestion"
  * ───────────────────────────────────────────── */
-export const OTLP_ENDPOINT_USAGE = 'https://otlp.eu.kapptivate.com:4317'
-export const OTLP_INTERNAL_ID = '3e8bb916-ff44-5a58-b45d-72ef8b0b76d8'
+export const OTLP_ENDPOINT_USAGE = 'https://obs-collector.kappti.dev'
+export const OTLP_INTERNAL_ID = '9cf352cd-f583-54a1-934f-c922f5094400'
 export const OTLP_KEY_MASKED =
   'otlp_sk_live_a91c··················3f9a'
+
+/* Hôte d'ingestion OTLP/HTTP : la vraie valeur du produit sur dev-1, pour que la
+ * discussion porte sur le parcours et pas sur des valeurs inventées. */
+export const OTLP_ENDPOINT_HTTP = 'https://obs-collector.kappti.dev'
+
+/* ─────────────────────────────────────────────
+ *  Onboarding "Connect data".
+ *  Parti pris : la clé s'émet DEPUIS le setup (visible une seule fois) et se
+ *  réinjecte dans le snippet affiché. Donc ni aller-retour vers une autre page,
+ *  ni base64 à fabriquer à la main, ni instruction dans le bloc de code :
+ *  ce qu'on copie est collable tel quel.
+ * ───────────────────────────────────────────── */
+export type OtlpPlatform = 'collector' | 'go' | 'node'
+
+/* Ce ne sont PAS des alternatives exclusives : un collector est le seul point à
+ * configurer si on en a un ; sinon il faut le faire sur CHAQUE service, donc Go
+ * et Node si on a les deux. D'où une liste dépliable, pas un sélecteur. */
+export const OTLP_PLATFORMS: { key: OtlpPlatform; label: string }[] = [
+  { key: 'collector', label: 'OpenTelemetry Collector' },
+  { key: 'go', label: 'Go service' },
+  { key: 'node', label: 'Node.js service' },
+]
+
+/** Ce que chaque cas implique, en une phrase, AU-DESSUS du bloc. */
+export const OTLP_PLATFORM_HINT: Record<OtlpPlatform, string> = {
+  collector: 'If you run one, this is the only place to configure. Your services keep pointing at your collector, nothing changes for them.',
+  go: 'The OTLP exporter picks these three variables up on its own, no code change beyond creating the exporter. Set them on every Go service you want to see.',
+  node: 'Same three variables, plus the auto-instrumentation loader so your code stays untouched. Set them on every Node.js service you want to see.',
+}
+
+/** Télémétrie d'infra du cluster : une couche EN PLUS des services, pas une
+ *  alternative. D'où une étape à part, explicitement optionnelle. */
+export const otlpK8sSnippet = (key: string | null) =>
+  `helm install obs-agent oci://ghcr.io/benjaminb64/kapptivate-obs-agent \\
+  --namespace obs-agent --create-namespace \\
+  --set endpoint="${OTLP_ENDPOINT_HTTP}" \\
+  --set auth.tenantId="${OTLP_INTERNAL_ID}" \\
+  --set auth.apiKey="${key ?? '<YOUR_API_KEY>'}"`
+
+/** Le credential Basic prêt à coller : plus de printf | base64 côté client. */
+export const otlpCredential = (key: string) => btoa(`${OTLP_INTERNAL_ID}:${key}`)
+
+/** Sonde de connectivité : une commande, une réponse 2xx, on sait tout de suite. */
+export const otlpTestCurl = (key: string | null) =>
+  `curl -i -X POST "${OTLP_ENDPOINT_HTTP}/v1/traces" \\
+  -u "${OTLP_INTERNAL_ID}:${key ?? '<YOUR_API_KEY>'}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"resourceSpans":[]}'`
+
+
+export const otlpSnippet = (p: OtlpPlatform, key: string | null): string => {
+  const http = OTLP_ENDPOINT_HTTP
+  const cred = key ? otlpCredential(key) : '<BASE64_CREDENTIAL>'
+  switch (p) {
+    case 'collector':
+      return `exporters:
+  otlphttp/kapptivate:
+    endpoint: "${http}"
+    headers:
+      Authorization: "Basic ${cred}"
+
+service:
+  pipelines:
+    traces:
+      exporters: [otlphttp/kapptivate]
+    metrics:
+      exporters: [otlphttp/kapptivate]
+    logs:
+      exporters: [otlphttp/kapptivate]`
+    case 'go':
+      return `export OTEL_EXPORTER_OTLP_ENDPOINT="${http}"
+export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic ${cred}"`
+    case 'node':
+      return `export OTEL_EXPORTER_OTLP_ENDPOINT="${http}"
+export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic ${cred}"
+node --require @opentelemetry/auto-instrumentations-node/register app.js`
+  }
+}
+
+/** Ce que CETTE page attend : la promesse est spécifique, l'action reste la même. */
+export const GATE_PROMISE: Partial<Record<ExploreTab, string>> = {
+  logs: 'Your logs will land here, live, the moment a service starts exporting them.',
+  traces: 'Your spans will land here as soon as your services start exporting traces.',
+  perses: 'Trace dashboards are built on trace data, so this page needs spans first.',
+  svcmap: 'The map draws itself from your traces, so it needs spans before it can show anything.',
+  k8s: 'Cluster health arrives with the Kubernetes agent, alongside your services telemetry.',
+}
 
 /** Ingéré ce mois-ci (le statut "Critical" dérive de ceci vs le cap, pas d'un chiffre en dur). */
 export const USAGE_INGESTED_GB = 8.6
@@ -553,3 +638,87 @@ export const K8S_CLUSTER = {
 
 /** Étiquettes de temps communes aux séries k8s (fenêtre ~3h). */
 export const K8S_XLABELS = ['10:00', '11:00', '12:00', '13:00']
+
+/* ─────────────────────────────────────────────
+ *  Metrics (page « Metrics ») - catalogue OTLP du workspace.
+ *  Données déterministes : pas de Math.random, un même nom donne toujours la
+ *  même courbe, sinon les captures et les revues ne sont pas comparables.
+ * ───────────────────────────────────────────── */
+export type MetricType = 'gauge' | 'sum' | 'histogram'
+
+export type MetricEntry = {
+  key: string
+  name: string
+  type: MetricType
+  /** Unité OTLP telle qu'émise (By, ms, s, 1, {cpu}, EUR…). */
+  unit: string
+  /** Service émetteur, pour filtrer et pour le drawer. */
+  service: string
+  /** Amplitude de la série (max attendu), sert à fabriquer les points. */
+  scale: number
+}
+
+export const METRICS: MetricEntry[] = [
+  { key: 'm01', name: 'container.cpu.time', type: 'sum', unit: 's', service: 'demo-site', scale: 420 },
+  { key: 'm02', name: 'container.cpu.usage', type: 'gauge', unit: '{cpu}', service: 'demo-site', scale: 0.42 },
+  { key: 'm03', name: 'container.filesystem.available', type: 'gauge', unit: 'By', service: 'demo-site', scale: 21_474_836_480 },
+  { key: 'm04', name: 'container.filesystem.capacity', type: 'gauge', unit: 'By', service: 'demo-site', scale: 32_212_254_720 },
+  { key: 'm05', name: 'container.filesystem.usage', type: 'gauge', unit: 'By', service: 'demo-site', scale: 10_737_418_240 },
+  { key: 'm06', name: 'container.memory.available', type: 'gauge', unit: 'By', service: 'demo-site', scale: 1_073_741_824 },
+  { key: 'm07', name: 'container.memory.page_faults', type: 'gauge', unit: '1', service: 'demo-site', scale: 1840 },
+  { key: 'm08', name: 'container.memory.rss', type: 'gauge', unit: 'By', service: 'demo-site', scale: 268_435_456 },
+  { key: 'm09', name: 'container.memory.usage', type: 'gauge', unit: 'By', service: 'demo-site', scale: 402_653_184 },
+  { key: 'm10', name: 'demo_site.http.error.count', type: 'sum', unit: '1', service: 'demo-site', scale: 34 },
+  { key: 'm11', name: 'demo_site.http.request.count', type: 'sum', unit: '1', service: 'demo-site', scale: 2480 },
+  { key: 'm12', name: 'demo_site.http.request.duration', type: 'histogram', unit: 'ms', service: 'demo-site', scale: 320 },
+  { key: 'm13', name: 'demo_site.order.created.count', type: 'sum', unit: '{order}', service: 'demo-site', scale: 96 },
+  { key: 'm14', name: 'demo_site.order.revenue', type: 'sum', unit: 'EUR', service: 'demo-site', scale: 4820 },
+  { key: 'm15', name: 'demo_site.order.total', type: 'gauge', unit: '{order}', service: 'demo-site', scale: 128 },
+  { key: 'm16', name: 'payment_service.charge.duration', type: 'histogram', unit: 'ms', service: 'payment-service', scale: 780 },
+  { key: 'm17', name: 'payment_service.charge.failed.count', type: 'sum', unit: '1', service: 'payment-service', scale: 12 },
+  { key: 'm18', name: 'payment_service.charge.count', type: 'sum', unit: '1', service: 'payment-service', scale: 310 },
+  { key: 'm19', name: 'postgres.connections.active', type: 'gauge', unit: '1', service: 'postgres', scale: 46 },
+  { key: 'm20', name: 'postgres.query.duration', type: 'histogram', unit: 'ms', service: 'postgres', scale: 210 },
+  { key: 'm21', name: 'k8s.pod.restarts', type: 'sum', unit: '1', service: 'obs-agent', scale: 14 },
+  { key: 'm22', name: 'k8s.node.cpu.utilization', type: 'gauge', unit: '1', service: 'obs-agent', scale: 0.68 },
+  { key: 'm23', name: 'rabbitmq.queue.depth', type: 'gauge', unit: '{message}', service: 'rabbitmq', scale: 940 },
+  { key: 'm24', name: 'otelcol.exporter.sent.spans', type: 'sum', unit: '{span}', service: 'obs-agent', scale: 18_400 },
+]
+
+export const METRIC_TOTALS = {
+  total: METRICS.length,
+  gauge: METRICS.filter((m) => m.type === 'gauge').length,
+  sum: METRICS.filter((m) => m.type === 'sum').length,
+  histogram: METRICS.filter((m) => m.type === 'histogram').length,
+}
+
+/** Points d'une métrique : déterministes à partir de son nom. */
+export const metricPoints = (m: MetricEntry, n = 24): number[] => {
+  let h = 0
+  for (let i = 0; i < m.name.length; i++) h = (h * 31 + m.name.charCodeAt(i)) % 9973
+  return Array.from({ length: n }, (_, i) => {
+    const wave = Math.sin((i / n) * Math.PI * 2 + (h % 7)) * 0.18
+    const jitter = (((h + i * 37) % 23) / 23 - 0.5) * 0.08
+    const base = m.type === 'gauge' ? 0.72 : 0.55
+    return Math.max(0, m.scale * (base + wave + jitter))
+  })
+}
+
+/** Unité lisible : on n'affiche pas 25 000 000 000 quand on peut dire 25 GB. */
+export const fmtMetric = (v: number, unit: string): string => {
+  if (unit === 'By') {
+    const u = ['B', 'KB', 'MB', 'GB', 'TB']
+    let i = 0
+    let n = v
+    while (n >= 1024 && i < u.length - 1) {
+      n /= 1024
+      i++
+    }
+    return `${n < 10 ? n.toFixed(1) : Math.round(n)} ${u[i]}`
+  }
+  if (unit === 'ms') return v >= 1000 ? `${(v / 1000).toFixed(2)} s` : `${Math.round(v)} ms`
+  if (unit === 's') return v >= 60 ? `${(v / 60).toFixed(1)} min` : `${v.toFixed(1)} s`
+  if (unit === 'EUR') return `€${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v)}`
+  if (v >= 1000) return `${(v / 1000).toFixed(v >= 10_000 ? 0 : 1)}k`
+  return v < 10 ? v.toFixed(2) : String(Math.round(v))
+}

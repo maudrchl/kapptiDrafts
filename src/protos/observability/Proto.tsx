@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ComponentType, type MouseEvent as ReactMouseEvent } from 'react'
+import { useState, useEffect, useMemo, useRef, type ComponentType, type MouseEvent as ReactMouseEvent } from 'react'
 import {
   Button,
   SearchInput,
@@ -17,6 +17,11 @@ import {
   IconAlertTriangle,
   Drawer,
   Segmented,
+  Collapse,
+  CodeBlock,
+  DateRangePicker,
+  TableFilter,
+  Popover,
   Input,
   Toggle,
   EmptyState,
@@ -60,9 +65,11 @@ import {
   Plus,
   Pin,
   ArrowUpRight,
+  ArrowLeftRight,
   Maximize2,
   Minimize2,
   RefreshCw,
+  Square,
   Share2,
   Orbit,
 } from 'lucide-react'
@@ -91,28 +98,28 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useReportScreen, useScreenNavigation } from '../../context/ScreenContext'
+import { useFrameControls } from '../../components/ProtoFrame'
 import styles from './explore-tabs.module.scss'
 import PersesView from './PersesView'
 import LineChart from './LineChart'
 import { toast, ToastMount } from './toast'
 import { dashboardStore } from './dashboardStore'
-import { interpretPrompt, TRACE_OVERVIEW_PANELS, TRACE_COMPARE_PANEL, makePanel, K8S_CPU_PANEL, K8S_MEM_PANEL } from './perses'
+import { interpretPrompt, TRACE_OVERVIEW_PANELS, makePanel, K8S_CPU_PANEL, K8S_MEM_PANEL, emptyPanel, rangeShortcuts, rangeKeyFromMinutes, rangeFactor, panelForRange, withPrevious } from './perses'
 import type { PanelSpec } from './perses'
-import type { ExploreTab, PodEntry, PodPhase, DeployResource, SignalKey, TraceEntry, ServiceNode, LogEntry, AlertItem, DestinationItem, IncidentItem, DestinationType } from './constants'
+import type { ExploreTab, OtlpPlatform, PodEntry, PodPhase, DeployResource, SignalKey, TraceEntry, ServiceNode, LogEntry, AlertItem, DestinationItem, IncidentItem, DestinationType } from './constants'
 import {
   EXPLORE_TABS,
   PAGE_META,
-  LOGS,
-  LOG_TOTAL,
-  TRACES,
-  TRACE_COMPARE,
-  SERVICE_LATENCY_DELTA,
-  SERVICES,
-  EDGES,
-  PODS,
-  K8S_NAMESPACES,
-  K8S_DEPLOYMENTS,
-  K8S_CLUSTER,
+  LOGS as ALL_LOGS,
+  LOG_TOTAL as ALL_LOG_TOTAL,
+  TRACES as ALL_TRACES,
+  TRACE_COMPARE as ALL_TRACE_COMPARE,
+  SERVICES as ALL_SERVICES,
+  EDGES as ALL_EDGES,
+  PODS as ALL_PODS,
+  K8S_NAMESPACES as ALL_K8S_NAMESPACES,
+  K8S_DEPLOYMENTS as ALL_K8S_DEPLOYMENTS,
+  K8S_CLUSTER as ALL_K8S_CLUSTER,
   SIGNALS,
   DAILY_GB,
   DAILY_BUDGET_GB,
@@ -120,8 +127,15 @@ import {
   USAGE_DAY_OF_MONTH,
   USAGE_DAYS_IN_MONTH,
   OTLP_ENDPOINT_USAGE,
+  OTLP_ENDPOINT_HTTP,
   OTLP_INTERNAL_ID,
   OTLP_KEY_MASKED,
+  OTLP_PLATFORMS,
+  OTLP_PLATFORM_HINT,
+  GATE_PROMISE,
+  otlpSnippet,
+  otlpK8sSnippet,
+  otlpTestCurl,
   RETENTION_LABELS,
   ALERT_SEVERITIES,
   ALERT_OPERATORS,
@@ -135,6 +149,21 @@ import {
 } from './constants'
 
 const LOGO_SRC = "data:image/svg+xml,%3csvg%20width='178'%20height='28'%20viewBox='0%200%20178%2028'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3crect%20width='178'%20height='28'%20fill=''/%3e%3cpath%20d='M46.6496%2022.9253L40.2032%2015.237L45.816%208.59585H40.62L36.0352%2014.3827L33.979%2017.0282H33.8679L33.9513%2014.3276V5.59691C33.9513%204.36156%2032.9498%203.36011%2031.7145%203.36011C30.4791%203.36011%2029.4777%204.36156%2029.4777%205.5969V22.9253H33.7012L37.5913%2018.3233L41.398%2022.9253H46.6496Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M53.9591%208.1825C49.5689%208.1825%2046.7347%209.31233%2046.8736%2013.0325H50.8471C51.0416%2011.8751%2051.8751%2011.4893%2053.7646%2011.4893C55.8208%2011.4893%2056.6822%2011.9578%2056.6822%2013.3356V14.4378H51.6529C47.8739%2014.4378%2046.1234%2015.8708%2046.1234%2018.7642C46.1234%2021.823%2048.0684%2023.3386%2051.2083%2023.3386C53.5979%2023.3386%2056.2654%2022.4568%2057.488%2020.4176L56.9878%2021.4372L57.3768%2022.9253H61.1558V12.8671C61.1558%209.78079%2058.9606%208.1825%2053.9591%208.1825ZM52.8199%2020.0043C51.2638%2020.0043%2050.6803%2019.4256%2050.6803%2018.5438C50.6803%2017.6344%2051.2638%2017.1384%2052.3753%2017.1384H56.6822V18.8193C55.7374%2019.5909%2054.4315%2020.0043%2053.0144%2020.0043H52.8199Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M72.3795%208.21006C70.1566%208.21006%2068.2949%209.09187%2066.8222%2011.5995L67.628%2010.0839L67.5447%208.59585H63.1544V27.7201H67.628V21.1616C68.795%2022.7324%2070.49%2023.3386%2072.3795%2023.3386C76.7141%2023.3386%2079.4928%2019.9767%2079.4928%2015.7606C79.4928%2011.572%2076.7141%208.21006%2072.3795%208.21006ZM71.3236%2019.4531C69.0173%2019.4531%2067.5724%2017.91%2067.5724%2015.7606C67.5724%2013.6111%2069.0173%2012.068%2071.3236%2012.068C73.6298%2012.068%2075.047%2013.6111%2075.047%2015.7606C75.047%2017.91%2073.6298%2019.4531%2071.3236%2019.4531Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M89.9912%208.21006C87.7683%208.21006%2085.9066%209.09187%2084.4339%2011.5995L85.2397%2010.0839L85.1564%208.59585H80.7662V27.7201H85.2397V21.1616C86.4068%2022.7324%2088.1017%2023.3386%2089.9912%2023.3386C94.3259%2023.3386%2097.1045%2019.9767%2097.1045%2015.7606C97.1045%2011.572%2094.3259%208.21006%2089.9912%208.21006ZM88.9353%2019.4531C86.6291%2019.4531%2085.1842%2017.91%2085.1842%2015.7606C85.1842%2013.6111%2086.6291%2012.068%2088.9353%2012.068C91.2416%2012.068%2092.6587%2013.6111%2092.6587%2015.7606C92.6587%2017.91%2091.2416%2019.4531%2088.9353%2019.4531Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M109.055%2012.3711V8.59585H105.026V3.63567H100.552V8.59585H97.3569V12.3711H100.552V17.8549C100.552%2021.1065%20102.108%2023.063%20106.276%2023.063H109.055V19.0949H107.11C105.721%2019.0949%20105.026%2018.5989%20105.026%2017.1384V12.3711H109.055Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M110.536%2022.9253H115.01V8.59585C113.603%209.30728%20111.942%209.30728%20110.536%208.59585V22.9253Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M121.912%2022.9253H126.691L132.86%208.59585H128.22L124.385%2017.9651H124.218L120.412%208.59585H115.771L121.912%2022.9253Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M139.875%208.1825C135.485%208.1825%20132.651%209.31233%20132.79%2013.0325H136.763C136.958%2011.8751%20137.791%2011.4893%20139.681%2011.4893C141.737%2011.4893%20142.598%2011.9578%20142.598%2013.3356V14.4378H137.569C133.79%2014.4378%20132.039%2015.8708%20132.039%2018.7642C132.039%2021.823%20133.984%2023.3386%20137.124%2023.3386C139.514%2023.3386%20142.181%2022.4568%20143.404%2020.4176L142.904%2021.4372L143.293%2022.9253H147.072V12.8671C147.072%209.78079%20144.877%208.1825%20139.875%208.1825ZM138.736%2020.0043C137.18%2020.0043%20136.596%2019.4256%20136.596%2018.5438C136.596%2017.6344%20137.18%2017.1384%20138.291%2017.1384H142.598V18.8193C141.653%2019.5909%20140.348%2020.0043%20138.93%2020.0043H138.736Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M159.449%2012.3711V8.59585H155.42V3.63567H150.946V8.59585H147.751V12.3711H150.946V17.8549C150.946%2021.1065%20152.503%2023.063%20156.67%2023.063H159.449V19.0949H157.504C156.115%2019.0949%20155.42%2018.5989%20155.42%2017.1384V12.3711H159.449Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M164.573%2017.0833H175.855C176.299%2011.4893%20173.187%208.1825%20168.075%208.1825C162.934%208.1825%20160.072%2011.4893%20160.072%2015.7606C160.072%2020.0318%20163.156%2023.3386%20168.325%2023.3386C171.253%2023.3386%20173.608%2022.2729%20174.993%2020.8479C175.985%2019.8266%20174.987%2018.4887%20173.563%2018.4887C172.645%2018.4887%20171.783%2019.0976%20170.949%2019.4815C170.264%2019.7967%20169.383%2019.9492%20168.575%2019.9492C166.352%2019.9492%20164.935%2018.8744%20164.573%2017.0833ZM168.075%2011.4342C169.936%2011.4342%20171.048%2012.2609%20171.464%2014.4103H164.546C164.879%2012.4538%20166.018%2011.4342%20168.075%2011.4342Z'%20fill='%23FFF9D4'/%3e%3cpath%20d='M3.23836%2015.5791C3.77117%2017.0253%204.65214%2017.5873%205.93234%2017.9525L6.18218%2017.5697C6.45474%2017.1389%206.55844%2016.5424%206.58749%2015.9993C6.59931%2015.7022%206.64682%2015.3922%206.99197%2015.2681C7.33711%2015.144%207.6791%2015.3405%207.79606%2015.658C7.83505%2015.7638%207.88055%2015.9605%207.86655%2016.1785C7.83964%2016.6542%207.70142%2017.596%207.23525%2018.2696L6.49976%2019.3462C5.71019%2020.4955%205.36527%2021.3519%205.71181%2022.2924C6.34425%2024.009%207.94592%2024.698%209.386%2024.1802C9.99297%2023.9619%2010.8087%2023.3225%2011.2845%2022.4191L12.5304%2020.0938C12.8278%2019.5475%2012.9498%2018.5982%2012.9355%2018.0841C12.9268%2017.7676%2013.036%2017.5153%2013.3454%2017.4041C13.6787%2017.2843%2014.0401%2017.4605%2014.1658%2017.8015C14.2134%2017.9308%2014.2102%2018.1051%2014.207%2018.2793C14.2039%2018.6%2014.2258%2019.5374%2013.6072%2020.7851C15.8549%2021.6545%2016.5918%2021.6426%2017.532%2021.3045C18.8769%2020.8209%2019.7886%2019.1617%2019.2211%2017.6215C18.9439%2016.8691%2018.4547%2016.4192%2017.5175%2015.9972L15.919%2015.2804C15.2697%2014.9813%2014.6333%2014.571%2014.0359%2014.1201C13.8887%2014.0133%2013.7902%2013.9288%2013.7209%2013.7407C13.6039%2013.4233%2013.7824%2013.0662%2014.0918%2012.955C14.3179%2012.8736%2014.5235%2012.9195%2014.7075%2013.0531C15.4933%2013.6494%2016.2758%2014.1269%2016.8677%2014.3801L18.7482%2013.704C20.6286%2013.0279%2021.4916%2011.3462%2020.8202%209.52384C20.1444%207.68974%2018.3891%206.94947%2016.5086%207.62559L5.40457%2011.6181C3.52413%2012.2942%202.64924%2013.9802%203.23836%2015.5791Z'%20fill='%23FFF9D4'/%3e%3cellipse%20cx='8.35869'%20cy='5.28086'%20rx='3.43657'%20ry='3.39487'%20fill='%23FFF9D4'/%3e%3cellipse%20cx='112.738'%20cy='4.55001'%20rx='3.33041'%20ry='3.29'%20fill='%23ED7846'/%3e%3c/svg%3e"
+
+/* Les deux états qui nous concernent ici. L'observabilité non activée n'est pas
+ * modélisée : dans ce cas le client reste sur Run et Explore n'existe pas, donc
+ * il n'y a rien à montrer de ce côté. */
+type ObsState = 'empty' | 'connected' | 'live'
+const OBS_STATE_LABEL: Record<ObsState, string> = {
+  empty: 'No data yet',
+  connected: 'Connected, no data',
+  live: 'Data live',
+}
+const OBS_STATE_DOT: Record<ObsState, string> = {
+  empty: styles.dataDotIdle,
+  connected: styles.dataDotWait,
+  live: styles.dataDotOn,
+}
 
 const NAV_RUN = [
   { section: 'Overview', items: [
@@ -167,16 +196,8 @@ const NAV_EXPLORE: { section: string; items: { key: ExploreTab; icon: React.Comp
     ],
   },
   {
-    section: 'Alerting',
-    items: [
-      { key: 'alerts', icon: IconBell, label: 'Alerts' },
-      { key: 'incidents', icon: IconAlertTriangle, label: 'Incidents' },
-      { key: 'destinations', icon: IconServer, label: 'Destinations' },
-    ],
-  },
-  {
     section: 'Data',
-    items: [{ key: 'usage', icon: IconBarChartBig, label: 'Usage & ingestion' }],
+    items: [{ key: 'usage', icon: IconBarChartBig, label: 'Ingestion' }],
   },
 ]
 
@@ -208,6 +229,14 @@ const httpAttrs = (msg: string): { method: string; route: string; status: string
   if (!m) return null
   return { method: m[1], route: m[2], status: m[3], dur: m[4] }
 }
+
+/** Compteur compact : 1.2k, 48k, 1.4M. Les volumes changent avec la plage. */
+const fmtCount = (n: number) =>
+  n >= 1_000_000
+    ? `${(n / 1_000_000).toFixed(1)}M`
+    : n >= 1000
+      ? `${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}k`
+      : String(Math.round(n))
 
 const genKey = () => {
   const hex = '0123456789abcdef'
@@ -246,7 +275,7 @@ const VOLUME_RANGES: Record<
   '24h': { n: 24, base: 74, yMax: 120, startMin: 660, stepMin: 60, labels: ['11:00', '15:00', '19:00', '23:00', '03:00', '07:00'] },
 }
 
-const LogVolumeBars = ({ range }: { range: string }) => {
+const LogVolumeBars = ({ range, empty }: { range: string; empty?: boolean }) => {
   const [hover, setHover] = useState<number | null>(null)
   // Position réelle (px) du centre de la barre survolée, relative au conteneur.
   // On la mesure au survol plutôt que la déduire du viewBox, sinon le tooltip
@@ -257,6 +286,8 @@ const LogVolumeBars = ({ range }: { range: string }) => {
   const spread = Math.max(6, Math.round(cfg.base * 0.3))
   const bars = Array.from({ length: cfg.n }, (_, i) => {
     const dip = i % 7 === 6
+    // Vide : l'histogramme garde ses axes et ses graduations, sans aucune barre.
+    if (empty) return { error: 0, warn: 0, info: 0, debug: 0 }
     return {
       error: cfg.base > 30 && i % 6 === 0 ? 1 : 0,
       warn: i % 4 === 0 ? 1 : 0,
@@ -387,6 +418,8 @@ const LogsView = ({
   setLevel,
   onOpenLog,
   onOpenTrace,
+  empty,
+  range,
 }: {
   search: string
   setSearch: (v: string) => void
@@ -394,9 +427,18 @@ const LogsView = ({
   setLevel: (v: string) => void
   onOpenLog: (l: LogEntry) => void
   onOpenTrace: (t: TraceEntry) => void
+  /** Connecté mais sans télémétrie : la page reste entière, les données sont vides. */
+  empty?: boolean
+  /** Plage de temps : elle vit dans l'en-tête de page, elle porte toute la page. */
+  range: string
 }) => {
+  // Vues vides : on masque les jeux de données au lieu de les atténuer. Le chrome
+  // de la page (filtres, axes, colonnes) reste, il n'y a simplement rien dedans.
+  const LOGS = empty ? [] : ALL_LOGS
+  const LOG_TOTAL = empty ? 0 : ALL_LOG_TOTAL
+  const TRACES = empty ? [] : ALL_TRACES
   const [live, setLive] = useState(false)
-  const [range, setRange] = useState('24h')
+  const [levelFilterOpen, setLevelFilterOpen] = useState(false)
   // Live tail : `rows` = flux courant (initialisé aux logs mockés), `newKeys` =
   // lignes fraîchement arrivées (pour le fondu), refs = horloge + compteur.
   const [rows, setRows] = useState<LogEntry[]>(LOGS)
@@ -445,86 +487,127 @@ const LogsView = ({
     <>
       <div className={styles.kpiRow}>
         <CounterCardGroup>
-          <CounterCard title="Total logs" value="1.2M" trend={<TrendTag current={118} previous={100} />} />
-          <CounterCard title="Errors" value="847" trend={<TrendTag current={105.2} previous={100} />} />
-          <CounterCard title="Warnings" value="3,241" trend={<TrendTag current={88} previous={100} invertColor />} />
-          <CounterCard title="Services" value="14" trend={<StatusTag variant="ghost" color="success">All reporting</StatusTag>} />
+          {/* Volumes proportionnels à la plage : changer le picker change ces
+              chiffres, c'est ce qui fait comprendre sa portée. */}
+          <CounterCard title="Total logs" value={empty ? '0' : fmtCount(50_000 * rangeFactor(range))} trend={empty ? undefined : <TrendTag current={118} previous={100} />} />
+          <CounterCard title="Errors" value={empty ? '0' : fmtCount(35 * rangeFactor(range))} trend={empty ? undefined : <TrendTag current={105.2} previous={100} />} />
+          <CounterCard title="Warnings" value={empty ? '0' : fmtCount(135 * rangeFactor(range))} trend={empty ? undefined : <TrendTag current={88} previous={100} invertColor />} />
+          <CounterCard
+            title="Services"
+            value={empty ? '0' : '14'}
+            trend={
+              empty ? (
+                <StatusTag variant="ghost" color="info">None reporting</StatusTag>
+              ) : (
+                <StatusTag variant="ghost" color="success">All reporting</StatusTag>
+              )
+            }
+          />
         </CounterCardGroup>
       </div>
 
       {/* Vue d'ensemble : le time range scope le graph */}
       <div className={styles.volumeCard}>
-        <div className={styles.volumeHead}>
-          <div className={styles.overviewTitle}>Log volume</div>
-          <Select
-            options={[
-              { label: 'Last 15 min', value: '15m' },
-              { label: 'Last 1 hour', value: '1h' },
-              { label: 'Last 6 hours', value: '6h' },
-              { label: 'Last 24 hours', value: '24h' },
-            ]}
-            value={range}
-            onChange={(_e, v) => setRange(v)}
-            icon={IconTimer}
-            minWidth="160px"
-          />
-        </div>
-        <LogVolumeBars range={range} />
+        <div className={styles.overviewTitle}>Log volume</div>
+        <LogVolumeBars range={range} empty={empty} />
         <MiniLegend items={[{ label: 'Error', color: '#e0372e' }, { label: 'Warning', color: '#f2b338' }, { label: 'Info', color: '#7B9F7F' }, { label: 'Debug', color: '#AEC6B1' }]} />
       </div>
 
       {/* Liste : la recherche + le niveau filtrent le tableau */}
       <div className={styles.searchRow}>
         <div className={styles.searchFlex}>
-          <SearchInput
+          <SmartSearch
             value={search}
             onChange={setSearch}
-            placeholder="Search logs... e.g. level:error service:payment-service"
-            fullwidth
+            placeholder="Search logs, e.g. level:error service:payment-service"
+            schema={{
+              level: ['error', 'warn', 'info', 'debug'],
+              service: ['demo-site', 'payment-service', 'postgres', 'rabbitmq', 'obs-agent'],
+              trace: ['exists', 'none'],
+            }}
           />
         </div>
         <div className={styles.filterGroup}>
-          <Select
-            options={[
-              { label: 'All levels', value: 'all' },
-              { label: 'Error', value: 'error' },
-              { label: 'Warning', value: 'warn' },
-              { label: 'Info', value: 'info' },
-              { label: 'Debug', value: 'debug' },
-            ]}
-            value={level}
-            onChange={(_e, v) => setLevel(v)}
-            icon={IconFilter}
-            minWidth="120px"
-          />
           <Button
-            color={live ? 'primary' : 'secondary'}
+            color={live ? 'danger-s' : 'secondary'}
+            disabled={empty}
             onClick={() => {
               setLive((s) => !s)
               toast.info(live ? 'Live tail stopped' : 'Live tail started')
             }}
           >
-            <Button.Icon icon={IconPlay} />
-            {live ? 'Streaming…' : 'Live tail'}
+            <Button.Icon icon={live ? Square : IconPlay} />
+            {live ? 'Stop live tail' : 'Live tail'}
           </Button>
         </div>
       </div>
 
       <div className={styles.resultBar}>
-        <span>Showing {filtered.length} of {LOG_TOTAL} lines</span>
-        {live && <span className={styles.liveDot}>● live</span>}
+        {/* Le live vit à côté du compteur : il pousse dans le vide, rien d'autre. */}
+        <span className={styles.resultCount}>
+          <span>Showing {filtered.length} of {empty ? 0 : fmtCount(LOG_TOTAL * rangeFactor(range))} lines</span>
+          {live && (
+            <span className={styles.otlpListening}>
+              <span className={styles.otlpPulse} />
+              Live
+            </span>
+          )}
+        </span>
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState
-          icon={<IconSearchX />}
-          text="No logs match your filters"
-          description="Try a broader search or reset the level filter."
-        />
+        <div className={styles.emptyBlock}>
+          <EmptyState
+            icon={<IconSearchX />}
+            text={empty ? 'No logs yet' : 'No logs match your filters'}
+            description={
+              empty
+                ? 'This table fills up on its own as soon as your services start exporting logs.'
+                : 'Try a broader search or reset the level filter.'
+            }
+          />
+        </div>
       ) : (
         <div className={styles.logTable}>
           <div className={styles.logTableHead}>
-            <span>Severity</span>
+            {/* Le filtre vit dans la colonne qu'il filtre, comme partout ailleurs
+                dans le produit, plutôt qu'en Select détaché au-dessus. */}
+            <span className={styles.logHeadFilter}>
+              Severity
+              <Popover
+                trigger="click"
+                placement="bottomLeft"
+                noPadding
+                open={levelFilterOpen}
+                setOpen={setLevelFilterOpen}
+                content={
+                  <TableFilter
+                    selectedFilters={level}
+                    setFilter={(v) => {
+                      setLevel(v)
+                      setLevelFilterOpen(false)
+                    }}
+                    items={[
+                      { label: 'All levels', key: 'all' },
+                      // Mêmes pastilles que dans le tableau : la couleur de la
+                      // sévérité doit se lire au moment où on la choisit.
+                      { label: 'Error', key: 'error', icon: <span className={styles.miniDot} style={{ background: SEV_COLOR.error }} /> },
+                      { label: 'Warning', key: 'warn', icon: <span className={styles.miniDot} style={{ background: SEV_COLOR.warn }} /> },
+                      { label: 'Info', key: 'info', icon: <span className={styles.miniDot} style={{ background: SEV_COLOR.info }} /> },
+                      { label: 'Debug', key: 'debug', icon: <span className={styles.miniDot} style={{ background: SEV_COLOR.debug }} /> },
+                    ]}
+                  />
+                }
+              >
+                <button
+                  type="button"
+                  className={level === 'all' ? styles.headFilterBtn : styles.headFilterBtnOn}
+                  aria-label="Filter by severity"
+                >
+                  <IconListFilter size={13} />
+                </button>
+              </Popover>
+            </span>
             <span>Time</span>
             <span>Resource</span>
             <span>Body</span>
@@ -587,7 +670,13 @@ const serviceBreakdown = (t: TraceEntry) => {
 }
 
 /* ─── Traces View ─── */
-const RANGE_LABEL: Record<string, string> = { '15m': '15 minutes', '1h': '1 hour', '6h': '6 hours' }
+const RANGE_LABEL: Record<string, string> = {
+  '15m': '15 minutes',
+  '1h': '1 hour',
+  '6h': '6 hours',
+  '24h': '24 hours',
+  custom: 'period',
+}
 
 const TracesView = ({
   search,
@@ -595,82 +684,95 @@ const TracesView = ({
   svc,
   setSvc,
   onOpenTrace,
+  empty,
+  range,
 }: {
   search: string
   setSearch: (v: string) => void
   svc: string
   setSvc: (v: string) => void
   onOpenTrace: (t: TraceEntry) => void
+  empty?: boolean
+  /** Plage de temps : dans l'en-tête de page, elle porte toute la page. */
+  range: string
 }) => {
-  const [range, setRange] = useState('1h')
-  const [comparePrev, setComparePrev] = useState(false)
+  const TRACES = empty ? [] : ALL_TRACES
+  const SERVICES = empty ? [] : ALL_SERVICES
+  const [live, setLive] = useState(false)
+  const [svcFilterOpen, setSvcFilterOpen] = useState(false)
+  // Comparaison par carte : l'affordance vit DANS le graphe qu'elle modifie,
+  // donc chaque graphe se compare indépendamment.
+  const [compareIds, setCompareIds] = useState<Set<string>>(() => new Set())
+  const toggleCompare = (id: string) =>
+    setCompareIds((cur) => {
+      const next = new Set(cur)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  // Live tail : les traces qui arrivent en direct s'empilent devant les autres.
+  const [incoming, setIncoming] = useState<TraceEntry[]>([])
+  const liveSeq = useRef(0)
+  useEffect(() => {
+    if (!live || empty) return
+    const id = setInterval(() => {
+      const tpl = ALL_TRACES[liveSeq.current % ALL_TRACES.length]
+      liveSeq.current += 1
+      const key = `live_${liveSeq.current}`
+      setIncoming((cur) =>
+        [{ ...tpl, key, traceId: idFrom(key, 32) }, ...cur].slice(0, 12),
+      )
+    }, 1600)
+    return () => clearInterval(id)
+  }, [live, empty])
+  useEffect(() => {
+    if (!live) setIncoming([])
+  }, [live])
+  // Rien reçu : tous les compteurs à zéro, et aucune période à comparer.
+  const ZERO = { cur: 0, prev: 0 }
+  const TRACE_COMPARE = empty
+    ? { requests: ZERO, errorRate: ZERO, avg: ZERO, p95: ZERO, p99: ZERO }
+    : ALL_TRACE_COMPARE
+
+
   const q = search.trim().toLowerCase()
-  const filtered = TRACES.filter(
+  const source = [...incoming, ...TRACES]
+  const filtered = source.filter(
     (t) => (svc === 'all' || t.svc === svc) && (q === '' || `${t.name} ${t.svc}`.toLowerCase().includes(q)),
   )
-  // Delta de latence par service, trié par plus gros écart (régression en tête).
-  const svcDeltas = [...SERVICE_LATENCY_DELTA].sort(
-    (a, b) => Math.abs(b.currMs - b.prevMs) - Math.abs(a.currMs - a.prevMs),
-  )
-  // Légende unique au-dessus de la liste : chaque service présent une seule
-  // fois, dans l'ordre de première apparition. Évite de répéter les libellés
-  // sur chaque ligne tout en gardant les couleurs signifiantes.
-  const legend: { name: string; color: string }[] = []
-  const seen = new Set<string>()
+  // Légende bornée : une légende qui énumère tous les services ne tient pas à
+  // 300 services. On classe par poids réel (temps cumulé sur les traces filtrées),
+  // on montre les 5 premiers, et le reste part dans un « +N » dépliable.
+  const weights = new Map<string, { color: string; w: number }>()
   for (const t of filtered)
     for (const b of t.bars) {
       const name = b.label.split(' (')[0]
-      if (!seen.has(name)) {
-        seen.add(name)
-        legend.push({ name, color: b.color })
-      }
+      const cur = weights.get(name)
+      weights.set(name, { color: cur?.color ?? b.color, w: (cur?.w ?? 0) + b.width })
     }
+  const ranked = [...weights.entries()]
+    .map(([name, v]) => ({ name, color: v.color, w: v.w }))
+    .sort((a, b) => b.w - a.w)
+  const LEGEND_MAX = 5
+  const legend = ranked.slice(0, LEGEND_MAX)
+  const legendRest = ranked.slice(LEGEND_MAX)
 
   return (
     <>
-      <div className={styles.searchRow}>
-        <div className={styles.searchFlex}>
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder="Search traces... e.g. service:demo-site duration:>100ms"
-            fullwidth
-          />
-        </div>
-        <div className={styles.filterGroup}>
-          <Select
-            options={[
-              { label: 'Last 15 min', value: '15m' },
-              { label: 'Last 1 hour', value: '1h' },
-              { label: 'Last 6 hours', value: '6h' },
-            ]}
-            value={range}
-            onChange={(_e, v) => setRange(v)}
-            icon={IconTimer}
-            minWidth="140px"
-          />
-          <Select
-            options={[
-              { label: 'All services', value: 'all' },
-              { label: 'demo-site', value: 'demo-site' },
-              { label: 'payment-service', value: 'payment-service' },
-              { label: 'postgres', value: 'postgres' },
-            ]}
-            value={svc}
-            onChange={(_e, v) => setSvc(v)}
-            icon={IconServer}
-            minWidth="140px"
-          />
-          <Toggle title="Compare to previous period" value={comparePrev} onChange={setComparePrev} />
-        </div>
-      </div>
 
       <div className={styles.kpiRow}>
         <CounterCardGroup>
           <CounterCard
             title="Traces"
-            value={`${(TRACE_COMPARE.requests.cur / 1000).toFixed(1)}K`}
-            trend={<TrendTag current={TRACE_COMPARE.requests.cur} previous={TRACE_COMPARE.requests.prev} />}
+            value={fmtCount(TRACE_COMPARE.requests.cur * rangeFactor(range))}
+            trend={
+              empty ? undefined : (
+                <TrendTag
+                  current={TRACE_COMPARE.requests.cur * rangeFactor(range)}
+                  previous={TRACE_COMPARE.requests.prev * rangeFactor(range)}
+                />
+              )
+            }
           />
           <CounterCard
             title="Avg duration"
@@ -690,69 +792,172 @@ const TracesView = ({
         </CounterCardGroup>
       </div>
 
-      {comparePrev ? (
-        <Card className={styles.cmpPanel}>
-          <div className={styles.cmpPanelTitle}>
-            Compared to previous {RANGE_LABEL[range]}
-          </div>
-          <LineChart panel={TRACE_COMPARE_PANEL} height={220} />
-          <div className={styles.cmpDeltaList}>
-            {svcDeltas.map((s) => {
-              const d = s.currMs - s.prevMs
-              return (
-                <div key={s.name} className={styles.cmpDeltaRow}>
-                  <span className={styles.traceLegendDot} style={{ background: s.color }} />
-                  <span className={styles.cmpDeltaName}>{s.name}</span>
-                  <span className={styles.cmpDeltaVals}>
-                    {s.prevMs}ms <span className={styles.cmpArrow}>→</span> {s.currMs}ms
-                  </span>
-                  <span className={d > 0 ? styles.cmpBad : styles.cmpGood}>
-                    {d > 0 ? '+' : ''}
-                    {d}ms
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </Card>
-      ) : (
-        <div className={styles.overviewRow}>
-          {TRACE_OVERVIEW_PANELS.map((p) => (
-            <Card key={p.id} className={styles.overviewCard}>
-              <div data-anchor={`trace-overview:${p.id}`} className={styles.overviewTitle}>
-                {p.name} <span>{p.unit}</span>
+      <div className={styles.overviewRow}>
+        {TRACE_OVERVIEW_PANELS.map((p0) => {
+          const on = compareIds.has(p0.id)
+          const panel = empty
+            ? emptyPanel(p0)
+            : on
+              ? withPrevious(panelForRange(p0, range))
+              : panelForRange(p0, range)
+          return (
+            <Card key={p0.id} className={styles.overviewCard}>
+              <div data-anchor={`trace-overview:${p0.id}`} className={styles.overviewTitle}>
+                <span>{panel.unit ? `${panel.name} (${panel.unit})` : panel.name}</span>
+                {/* Discret, dans la carte : comparer n'ajoute qu'une courbe ici. */}
+                <button
+                  type="button"
+                  className={on ? styles.cardActionOn : styles.cardAction}
+                  disabled={empty}
+                  onClick={() => toggleCompare(p0.id)}
+                  title={
+                    on
+                      ? 'Hide the previous period'
+                      : `Compare with previous ${RANGE_LABEL[range] ?? 'period'}`
+                  }
+                  aria-label="Compare with previous period"
+                >
+                  <ArrowLeftRight size={13} />
+                </button>
               </div>
-              <LineChart panel={p} height={150} />
+              <LineChart panel={panel} height={150} />
             </Card>
-          ))}
+          )
+        })}
+      </div>
+
+      {/* Recherche + live tail immédiatement au-dessus de la liste qu'ils pilotent,
+          exactement comme sur la page Logs. */}
+      <div className={styles.searchRow}>
+        <div className={styles.searchFlex}>
+          <SmartSearch
+            value={search}
+            onChange={setSearch}
+            placeholder="Search traces, e.g. service:demo-site duration:>100ms"
+            schema={{
+              service: ['demo-site', 'payment-service', 'postgres'],
+              status: ['ok', 'error'],
+              duration: ['>100ms', '>500ms', '>1s'],
+            }}
+          />
         </div>
-      )}
+        <div className={styles.filterGroup}>
+          <Button
+            color={live ? 'danger-s' : 'secondary'}
+            disabled={empty}
+            onClick={() => {
+              setLive((v) => !v)
+              toast.info(live ? 'Live tail stopped' : 'Live tail started')
+            }}
+          >
+            <Button.Icon icon={live ? Square : IconPlay} />
+            {live ? 'Stop live tail' : 'Live tail'}
+          </Button>
+        </div>
+      </div>
 
       <div className={styles.resultBar}>
-        <span>Showing {filtered.length} of {TRACES.length} traces</span>
+        {/* Le live vit à côté du compteur, à gauche : il ne pousse plus la légende. */}
+        <span className={styles.resultCount}>
+          <span>
+            Showing {filtered.length} of {empty ? 0 : fmtCount(source.length * 42 * rangeFactor(range))} traces
+          </span>
+          {live && (
+            <span className={styles.otlpListening}>
+              <span className={styles.otlpPulse} />
+              Live
+            </span>
+          )}
+        </span>
+        {legend.length > 0 && (
+          <span className={styles.traceLegendItems}>
+            {legend.map((l) => (
+              <span key={l.name} className={styles.traceLegendItem}>
+                <span className={styles.traceLegendDot} style={{ background: l.color }} />
+                {l.name}
+              </span>
+            ))}
+            {legendRest.length > 0 && (
+              <Popover
+                trigger="click"
+                placement="bottomRight"
+                content={
+                  <div className={styles.legendRest}>
+                    {legendRest.map((l) => (
+                      <span key={l.name} className={styles.traceLegendItem}>
+                        <span className={styles.traceLegendDot} style={{ background: l.color }} />
+                        {l.name}
+                      </span>
+                    ))}
+                  </div>
+                }
+              >
+                <button type="button" className={styles.legendMore}>
+                  +{legendRest.length}
+                </button>
+              </Popover>
+            )}
+          </span>
+        )}
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState
-          icon={<IconSearchX />}
-          text="No traces match your filters"
-          description="Try a broader search or pick another service."
-        />
+        <div className={styles.emptyBlock}>
+          <EmptyState
+            icon={<IconSearchX />}
+            text={empty ? 'No traces yet' : 'No traces match your filters'}
+            description={
+              empty
+                ? 'Spans land here as soon as your services start exporting traces.'
+                : 'Try a broader search or pick another service.'
+            }
+          />
+        </div>
       ) : (
         <div className={styles.traceList}>
-        {legend.length > 0 && (
-          <div className={styles.traceListHead}>
-            <span className={styles.traceLegendLabel}>Time by service</span>
-            <div className={styles.traceLegendItems}>
-              {legend.map((l) => (
-                <span key={l.name} className={styles.traceLegendItem}>
-                  <span className={styles.traceLegendDot} style={{ background: l.color }} />
-                  {l.name}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Entête de colonnes, comme sur les logs : le filtre de service vit dans
+            la colonne qu'il filtre, plus de Select détaché au-dessus. */}
+        <div className={styles.traceListHead}>
+          <span className={styles.traceHeadName}>
+            Trace
+            <Popover
+              trigger="click"
+              placement="bottomLeft"
+              noPadding
+              open={svcFilterOpen}
+              setOpen={setSvcFilterOpen}
+              content={
+                <TableFilter
+                  selectedFilters={svc}
+                  setFilter={(v) => {
+                    setSvc(v)
+                    setSvcFilterOpen(false)
+                  }}
+                  items={[
+                    { label: 'All services', key: 'all' },
+                    { label: 'demo-site', key: 'demo-site' },
+                    { label: 'payment-service', key: 'payment-service' },
+                    { label: 'postgres', key: 'postgres' },
+                  ]}
+                />
+              }
+            >
+              <button
+                type="button"
+                className={svc === 'all' ? styles.headFilterBtn : styles.headFilterBtnOn}
+                aria-label="Filter by service"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <IconListFilter size={13} />
+              </button>
+            </Popover>
+          </span>
+          <span className={styles.traceHeadMeta}>
+            <span className={styles.traceHeadSpans}>Spans</span>
+            <span className={styles.traceHeadDur}>Duration</span>
+            <span className={styles.traceHeadBar}>Time by service</span>
+          </span>
+        </div>
         {filtered.map((t) => {
           return (
             <div
@@ -966,6 +1171,119 @@ const MiniLineChart = ({
   )
 }
 
+/* ─── Recherche assistée ───
+ * Complétion pendant la frappe : on tape `service:` et les valeurs possibles
+ * s'affichent, filtrées par ce qui est déjà tapé. Parti pris opposé au bouton
+ * « {} » qui ouvre un catalogue à onglets à côté du champ : là, l'aide arrive
+ * dans le flux de la frappe, au clavier, sans avoir à savoir qu'un panneau
+ * existe. Le catalogue reste utile pour découvrir la syntaxe, pas pour l'écrire.
+ */
+type SearchSchema = Record<string, string[]>
+
+const SmartSearch = ({
+  value,
+  onChange,
+  placeholder,
+  schema,
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder: string
+  schema: SearchSchema
+}) => {
+  const [open, setOpen] = useState(false)
+  const [hi, setHi] = useState(0)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  // Le jeton en cours = ce qui suit le dernier espace. Tout le reste est acquis.
+  const cut = value.lastIndexOf(' ') + 1
+  const head = value.slice(0, cut)
+  const token = value.slice(cut)
+  const colon = token.indexOf(':')
+  const key = colon === -1 ? '' : token.slice(0, colon)
+  const partial = colon === -1 ? token : token.slice(colon + 1)
+
+  const suggestions: { label: string; insert: string }[] =
+    colon === -1
+      ? Object.keys(schema)
+          .filter((k) => k.startsWith(token.toLowerCase()))
+          .map((k) => ({ label: `${k}:`, insert: `${k}:` }))
+      : (schema[key] ?? [])
+          .filter((v) => v.toLowerCase().startsWith(partial.toLowerCase()))
+          .map((v) => ({ label: `${key}:${v}`, insert: `${key}:${v} ` }))
+
+  const shown = suggestions.slice(0, 7)
+  const accept = (i: number) => {
+    const s = shown[i]
+    if (!s) return
+    onChange(head + s.insert)
+    setHi(0)
+  }
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [])
+
+  return (
+    <div
+      className={styles.smartSearch}
+      ref={wrapRef}
+      // Au focus, on propose déjà les clés disponibles : plus besoin d'un bouton
+      // « {} » séparé pour découvrir la syntaxe, elle s'offre dans le champ.
+      onFocus={() => setOpen(true)}
+      onKeyDown={(e) => {
+        if (!open || !shown.length) return
+        if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          setHi((h) => (h + 1) % shown.length)
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault()
+          setHi((h) => (h - 1 + shown.length) % shown.length)
+        } else if (e.key === 'Tab') {
+          e.preventDefault()
+          accept(hi)
+        } else if (e.key === 'Escape') {
+          setOpen(false)
+        }
+      }}
+    >
+      <SearchInput
+        value={value}
+        onChange={(v) => {
+          onChange(v)
+          setOpen(true)
+          setHi(0)
+        }}
+        onPressEnter={() => (shown.length ? accept(hi) : setOpen(false))}
+        placeholder={placeholder}
+        fullwidth
+      />
+      {open && shown.length > 0 && (
+        <div className={styles.ssMenu}>
+          {shown.map((s, i) => (
+            <button
+              key={s.label}
+              type="button"
+              className={i === hi ? styles.ssItemHi : styles.ssItem}
+              onMouseEnter={() => setHi(i)}
+              onClick={() => accept(i)}
+            >
+              <span className={styles.ssLabel}>{s.label}</span>
+            </button>
+          ))}
+          <div className={styles.ssFoot}>
+            <kbd>Tab</kbd> or <kbd>Enter</kbd> to complete
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const MiniLegend = ({ items }: { items: { label: string; color: string }[] }) => (
   <div className={styles.miniLegend}>
     {items.map((it) => (
@@ -1069,17 +1387,17 @@ const METRIC_META: Record<SvcMetric, { label: string; get: (s: ServiceNode) => s
 const SVC_CANVAS_W = 1040
 const SVC_CANVAS_H = 600
 const ORGANIC_POS: Record<string, { x: number; y: number }> = Object.fromEntries(
-  SERVICES.map((s) => [s.id, { x: (s.x / 100) * SVC_CANVAS_W, y: (s.y / 100) * SVC_CANVAS_H }]),
+  ALL_SERVICES.map((s) => [s.id, { x: (s.x / 100) * SVC_CANVAS_W, y: (s.y / 100) * SVC_CANVAS_H }]),
 )
 const CIRCULAR_POS: Record<string, { x: number; y: number }> = (() => {
-  const n = SERVICES.length
+  const n = ALL_SERVICES.length
   // Rayon dimensionné pour que la corde entre 2 nœuds voisins dépasse la
   // largeur d'une carte (~190px) + marge, sinon les cartes se chevauchent.
   const r = Math.max(320, (240 * n) / (2 * Math.PI))
   const cx = r + 120
   const cy = r + 120
   const pos: Record<string, { x: number; y: number }> = {}
-  SERVICES.forEach((s, i) => {
+  ALL_SERVICES.forEach((s, i) => {
     const a = (i / n) * 2 * Math.PI - Math.PI / 2
     pos[s.id] = { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) }
   })
@@ -1262,9 +1580,16 @@ function DisplayRow({
 type ServiceMapProps = {
   onGoToLogs: (svc: string) => void
   onGoToTraces: (svc: string) => void
+  /** Connecté sans télémétrie : canvas vide, pas de faux services. */
+  empty?: boolean
 }
 
-const ServiceMapInner = ({ onGoToLogs, onGoToTraces }: ServiceMapProps) => {
+const ServiceMapInner = ({ onGoToLogs, onGoToTraces, empty }: ServiceMapProps) => {
+  const SERVICES = empty ? [] : ALL_SERVICES
+  const EDGES = empty ? [] : ALL_EDGES
+  const LOGS = empty ? [] : ALL_LOGS
+  const PODS = empty ? [] : ALL_PODS
+  const K8S_DEPLOYMENTS = empty ? [] : ALL_K8S_DEPLOYMENTS
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string | null>(SERVICES[0]?.id ?? null)
   const [drawerSvc, setDrawerSvc] = useState<ServiceNode | null>(null)
@@ -1503,6 +1828,16 @@ const ServiceMapInner = ({ onGoToLogs, onGoToTraces }: ServiceMapProps) => {
         data-anchor="svcmap:canvas"
         className={fullscreen ? `${styles.svcFlowWrap} ${styles.svcFlowFull}` : styles.svcFlowWrap}
       >
+        {empty ? (
+          // Un canvas vide ne dit rien : sans service, on annonce ce qui manque.
+          <div className={styles.svcFlowEmpty}>
+            <EmptyState
+              icon={<IconNetwork color="var(--color-text-secondary)" />}
+              text="No service map yet"
+              description="The map draws itself from your traces. As soon as your services export spans, their dependencies appear here."
+            />
+          </div>
+        ) : (
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -1519,7 +1854,7 @@ const ServiceMapInner = ({ onGoToLogs, onGoToTraces }: ServiceMapProps) => {
           nodesConnectable={false}
           elementsSelectable
         >
-          <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="#dfe3e8" />
+          <Background variant={BackgroundVariant.Dots} gap={18} size={1.6} color="#d5d9e0" />
           <Controls showInteractive={false} />
           <MiniMap
             pannable
@@ -1549,6 +1884,7 @@ const ServiceMapInner = ({ onGoToLogs, onGoToTraces }: ServiceMapProps) => {
             </div>
           </Panel>
         </ReactFlow>
+        )}
       </div>
 
       {/* Service detail drawer */}
@@ -1801,7 +2137,7 @@ const phaseColor = (s: PodPhase): 'success' | 'info' | 'warning' | 'failed' =>
 
 /* Pire santé des pods d'un namespace (pour le point sur la chip). */
 const nsHealth = (n: string): Health => {
-  const hs = PODS.filter((p) => p.ns === n).map(podHealth)
+  const hs = ALL_PODS.filter((p) => p.ns === n).map(podHealth)
   return hs.includes('failed') ? 'failed' : hs.includes('warning') ? 'warning' : 'success'
 }
 
@@ -1810,12 +2146,13 @@ const fmtMem = (v: number) => (v >= 1024 ? `${(v / 1024).toFixed(1)}Gi` : `${v}M
 /* Palette catégorielle stable (par index de déploiement) pour les barres. */
 const DEPLOY_COLORS = ['#c2477e', '#ed7846', '#06b6d4', '#a855f7', '#e0372e', '#1fae7e', '#3b82f6', '#f2b338']
 const deployColor = (name: string) => {
-  const i = K8S_DEPLOYMENTS.findIndex((d) => d.name === name)
+  const i = ALL_K8S_DEPLOYMENTS.findIndex((d) => d.name === name)
   return DEPLOY_COLORS[(i < 0 ? 0 : i) % DEPLOY_COLORS.length]
 }
 
 /* Request by deployment - réutilise le style .sigRow de "Usage by signal". */
-const DeployBars = ({ metric, showZero }: { metric: 'cpu' | 'mem'; showZero: boolean }) => {
+const DeployBars = ({ metric, showZero, empty }: { metric: 'cpu' | 'mem'; showZero: boolean; empty?: boolean }) => {
+  const K8S_DEPLOYMENTS = empty ? [] : ALL_K8S_DEPLOYMENTS
   const valOf = (d: DeployResource) => (metric === 'cpu' ? d.cpuReq : d.memReq)
   const rows = [...K8S_DEPLOYMENTS].sort((a, b) => valOf(b) - valOf(a)).filter((d) => showZero || valOf(d) > 0)
   const max = Math.max(1, ...rows.map(valOf))
@@ -1842,7 +2179,357 @@ const DeployBars = ({ metric, showZero }: { metric: 'cpu' | 'mem'; showZero: boo
   )
 }
 
-const KubernetesView = () => {
+/* ─── Connect data (OTLP onboarding / no-data state) ───
+ * Parcours en 3 étapes dans une card : infos de connexion, émission de la clé
+ * SUR PLACE, exporter. La clé émise remplit le snippet affiché, donc plus rien
+ * à fabriquer à la main et rien à aller chercher sur une autre page. Le statut
+ * "listening" + la sonde curl donnent le retour qui manquait : on sait si ça a
+ * marché sans partir cliquer dans la nav.
+ * La promesse d'en-tête est spécifique à la page où on a atterri (GATE_PROMISE). */
+/** Au-delà de ce délai sans rien recevoir, on arrête de dire « ça arrive » et on
+ *  envoie vers les causes probables. */
+const WAIT_NUDGE_MS = 90_000
+
+const fmtWait = (ms: number) => {
+  const s = Math.floor(ms / 1000)
+  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`
+}
+
+const OtlpOnboardingView = ({
+  freshKey,
+  keyExists,
+  quiet,
+  onIssue,
+}: {
+  /** Clé émise à l'instant, donc encore affichable en clair. */
+  freshKey: string | null
+  /** Une clé existe déjà mais n'est plus affichable (état où on revient plus tard). */
+  keyExists: boolean
+  /** Aucun bandeau d'état au-dessus : la card porte alors la pastille d'écoute. */
+  quiet: boolean
+  onIssue: () => void
+}) => {
+  const [confirmNew, setConfirmNew] = useState(false)
+  const openDocs = () => toast.success('Opening the setup guide')
+  return (
+    <div className={styles.otlpOnboard}>
+      <Card className={styles.otlpCard}>
+        <Card.Content>
+          <div className={styles.otlpHead}>
+            <div className={styles.otlpHeadMain}>
+              <div className={styles.otlpHeadTitle}>Connect your first source</div>
+              <p className={styles.otlpHeadSub}>
+                Point your services at Kapptivate with OpenTelemetry and your logs, traces and
+                metrics show up on their own, no refresh needed.
+              </p>
+            </div>
+            {quiet && (
+              <span className={styles.otlpListening}>
+                <span className={styles.otlpPulse} />
+                Listening for data
+              </span>
+            )}
+          </div>
+
+          <ol className={styles.otlpSteps}>
+            <li className={styles.otlpStep}>
+              <span className={styles.otlpStepNum}>1</span>
+              <div className={styles.otlpStepBody}>
+                <div className={styles.otlpStepTitle}>Get your connection details</div>
+                <div className={styles.otlpStepHint}>These are unique to this workspace. You'll send OTLP over HTTP.</div>
+                <div className={styles.otlpKv}>
+                  <div className={styles.field} style={{ marginBottom: 0 }}>
+                    <label>Ingestion endpoint</label>
+                    <Input value={OTLP_ENDPOINT_HTTP} canCopy mono disabled fullWidth size="m" />
+                  </div>
+                  <div className={styles.field} style={{ marginBottom: 0 }}>
+                    <label>Internal ID</label>
+                    <Input value={OTLP_INTERNAL_ID} canCopy mono disabled fullWidth size="m" />
+                  </div>
+                </div>
+              </div>
+            </li>
+
+            <li className={styles.otlpStep}>
+              <span className={styles.otlpStepNum}>2</span>
+              <div className={styles.otlpStepBody}>
+                <div className={styles.otlpStepTitle}>Issue an ingestion key</div>
+                <div className={styles.otlpStepHint}>
+                  Your Internal ID is the username of the Basic auth pair, this key is the
+                  password. It is shown once, here, then only its prefix.
+                </div>
+                {freshKey ? (
+                  <>
+                    <div className={styles.field} style={{ marginBottom: 0 }}>
+                      <label>Ingestion key</label>
+                      <Input value={freshKey} canCopy mono disabled fullWidth size="m" />
+                    </div>
+                    <div className={styles.otlpKeyNote}>
+                      <IconAlertTriangle size={13} />
+                      Copy it now, it won't be shown again. Issuing a new one revokes this key immediately.
+                    </div>
+                    <div className={styles.otlpKeyActions}>
+                      <Button color="secondary" size="s" onClick={() => setConfirmNew(true)}>
+                        <Button.Icon icon={RefreshCw} />
+                        Issue a new key
+                      </Button>
+                    </div>
+                  </>
+                ) : keyExists ? (
+                  <>
+                    <div className={styles.field} style={{ marginBottom: 0 }}>
+                      <label>Ingestion key</label>
+                      <Input value={OTLP_KEY_MASKED} mono disabled fullWidth size="m" />
+                    </div>
+                    <div className={styles.otlpKeyNote}>
+                      <IconAlertTriangle size={13} />
+                      A key already exists. Keys are only shown when created, so this one can't be
+                      displayed again. Issue a new one if you don't have it.
+                    </div>
+                    <div className={styles.otlpKeyActions}>
+                      <Button color="secondary" size="s" onClick={() => setConfirmNew(true)}>
+                        <Button.Icon icon={RefreshCw} />
+                        Issue a new key
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <Button onClick={onIssue}>
+                    <Button.Icon icon={KeyRound} />
+                    Generate key
+                  </Button>
+                )}
+              </div>
+            </li>
+
+            <li className={styles.otlpStep}>
+              <span className={styles.otlpStepNum}>3</span>
+              <div className={styles.otlpStepBody}>
+                <div className={styles.otlpStepTitle}>Point your services at Kapptivate</div>
+                <div className={styles.otlpStepHint}>
+                  Do the ones that apply to you, not all of them.{' '}
+                  {freshKey
+                    ? 'The credentials below are already built from your key, paste them as is.'
+                    : keyExists
+                      ? 'Your existing key cannot be displayed, so issue a new one above to fill these in.'
+                      : 'There is nothing to encode by hand: the credential is built for you as soon as you issue a key above.'}
+                </div>
+                <Collapse
+                  classNames={styles.otlpPlatforms}
+                  defaultActiveKey={['collector']}
+                  items={OTLP_PLATFORMS.map((pf) => ({
+                    key: pf.key,
+                    label: pf.label,
+                    children: (
+                      <>
+                        <div className={styles.otlpStepHint}>{OTLP_PLATFORM_HINT[pf.key]}</div>
+                        <CodeBlock
+                          className={styles.otlpCodeBlock}
+                          code={otlpSnippet(pf.key, freshKey)}
+                          language={pf.key === 'collector' ? 'yaml' : 'sh'}
+                        />
+                      </>
+                    ),
+                  }))}
+                />
+              </div>
+            </li>
+
+            <li className={styles.otlpStep}>
+              <span className={styles.otlpStepNum}>4</span>
+              <div className={styles.otlpStepBody}>
+                <div className={styles.otlpStepTitle}>
+                  Add cluster telemetry{' '}
+                  <Tag color="grey" size="xxs" smallPadding>Optional</Tag>
+                </div>
+                <div className={styles.otlpStepHint}>
+                  Only on Kubernetes, and only once your services export their own telemetry. The
+                  chart installs a per-node agent and a cluster collector, so node and pod metrics,
+                  pod logs and cluster events reach the same endpoint. Your credentials land in a
+                  chart-managed Secret.
+                </div>
+                <CodeBlock className={styles.otlpCodeBlock} code={otlpK8sSnippet(freshKey)} language="sh" />
+              </div>
+            </li>
+          </ol>
+
+          <div className={styles.otlpFoot}>
+            <Collapse
+              ghost
+              expandIconPosition="start"
+              classNames={styles.otlpTrouble}
+              items={[
+                {
+                  key: 'trouble',
+                  label: 'Nothing arriving after a couple of minutes?',
+                  children: (
+                    <>
+                      <ul className={styles.troubleList}>
+                        <li>
+                          The exporter has to speak OTLP over HTTP with{' '}
+                          <code className={styles.mono}>http/protobuf</code>, not gRPC.
+                        </li>
+                        <li>
+                          Point it at the base endpoint. The SDK appends{' '}
+                          <code className={styles.mono}>/v1/traces</code>,{' '}
+                          <code className={styles.mono}>/v1/logs</code> and{' '}
+                          <code className={styles.mono}>/v1/metrics</code> on its own.
+                        </li>
+                        <li>
+                          Check that nothing on the way out strips the{' '}
+                          <code className={styles.mono}>Authorization</code> header.
+                        </li>
+                      </ul>
+                      <div className={styles.otlpProbeHint}>
+                        Or probe it from your terminal. A 2xx means we accepted the payload, so
+                        the credential and the network path are fine.
+                      </div>
+                      <CodeBlock className={styles.otlpCodeBlock} code={otlpTestCurl(freshKey)} language="sh" />
+                    </>
+                  ),
+                },
+              ]}
+            />
+            <div className={styles.otlpDocs}>
+              <Button color="secondary" size="s" onClick={openDocs}>
+                Read the setup guide
+                <Button.Icon icon={ArrowUpRight} />
+              </Button>
+            </div>
+          </div>
+        </Card.Content>
+      </Card>
+
+      <Alert open={confirmNew} onCancel={() => setConfirmNew(false)}>
+        <Alert.Title>Issue a new key?</Alert.Title>
+        <Alert.Description>
+          If you issue a new key, the current one stops working immediately. Every collector using
+          the old key will start getting 401s until you roll out the new one.
+        </Alert.Description>
+        <Alert.Cancel>Cancel</Alert.Cancel>
+        <Alert.Action
+          danger
+          onClick={() => {
+            setConfirmNew(false)
+            onIssue()
+          }}
+        >
+          Issue new key
+        </Alert.Action>
+      </Alert>
+    </div>
+  )
+}
+
+/* ─── État vide d'une page télémétrie avant le setup ───
+ * Un seul écran porte le guide (Ingestion). Ici, chaque page dit ce qui lui
+ * manque à elle, en une ligne, et propose la seule action qui débloque tout.
+ * Répéter le guide sous 5 titres différents donnait 5 fois la même page. */
+const GATE_ICON: Partial<Record<ExploreTab, ComponentType<{ color?: string }>>> = {
+  logs: IconFile,
+  traces: IconBookOpen,
+  perses: IconGlobe,
+  svcmap: IconNetwork,
+  k8s: IconWrench,
+}
+const GATE_TITLE: Partial<Record<ExploreTab, string>> = {
+  logs: 'No logs yet',
+  traces: 'No traces yet',
+  perses: 'No trace data yet',
+  svcmap: 'No service map yet',
+  k8s: 'No cluster data yet',
+}
+
+/* La vraie vue est rendue derrière, atténuée et inerte, avec un fondu vers le bas :
+ * on ne DÉCRIT plus ce qu'on obtiendra, on le montre. Le geste reste unique et
+ * mène au seul écran de setup. Étiqueté "Sample data" pour ne jamais faire croire
+ * que ces chiffres sont les siens. */
+/* Bande d'état pleine largeur, façon bandeau applicatif du produit : 50px de
+ * haut, fond de couleur, texte blanc, action à droite. Sert sur les pages
+ * Explore, où la page reste lisible et vide dessous. */
+const StateBand = ({
+  tone,
+  icon,
+  text,
+  action,
+}: {
+  tone: 'success' | 'waiting' | 'warning'
+  icon: React.ReactNode
+  text: string
+  action?: React.ReactNode
+}) => (
+  <Flex
+    align="center"
+    justify="space-between"
+    gap={5}
+    className={styles.stateBand}
+    style={{ background: BAND_BG[tone] }}
+  >
+    <Flex align="center" justify="start" gap={5}>
+      {icon}
+      <Text size="sm" weight="medium" color="white">
+        {text}
+      </Text>
+    </Flex>
+    {action}
+  </Flex>
+)
+
+const BAND_BG: Record<'success' | 'waiting' | 'warning', string> = {
+  success: 'var(--color-success, #12b76a)',
+  waiting: '#285c59',
+  warning: 'var(--color-warning, #f2b338)',
+}
+
+const GatePreview = ({
+  tab,
+  connected,
+  onSetup,
+  children,
+}: {
+  tab: ExploreTab
+  /** Déjà connecté mais sans télémétrie : l'action n'est plus « brancher ». */
+  connected: boolean
+  onSetup: () => void
+  children: React.ReactNode
+}) => {
+  const Icon = GATE_ICON[tab] ?? IconFile
+  return (
+    <div className={styles.gatePrev}>
+      <div className={styles.gatePrevGhost} aria-hidden>
+        {children}
+      </div>
+      <div className={styles.gatePrevOver}>
+        <div className={styles.gatePrevCard}>
+          <Tag color="grey" size="xxs" smallPadding>Sample data</Tag>
+          <div className={styles.gatePrevIcon}>
+            <Icon color="var(--color-text-secondary)" />
+          </div>
+          <div className={styles.gatePrevTitle}>{GATE_TITLE[tab] ?? 'Nothing here yet'}</div>
+          <p className={styles.gatePrevSub}>{GATE_PROMISE[tab]}</p>
+          <div className={styles.gatePrevAction}>
+            <Button color="primary" onClick={onSetup}>
+              {connected ? 'Check your setup' : 'Connect your data'}
+            </Button>
+          </div>
+          <div className={styles.gatePrevCost}>
+            {connected
+              ? 'Your exporter reached us, but sent no telemetry yet.'
+              : 'One command, about two minutes.'}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const KubernetesView = ({ empty }: { empty?: boolean }) => {
+  const PODS = empty ? [] : ALL_PODS
+  const K8S_NAMESPACES = empty ? [] : ALL_K8S_NAMESPACES
+  const K8S_DEPLOYMENTS = empty ? [] : ALL_K8S_DEPLOYMENTS
+  const K8S_CLUSTER = empty
+    ? { cpuUsedMilli: 0, cpuPct: 0, cpuRequestMilli: 0, cpuMaxMilli: 0, memUsedMi: 0, memPct: 0, memRequestMi: 0, memMaxMi: 0 }
+    : ALL_K8S_CLUSTER
   const [ns, setNs] = useState<string>('all')
   const [onlyUnhealthy, setOnlyUnhealthy] = useState(false)
   const [showZero, setShowZero] = useState(false)
@@ -1955,7 +2642,19 @@ const KubernetesView = () => {
         </Card.Header>
         <Card.Content>
           <div className={styles.usageCardBody}>
-            <Table rowKey="key" columns={restartCols} data={restarters} showHeader onClickRow={(r: PodEntry) => { setOnlyUnhealthy(false); setNs(r.ns) }} />
+            {empty ? (
+              // Le « No result found » du Table parle de filtres : ici il n'y a pas
+              // de données du tout, ce n'est pas la même chose.
+              <div className={styles.emptyBlock}>
+                <EmptyState
+                  icon={<IconActivity color="var(--color-text-secondary)" />}
+                  text="No pods yet"
+                  description="Restart counts appear once the Kubernetes agent starts reporting."
+                />
+              </div>
+            ) : (
+              <Table rowKey="key" columns={restartCols} data={restarters} showHeader onClickRow={(r: PodEntry) => { setOnlyUnhealthy(false); setNs(r.ns) }} />
+            )}
           </div>
         </Card.Content>
       </Card>
@@ -1966,13 +2665,13 @@ const KubernetesView = () => {
           <Card.Header>
             <Card.Header.Title><Card.Header.Icon icon={IconGauge} />CPU usage vs request</Card.Header.Title>
           </Card.Header>
-          <Card.Content><div className={styles.usageCardBody}><LineChart panel={K8S_CPU_PANEL} height={220} /></div></Card.Content>
+          <Card.Content><div className={styles.usageCardBody}><LineChart panel={empty ? emptyPanel(K8S_CPU_PANEL) : K8S_CPU_PANEL} height={220} /></div></Card.Content>
         </Card>
         <Card className={styles.usageCard}>
           <Card.Header>
             <Card.Header.Title><Card.Header.Icon icon={IconGauge} />Memory usage vs request</Card.Header.Title>
           </Card.Header>
-          <Card.Content><div className={styles.usageCardBody}><LineChart panel={K8S_MEM_PANEL} height={220} /></div></Card.Content>
+          <Card.Content><div className={styles.usageCardBody}><LineChart panel={empty ? emptyPanel(K8S_MEM_PANEL) : K8S_MEM_PANEL} height={220} /></div></Card.Content>
         </Card>
       </div>
 
@@ -1983,14 +2682,14 @@ const KubernetesView = () => {
             <Card.Header.Title><Card.Header.Icon icon={IconBarChartBig} />CPU request by deployment</Card.Header.Title>
             <Card.Header.Aside><Toggle title="Show empty" value={showZero} onChange={setShowZero} /></Card.Header.Aside>
           </Card.Header>
-          <Card.Content><div className={styles.usageCardBody}><DeployBars metric="cpu" showZero={showZero} /></div></Card.Content>
+          <Card.Content><div className={styles.usageCardBody}><DeployBars metric="cpu" showZero={showZero} empty={empty} /></div></Card.Content>
         </Card>
         <Card className={styles.usageCard}>
           <Card.Header>
             <Card.Header.Title><Card.Header.Icon icon={IconBarChartBig} />Memory request by deployment</Card.Header.Title>
             <Card.Header.Aside><Toggle title="Show empty" value={showZero} onChange={setShowZero} /></Card.Header.Aside>
           </Card.Header>
-          <Card.Content><div className={styles.usageCardBody}><DeployBars metric="mem" showZero={showZero} /></div></Card.Content>
+          <Card.Content><div className={styles.usageCardBody}><DeployBars metric="mem" showZero={showZero} empty={empty} /></div></Card.Content>
         </Card>
       </div>
     </div>
@@ -2013,6 +2712,8 @@ const UsageView = ({
   quotaOpen: boolean
   setQuotaOpen: (v: boolean) => void
 }) => {
+  const LOGS = ALL_LOGS
+  const TRACES = ALL_TRACES
   const [period, setPeriod] = useState<Period>('month')
   const [signalFilter, setSignalFilter] = useState<SignalFilter>('all')
   const [capDraft, setCapDraft] = useState(String(cap))
@@ -2466,6 +3167,52 @@ const DestinationsView = ({ destinations }: { destinations: DestinationItem[] })
 /* ─── Main Proto ─── */
 const ExploreTabsProto = () => {
   const [mode, setMode] = useState<'run' | 'obs'>('obs')
+  // Réglage du proto : activée mais vide, ou pleine. L'activation elle-même est
+  // notre geste, pas celui du client, et sans elle il n'a pas Explore du tout :
+  // rien à démontrer de ce côté.
+  // La pilule vit dans le chrome (à côté du fil d'Ariane), pas dans l'UI produit.
+  // Persiste via l'URL ?obs=empty (?data=off reste compris, anciens liens).
+  const [obsState, setObsState] = useState<ObsState>(() => {
+    const q = new URLSearchParams(window.location.search)
+    const o = q.get('obs')
+    const d = q.get('data')
+    if (o === 'connected') return 'connected'
+    if (o === 'empty' || d === 'off' || d === 'false' || d === '0') return 'empty'
+    return 'live'
+  })
+  const hasData = obsState === 'live'
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    url.searchParams.delete('data')
+    if (obsState === 'live') url.searchParams.delete('obs')
+    else url.searchParams.set('obs', obsState)
+    window.history.replaceState(null, '', url)
+  }, [obsState])
+  // La promesse du guide, tenue : la première donnée bascule la page toute seule.
+  const prevObs = useRef(obsState)
+  useEffect(() => {
+    if (obsState === 'live' && prevObs.current !== 'live') {
+      toast.success('First batch received, your data is live')
+    }
+    prevObs.current = obsState
+  }, [obsState])
+  const dataControl = useMemo(
+    () => (
+      <button
+        type="button"
+        className={styles.dataPill}
+        onClick={() =>
+          setObsState((s) => (s === 'empty' ? 'connected' : s === 'connected' ? 'live' : 'empty'))
+        }
+        title="Proto setting: cycle no data, connected without data, live data"
+      >
+        <span className={OBS_STATE_DOT[obsState]} />
+        {OBS_STATE_LABEL[obsState]}
+      </button>
+    ),
+    [obsState],
+  )
+  useFrameControls(dataControl)
   // Onglet actif, synchronisé avec l'URL (?tab=…): persiste au refresh, Logs par défaut.
   const [tab, setTab] = useState<ExploreTab>(() => {
     const t = new URLSearchParams(window.location.search).get('tab')
@@ -2577,12 +3324,12 @@ const ExploreTabsProto = () => {
       setTab('incidents')
       if (inc) setIncidentDetail(inc)
     } else if (p.startsWith('obs:log:')) {
-      const log = LOGS.find((l) => l.key === p.slice('obs:log:'.length))
+      const log = ALL_LOGS.find((l) => l.key === p.slice('obs:log:'.length))
       setMode('obs')
       setTab('logs')
       if (log) setLogDetail(log)
     } else if (p.startsWith('obs:trace:')) {
-      const tr = TRACES.find((t) => t.key === p.slice('obs:trace:'.length))
+      const tr = ALL_TRACES.find((t) => t.key === p.slice('obs:trace:'.length))
       setMode('obs')
       setTab('traces')
       if (tr) setTraceDetail(tr)
@@ -2595,7 +3342,50 @@ const ExploreTabsProto = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingScreen, clearPendingScreen])
 
-  const meta = PAGE_META[tab]
+  // Vues télémétrie : sans data, elles affichent l'empty state à la place de leur contenu.
+  const TELEMETRY_TABS: ExploreTab[] = ['logs', 'traces', 'svcmap', 'perses', 'k8s']
+  // Une seule destination d'ingestion : sans data, la page Ingestion porte le
+  // guide elle aussi (au lieu d'une 2e page de setup), et reste la seule entrée
+  // de la nav qui n'est pas atténuée.
+  const GATED_TABS: ExploreTab[] = [...TELEMETRY_TABS, 'usage']
+  const gatedByData = !hasData && GATED_TABS.includes(tab)
+  // Écran de setup : seule vue qui se lit comme une colonne centrée, en-tête incluse.
+  const setupScreen = gatedByData && tab === 'usage'
+
+  // Cycle de vie de la clé d'ingestion, porté par le parent pour survivre à la
+  // navigation : `ingestKey` = clé encore affichable (vient d'être émise),
+  // `keyIssued` = une clé existe. En quittant l'écran, la clé cesse d'être
+  // affichable, comme dans le vrai produit : on ne la montre qu'à l'émission.
+  // Plages de temps des pages : elles vivent ici parce que le sélecteur est dans
+  // l'en-tête de page, à droite du titre, et qu'il porte tout le contenu.
+  const [logRange, setLogRange] = useState('24h')
+  const [traceRange, setTraceRange] = useState('1h')
+  // Comparaison de périodes : attribut de la plage, donc piloté depuis l'en-tête.
+  const [traceCompare, setTraceCompare] = useState(false)
+  const [ingestKey, setIngestKey] = useState<string | null>(null)
+  const [keyIssued, setKeyIssued] = useState(false)
+  useEffect(() => {
+    if (tab !== 'usage' && ingestKey) setIngestKey(null)
+  }, [tab, ingestKey])
+  const [keyIssuedAt, setKeyIssuedAt] = useState<number | null>(null)
+  // Chrono d'attente : démarre à l'émission de la clé, c'est le moment où on sait
+  // que l'utilisateur a commencé. Sert au bandeau d'état, en pleine largeur.
+  const [waited, setWaited] = useState(0)
+  useEffect(() => {
+    if (!keyIssuedAt) return
+    const tick = () => setWaited(Date.now() - keyIssuedAt)
+    tick()
+    const id = window.setInterval(tick, 1000)
+    return () => window.clearInterval(id)
+  }, [keyIssuedAt])
+  const issueIngestKey = () => {
+    setIngestKey(genKey())
+    setKeyIssued(true)
+    setKeyIssuedAt(Date.now())
+    toast.success(keyIssued ? 'New ingestion key created successfully' : 'Ingestion key created successfully')
+  }
+  // On garde le titre de la vue (Logs explorer, etc.) mais on masque ses actions.
+  const meta = gatedByData ? { ...PAGE_META[tab], actions: [] } : PAGE_META[tab]
 
   const toggleSilence = (key: string) => {
     setAlerts((cur) => cur.map((a) => (a.key === key ? { ...a, status: a.status === 'silenced' ? 'active' : 'silenced' } : a)))
@@ -2713,10 +3503,80 @@ const ExploreTabsProto = () => {
     }
   }
 
+  // État de l'ingestion, une seule source. Deux présentations : bande applicative
+  // pleine largeur sur les pages Explore, Banner DS dans la colonne du setup.
+  const nudge = waited >= WAIT_NUDGE_MS
+  const ingestState:
+    | { tone: 'success' | 'waiting' | 'warning'; title: string; sub: string; band: string }
+    | null =
+    !gatedByData
+      ? null
+      : obsState === 'connected'
+        ? {
+            tone: 'success',
+            title: "You're connected, no data yet",
+            sub: "We're receiving requests from your exporter, so your credentials and your network path are fine. Your logs and traces should arrive within a few minutes.",
+            band: "You're connected. We haven't received any data yet, it usually arrives within a few minutes.",
+          }
+        : keyIssuedAt !== null
+          ? nudge
+            ? {
+                tone: 'warning',
+                title: "We still haven't received anything",
+                sub: `Nothing has arrived in ${fmtWait(waited)}. Three things explain almost every case where data never shows up, and you can test your credentials with a single command. Both are at the bottom of the setup page.`,
+                band: `We still haven't received anything after ${fmtWait(waited)}. Check the usual causes on the setup page.`,
+              }
+            : {
+                tone: 'waiting',
+                title: "We're listening for your data",
+                sub: `Nothing received in the last ${fmtWait(waited)}. You can leave this page open, it fills in on its own as soon as your data arrives.`,
+                band: `We're listening for your data. Nothing received in the last ${fmtWait(waited)}.`,
+              }
+          : null
+
+  const bandIcon =
+    ingestState?.tone === 'success' ? (
+      <CheckCircle2 size={16} stroke="white" strokeWidth={1.875} />
+    ) : ingestState?.tone === 'warning' ? (
+      <IconAlertTriangle size={16} color="white" />
+    ) : (
+      <span className={styles.otlpWaitIcon}>
+        <span className={styles.otlpPulse} />
+      </span>
+    )
+
   const renderView = () => {
+    if (gatedByData && tab === 'usage') {
+      return (
+        <OtlpOnboardingView
+          freshKey={ingestKey}
+          keyExists={keyIssued}
+          quiet={ingestState === null}
+          onIssue={issueIngestKey}
+        />
+      )
+    }
+    const view = renderTabView()
+    if (gatedByData) {
+      // Connecté : la vue réelle, vide (voir `noData`). Rien à superposer.
+      return obsState === 'connected' ? (
+        view
+      ) : (
+        <GatePreview tab={tab} connected={false} onSetup={() => setTab('usage')}>
+          {view}
+        </GatePreview>
+      )
+    }
+    return view
+  }
+
+  // Connecté sans télémétrie : les vues se rendent entières mais sans données.
+  const noData = obsState === 'connected'
+
+  const renderTabView = () => {
     switch (tab) {
       case 'logs':
-        return <LogsView search={logSearch} setSearch={setLogSearch} level={logLevel} setLevel={setLogLevel} onOpenLog={openLog} onOpenTrace={setTraceDetail} />
+        return <LogsView search={logSearch} setSearch={setLogSearch} level={logLevel} setLevel={setLogLevel} onOpenLog={openLog} onOpenTrace={setTraceDetail} empty={noData} range={logRange} />
       case 'traces':
         return (
           <TracesView
@@ -2725,11 +3585,14 @@ const ExploreTabsProto = () => {
             svc={traceSvc}
             setSvc={setTraceSvc}
             onOpenTrace={setTraceDetail}
+            empty={noData}
+            range={traceRange}
           />
         )
       case 'svcmap':
         return (
           <ServiceMapView
+            empty={noData}
             onGoToLogs={(svc) => {
               setLogLevel('all')
               setLogSearch(svc)
@@ -2743,7 +3606,7 @@ const ExploreTabsProto = () => {
           />
         )
       case 'k8s':
-        return <KubernetesView />
+        return <KubernetesView empty={noData} />
       case 'usage':
         return <UsageView cap={cap} setCap={setCap} quotaOpen={quotaOpen} setQuotaOpen={setQuotaOpen} />
       case 'alerts':
@@ -2753,7 +3616,7 @@ const ExploreTabsProto = () => {
       case 'destinations':
         return <WipView label="Destinations" />
       case 'perses':
-        return <PersesView headerSlot={persesHeaderSlot} />
+        return <PersesView headerSlot={persesHeaderSlot} empty={noData} />
     }
   }
 
@@ -2805,6 +3668,8 @@ const ExploreTabsProto = () => {
               <div key={section.section}>
                 {si > 0 && <div className={styles.navSep} />}
                 <div className={styles.navLabel}>{section.section}</div>
+                {/* Pas de grisé avant le setup : chaque entrée mène vraiment quelque part
+                    (sa promesse + le guide), donc rien ne doit avoir l'air désactivé. */}
                 {section.items.map((item) => (
                   <button
                     key={item.key}
@@ -2827,14 +3692,44 @@ const ExploreTabsProto = () => {
 
       {/* Content */}
       <div className={styles.content}>
+        {ingestState && tab !== 'usage' && (
+          <StateBand
+            tone={ingestState.tone}
+            icon={bandIcon}
+            text={ingestState.band}
+            action={
+              <Button color="secondary" size="s" onClick={() => setTab('usage')}>
+                {obsState === 'connected' ? 'Check your setup' : 'Open setup'}
+              </Button>
+            }
+          />
+        )}
         <div className={tab === 'svcmap' ? `${styles.contentBody} ${styles.contentBodyFill}` : styles.contentBody}>
-          <div className={styles.pageHead}>
+          <div className={setupScreen ? `${styles.pageHead} ${styles.pageHeadNarrow}` : styles.pageHead}>
             <h1 className={styles.pageTitle}>{meta.title}</h1>
             {tab === 'perses' ? (
               // Le cluster d'actions Perses est téléporté ici depuis PersesView (portal).
               <div className={styles.contentActions} ref={setPersesHeaderSlot} />
             ) : (
               <div className={styles.contentActions}>
+                {/* La plage de temps porte TOUT le contenu de la page : elle vit donc
+                    dans l'en-tête, à droite du titre, pas dans une carte. */}
+                {(tab === 'logs' || tab === 'traces') && obsState !== 'empty' && (
+                  <DateRangePicker
+                    size="m"
+                    defaultValue={tab === 'logs' ? 3 : 1}
+                    options={rangeShortcuts(['15m', '1h', '6h', '24h'])}
+                    onChange={(dr) => {
+                      if (!dr) return
+                      const mins = Math.round(
+                        (new Date(dr.end).getTime() - new Date(dr.start).getTime()) / 60_000,
+                      )
+                      const key = rangeKeyFromMinutes(mins)
+                      if (tab === 'logs') setLogRange(key)
+                      else setTraceRange(key)
+                    }}
+                  />
+                )}
                 {meta.actions.map((a) => {
                   // Toutes les actions n'ont pas d'icône : le slot Button.Icon en exige
                   // une, donc on ne le rend que s'il y en a.
@@ -2862,6 +3757,17 @@ const ExploreTabsProto = () => {
               </div>
             )}
           </div>
+          {ingestState && tab === 'usage' && (
+            <div className={`${styles.stateBanner} ${styles.pageHeadNarrow}`}>
+              <Banner
+                variant={ingestState.tone === 'success' ? 'success' : ingestState.tone === 'warning' ? 'warning' : 'secondary'}
+              >
+                <Banner.Icon>{bandIcon}</Banner.Icon>
+                <Banner.Description>{ingestState.title}</Banner.Description>
+                <Banner.SubDescription>{ingestState.sub}</Banner.SubDescription>
+              </Banner>
+            </div>
+          )}
           {renderView()}
         </div>
       </div>
@@ -3188,7 +4094,7 @@ helm install kapp-agent kapptivate/agent \\
             const a = httpAttrs(l.msg)
             const spanId = idFrom(l.key, 16)
             const traceId = idFrom(l.key + 't', 32)
-            const linkedTrace = l.traceKey ? TRACES.find((t) => t.key === l.traceKey) : undefined
+            const linkedTrace = l.traceKey ? ALL_TRACES.find((t) => t.key === l.traceKey) : undefined
             const taskId = `${idFrom(l.key, 8)}-${idFrom(l.key + '1', 4)}-${idFrom(l.key + '2', 4)}-${idFrom(l.key + '3', 4)}-${idFrom(l.key + '4', 12)}`
             const headers: [string, string][] = a
               ? [

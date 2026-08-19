@@ -14,6 +14,7 @@ import {
   ActionMenu,
   RefreshButton,
   ButtonGroup,
+  DateRangePicker,
 } from '@kapptivate/ui-kit'
 import {
   Plus,
@@ -52,6 +53,9 @@ import {
   PALETTE,
   interpretPrompt,
   suggestViz,
+  emptyPanel,
+  rangeShortcuts,
+  rangeKeyFromMinutes,
 } from './perses'
 import { dashboardStore, useDashboard, useDashboardDirty } from './dashboardStore'
 
@@ -259,7 +263,7 @@ const QUICK_METRICS: { label: string; prompt: string }[] = [
 ]
 
 /* ─── Main Perses view ─── */
-const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
+const PersesView = ({ headerSlot, empty }: { headerSlot?: HTMLElement | null; empty?: boolean }) => {
   const dashboard = useDashboard()
   const dirty = useDashboardDirty()
 
@@ -472,7 +476,7 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
               <ActionMenu options={menu.options} onClick={menu.onClick} />
             </span>
           </div>
-          <LineChart panel={panel} height={panel.span === 3 ? 240 : 172} />
+          <LineChart panel={empty ? emptyPanel(panel) : panel} height={panel.span === 3 ? 240 : 172} />
         </Card>
       </div>
     )
@@ -481,9 +485,19 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
   {/* Seuls Save/Cancel remontent dans le bandeau du haut (alignés comme les autres tabs). */}
   const headerActions = (
     <>
-      <Button
-        color="primary" disabled={!dirty} onClick={save}
-      >
+      {/* La plage porte tout le dashboard : elle vit dans l'en-tête de page,
+          à droite du titre, pas dans la barre de contrôles du corps. */}
+      <DateRangePicker
+        size="m"
+        defaultValue={1}
+        options={rangeShortcuts(TIME_RANGE_OPTIONS.map((o) => o.value))}
+        onChange={(dr) => {
+          if (!dr) return
+          const mins = Math.round((new Date(dr.end).getTime() - new Date(dr.start).getTime()) / 60_000)
+          setRange(rangeKeyFromMinutes(mins))
+        }}
+      />
+      <Button color="primary" disabled={!dirty} onClick={save}>
         <Button.Icon icon={Save} />
         Save
       </Button>
@@ -531,7 +545,6 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
         <div className={styles.operatorWrap}>
           <Select label="operator" fullWidth disabled value={dashboard.operator} options={[{ label: dashboard.operator, value: dashboard.operator }]} />
         </div>
-        <Select value={range} onChange={(_e, v) => setRange(v)} options={TIME_RANGE_OPTIONS} icon={Calendar} minWidth="150px" />
         <RefreshButton interval="30s" iconOnly handleRefresh={() => toast.info('Refreshing dashboard…')} />
         <ActionMenu options={dashMenu.options} onClick={dashMenu.onClick} />
       </div>
@@ -610,7 +623,7 @@ const PersesView = ({ headerSlot }: { headerSlot?: HTMLElement | null }) => {
       />
 
       <Drawer open={expanded !== null} onClose={() => setExpanded(null)} width={960} title={expanded?.name ?? 'Panel'}>
-        {expanded && <LineChart panel={{ ...expanded, span: 3 }} height={420} />}
+        {expanded && <LineChart panel={empty ? emptyPanel({ ...expanded, span: 3 }) : { ...expanded, span: 3 }} height={420} />}
       </Drawer>
 
       {/* Rename group */}

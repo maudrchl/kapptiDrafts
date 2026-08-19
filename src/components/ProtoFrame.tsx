@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode, type CSSProperties } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { IconLink, IconCheck, IconTrash } from '@kapptivate/ui-kit'
 import logo from '../assets/kapptidrafts-logo.svg'
@@ -7,6 +7,22 @@ import { ScreenProvider } from '../context/ScreenContext'
 import CollabLayer from './collab/CollabLayer'
 import { createShare, listShares, revokeShare, shareUrl, type ShareRow } from '../lib/shares'
 import { collabEnabled } from '../lib/supabase'
+
+/**
+ * Slot de réglages proto : un proto peut injecter un contrôle (ReactNode) qui
+ * s'affiche dans une pilule séparée, à côté du fil d'Ariane et au même design.
+ * Vit dans le chrome de l'app, pas dans l'interface du produit.
+ */
+const FrameControlsContext = createContext<{ setControls: (n: ReactNode) => void }>({
+  setControls: () => {},
+})
+export const useFrameControls = (node: ReactNode) => {
+  const { setControls } = useContext(FrameControlsContext)
+  useEffect(() => {
+    setControls(node)
+    return () => setControls(null)
+  }, [node, setControls])
+}
 
 /**
  * Chrome léger autour d'un prototype (effet « mise en abyme ») :
@@ -34,6 +50,8 @@ const ProtoFrame = ({
   /** Pas de partage (ex. archive HTML : l'iframe /folder/* est bloquée hors login). */
   noShare?: boolean
 }) => {
+  const [controls, setControls] = useState<ReactNode>(null)
+  const controlsCtx = useMemo(() => ({ setControls }), [])
   const [codeOpen, setCodeOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [shares, setShares] = useState<ShareRow[]>([])
@@ -84,6 +102,7 @@ const ProtoFrame = ({
 
   return (
     <ScreenProvider>
+      <FrameControlsContext.Provider value={controlsCtx}>
       {children}
 
       {/* Collaboration : présence, commentaires épinglés, historique.
@@ -102,16 +121,19 @@ const ProtoFrame = ({
 
       {!scoped && (
         <>
-          {/* Fil d'Ariane */}
-          <div style={styles.crumb}>
-            <Link to="/" style={styles.home} title="Back to index">
-              <span style={styles.arrow}>
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-              </span>
-              <img src={logo} alt="kapptiDrafts" style={styles.logo} />
-            </Link>
-            <span style={styles.sep}>/</span>
-            <span style={styles.title}>{title}</span>
+          {/* Fil d'Ariane + réglages proto (pilules séparées, même design) */}
+          <div style={styles.crumbRow}>
+            <div style={styles.crumb}>
+              <Link to="/" style={styles.home} title="Back to index">
+                <span style={styles.arrow}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                </span>
+                <img src={logo} alt="kapptiDrafts" style={styles.logo} />
+              </Link>
+              <span style={styles.sep}>/</span>
+              <span style={styles.title}>{title}</span>
+            </div>
+            {controls && <div style={styles.crumb}>{controls}</div>}
           </div>
 
           {shareOpen && (
@@ -162,6 +184,7 @@ const ProtoFrame = ({
           {!noCode && <CodeDrawer slug={slug} open={codeOpen} onClose={() => setCodeOpen(false)} />}
         </>
       )}
+      </FrameControlsContext.Provider>
     </ScreenProvider>
   )
 }
@@ -174,11 +197,18 @@ const styles: Record<string, CSSProperties> = {
     boxShadow: 'inset 0 0 0 4px rgba(28,74,71,0.12)',
     zIndex: 2147483646,
   },
-  crumb: {
+  crumbRow: {
     position: 'fixed',
     top: 12,
     left: 12,
     zIndex: 2147483647,
+    display: 'flex',
+    /* Réglages du proto empilés SOUS le fil d'Ariane, pas à côté. */
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  crumb: {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
