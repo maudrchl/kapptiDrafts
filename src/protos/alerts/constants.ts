@@ -430,23 +430,28 @@ export type Incident = {
   severity: Severity
   at: string
   ago: string
-  status: 'ongoing' | 'closed'
+  status: 'ongoing' | 'resolved' | 'canceled'
+  /** Jour de l'incident : sert de bande de séparation dans le flux. */
+  day: string
   zone: string
   test: string
   product: string
 }
 
 export const INCIDENT_FEED: Incident[] = [
-  { id: '#3992772', alert: 'Checkout journey failing', severity: 'critical', at: '21/08/2026 - 16:27:03', ago: 'a few seconds ago', status: 'ongoing', zone: 'eu-west/Paris', test: 'Checkout / card payment', product: 'Payments' },
-  { id: '#3992771', alert: 'Checkout journey failing', severity: 'critical', at: '21/08/2026 - 16:26:58', ago: 'a few seconds ago', status: 'ongoing', zone: 'eu-west/Paris', test: 'Checkout / wallet payment', product: 'Payments' },
-  { id: '#3992768', alert: 'USSD response time', severity: 'warning', at: '21/08/2026 - 16:24:47', ago: '2 minutes ago', status: 'ongoing', zone: 'eu-west/Paris', test: 'FastPay / balance', product: 'FastPay' },
-  { id: '#3992764', alert: 'USSD response time', severity: 'warning', at: '21/08/2026 - 16:22:44', ago: '4 minutes ago', status: 'ongoing', zone: 'eu-central/Frankfurt', test: 'FastPay / transfer', product: 'FastPay' },
-  { id: '#3992762', alert: 'Checkout journey failing', severity: 'critical', at: '21/08/2026 - 16:21:36', ago: '6 minutes ago', status: 'closed', zone: 'eu-west/Paris', test: 'Checkout / card payment', product: 'Payments' },
-  { id: '#3992760', alert: 'Success rate below target', severity: 'warning', at: '21/08/2026 - 16:21:14', ago: '6 minutes ago', status: 'closed', zone: 'eu-west/Paris', test: 'Menu / browse', product: 'demo-site' },
-  { id: '#3992757', alert: 'USSD response time', severity: 'warning', at: '21/08/2026 - 16:20:35', ago: '7 minutes ago', status: 'closed', zone: 'eu-central/Frankfurt', test: 'FastPay / balance', product: 'FastPay' },
-  { id: '#3992753', alert: 'Login failures spike', severity: 'warning', at: '21/08/2026 - 16:17:55', ago: '9 minutes ago', status: 'closed', zone: 'us-east/Virginia', test: 'Accounts / login', product: 'Accounts' },
-  { id: '#3992749', alert: 'Checkout journey failing', severity: 'critical', at: '21/08/2026 - 16:11:02', ago: '16 minutes ago', status: 'closed', zone: 'eu-west/Paris', test: 'Checkout / apple pay', product: 'Payments' },
-  { id: '#3992744', alert: 'Success rate below target', severity: 'critical', at: '21/08/2026 - 15:58:20', ago: '29 minutes ago', status: 'closed', zone: 'eu-west/Paris', test: 'Order / submit', product: 'demo-site' },
+  { id: '#3992772', day: 'Today, 21 August 2026', alert: 'Checkout journey failing', severity: 'critical', at: '21/08/2026 - 16:27:03', ago: 'a few seconds ago', status: 'ongoing', zone: 'eu-west/Paris', test: 'Checkout / card payment', product: 'Payments' },
+  { id: '#3992771', day: 'Today, 21 August 2026', alert: 'Checkout journey failing', severity: 'critical', at: '21/08/2026 - 16:26:58', ago: 'a few seconds ago', status: 'ongoing', zone: 'eu-west/Paris', test: 'Checkout / wallet payment', product: 'Payments' },
+  { id: '#3992768', day: 'Today, 21 August 2026', alert: 'USSD response time', severity: 'warning', at: '21/08/2026 - 16:24:47', ago: '2 minutes ago', status: 'ongoing', zone: 'eu-west/Paris', test: 'FastPay / balance', product: 'FastPay' },
+  { id: '#3992764', day: 'Today, 21 August 2026', alert: 'USSD response time', severity: 'warning', at: '21/08/2026 - 16:22:44', ago: '4 minutes ago', status: 'ongoing', zone: 'eu-central/Frankfurt', test: 'FastPay / transfer', product: 'FastPay' },
+  { id: '#3992762', day: 'Today, 21 August 2026', alert: 'Checkout journey failing', severity: 'critical', at: '21/08/2026 - 16:21:36', ago: '6 minutes ago', status: 'resolved', zone: 'eu-west/Paris', test: 'Checkout / card payment', product: 'Payments' },
+  { id: '#3992760', day: 'Today, 21 August 2026', alert: 'Success rate below target', severity: 'warning', at: '21/08/2026 - 16:21:14', ago: '6 minutes ago', status: 'resolved', zone: 'eu-west/Paris', test: 'Menu / browse', product: 'demo-site' },
+  { id: '#3992757', day: 'Today, 21 August 2026', alert: 'USSD response time', severity: 'warning', at: '21/08/2026 - 16:20:35', ago: '7 minutes ago', status: 'resolved', zone: 'eu-central/Frankfurt', test: 'FastPay / balance', product: 'FastPay' },
+  { id: '#3992753', day: 'Today, 21 August 2026', alert: 'Login failures spike', severity: 'warning', at: '21/08/2026 - 16:17:55', ago: '9 minutes ago', status: 'canceled', zone: 'us-east/Virginia', test: 'Accounts / login', product: 'Accounts' },
+  { id: '#3992749', day: 'Today, 21 August 2026', alert: 'Checkout journey failing', severity: 'critical', at: '21/08/2026 - 16:11:02', ago: '16 minutes ago', status: 'resolved', zone: 'eu-west/Paris', test: 'Checkout / apple pay', product: 'Payments' },
+  { id: '#3992744', day: 'Today, 21 August 2026', alert: 'Success rate below target', severity: 'critical', at: '21/08/2026 - 15:58:20', ago: '29 minutes ago', status: 'canceled', zone: 'eu-west/Paris', test: 'Order / submit', product: 'demo-site' },
+  { id: '#3992702', day: 'Yesterday, 20 August 2026', alert: 'Checkout journey failing', severity: 'warning', at: '20/08/2026 - 09:40:12', ago: 'yesterday', status: 'resolved', zone: 'eu-west/Paris', test: 'Checkout / card payment', product: 'Payments' },
+  { id: '#3992688', day: 'Yesterday, 20 August 2026', alert: 'USSD response time', severity: 'warning', at: '20/08/2026 - 22:14:03', ago: 'yesterday', status: 'canceled', zone: 'eu-central/Frankfurt', test: 'FastPay / balance', product: 'FastPay' },
+  { id: '#3992671', day: 'Yesterday, 20 August 2026', alert: 'Success rate below target', severity: 'critical', at: '20/08/2026 - 03:14:55', ago: 'yesterday', status: 'resolved', zone: 'eu-west/Paris', test: 'Order / submit', product: 'demo-site' },
 ]
 
 /* ──────────────────── Page Configuration (onglet voisin) ──────────────────── */

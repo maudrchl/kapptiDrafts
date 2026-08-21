@@ -9,6 +9,7 @@ import {
   CounterCardGroup,
   CounterCard,
   IconSearchX,
+  EmptyState,
   IconAlertTriangle,
   IconMoreVertical,
   IconCalendarDays,
@@ -42,15 +43,19 @@ const NOISY_THRESHOLD = 5
 
 type TagFilter = { kind: 'zone' | 'test' | 'product'; value: string }
 
+/** Une ligne du tableau : soit une bande de journée, soit un incident. */
+type Row = (Group & { band?: undefined }) | { key: string; band: string }
+
 type Group = {
   key: string
+  day: string
   alert: string
   rule?: AlertRule
   severity: Severity
   test: string
   product: string
   zone: string
-  status: 'ongoing' | 'closed'
+  status: 'ongoing' | 'resolved' | 'canceled'
   count: number
   ago: string
   at: string
@@ -60,7 +65,7 @@ type Group = {
 const groupIncidents = (feed: Incident[]): Group[] => {
   const map = new Map<string, Group>()
   for (const i of feed) {
-    const key = `${i.alert}::${i.test}`
+    const key = `${i.day}::${i.alert}::${i.test}`
     const seen = map.get(key)
     if (seen) {
       seen.count += 1
@@ -70,6 +75,7 @@ const groupIncidents = (feed: Incident[]): Group[] => {
     }
     map.set(key, {
       key,
+      day: i.day,
       alert: i.alert,
       rule: ALERTS.find((a) => a.name === i.alert),
       severity: i.severity,
@@ -111,29 +117,63 @@ const IncidentsPage = ({
     let all = groupIncidents(INCIDENT_FEED)
     if (alertFilter) all = all.filter((g) => g.alert === alertFilter)
     for (const t of tags) all = all.filter((g) => g[t.kind] === t.value)
-    return status === 'all' ? all : all.filter((g) => g.status === status)
+    if (status === 'ongoing') return all.filter((g) => g.status === 'ongoing')
+    if (status === 'closed') return all.filter((g) => g.status !== 'ongoing')
+    return all
   }, [status, alertFilter, tags])
 
-  const ongoing = INCIDENT_FEED.filter((i) => i.status === 'ongoing')
-  const critical = ongoing.filter((i) => i.severity === 'critical')
-  const warning = ongoing.filter((i) => i.severity === 'warning')
-  const closed = INCIDENT_FEED.filter((i) => i.status === 'closed')
+  // Les compteurs comptent des incidents, pas des déclenchements : sinon ils
+  // contredisent la ligne « 10 triggers grouped into 8 incidents ».
+  const all = useMemo(() => groupIncidents(INCIDENT_FEED), [])
+  const ongoing = all.filter((g) => g.status === 'ongoing')
+  const critical = ongoing.filter((g) => g.severity === 'critical')
+  const warning = ongoing.filter((g) => g.severity === 'warning')
+  const closed = all.filter((g) => g.status !== 'ongoing')
+
+  /**
+   * Lignes du tableau : une bande de séparation par journée, comme la page
+   * Executions, puis les incidents de la journée avec les incidents en cours
+   * d'abord. Les incidents refermés gardent leur place mais perdent leur
+   * couleur, pour qu'on puisse se concentrer sur ce qui est ouvert.
+   */
+  const rows = useMemo(() => {
+    const days = [...new Set(groups.map((g) => g.day))]
+    return days.flatMap((day) => {
+      const inDay = groups
+        .filter((g) => g.day === day)
+        .sort((a, b) => Number(b.status === 'ongoing') - Number(a.status === 'ongoing'))
+      return [{ key: `band-${day}`, band: day } as Row, ...inDay]
+    })
+  }, [groups])
+
+  // La bande de journée est une ligne qui fusionne toutes les colonnes.
+  const bandCell = (r: Row) => (r.band ? { colSpan: 4 } : {})
+  const hiddenCell = (r: Row) => (r.band ? { colSpan: 0 } : {})
 
   const columns = [
     {
       title: 'Alert triggered',
       dataIndex: 'alert',
       key: 'alert',
-      render: (v: string, g: Group) => (
+      onCell: bandCell,
+      render: (v: string, r: Row) => {
+        if (r.band) return <span className={css.bandLabel}>{r.band}</span>
+        const g = r as Group
+        return (
         <div className={css.incidentCell}>
           {/* Pastille de type, comme dans le produit : la sévérité se voit avant
               de lire, et elle est collée au nom qu'elle qualifie. */}
           <span
             className={css.typeBadge}
-            style={{ background: SEV_COLOR[g.severity] }}
+            style={{
+              background: g.status === 'ongoing' ? SEV_COLOR[g.severity] : 'var(--color-surface-grey, #f4f4f5)',
+            }}
             title={g.severity}
           >
-            <IconAlertTriangle size={15} color="#fff" />
+            <IconAlertTriangle
+              size={15}
+              color={g.status === 'ongoing' ? '#fff' : 'var(--color-text-third)'}
+            />
           </span>
           <span className={css.incidentText}>
           <span className={css.nameLine}>
@@ -181,24 +221,33 @@ const IncidentsPage = ({
           </span>
           </span>
         </div>
-      ),
+        )
+      },
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (v: Group['status']) => (
-        <StatusTag variant="outline" color={v === 'ongoing' ? 'failed' : 'success'}>
+      onCell: hiddenCell,
+      render: (v: Group['status'], r: Row) =>
+        r.band ? null : (
+        <StatusTag
+          variant="outline"
+          color={v === 'ongoing' ? 'failed' : v === 'resolved' ? 'success' : 'neutral'}
+        >
           {v}
         </StatusTag>
-      ),
+        ),
     },
     {
       // Étiquettes du produit : le libellé en gras, la valeur à côté.
       title: 'Tags',
       key: 'tags',
-      render: (_v: unknown, g: Group) => {
+      onCell: hiddenCell,
+      render: (_v: unknown, r: Row) => {
+        if (r.band) return null
+        const g = r as Group
         // Cliquer une étiquette filtre le flux : c'est le geste qu'on essaie
         // naturellement, et le produit ne le propose pas.
         const chip = (kind: TagFilter['kind'], label: string, value: string) => {
@@ -231,7 +280,9 @@ const IncidentsPage = ({
       title: '',
       key: 'actions',
       width: 50,
-      render: (_v: unknown, g: Group) => (
+      onCell: hiddenCell,
+      render: (_v: unknown, r: Row) =>
+        r.band ? null : (
         <Dropdown
           menu={{
             items: [
@@ -239,7 +290,8 @@ const IncidentsPage = ({
               { key: 'close', label: 'Close incident' },
             ],
             onClick: ({ key }: { key: string }) => {
-              if (key === 'alert' && g.rule) onOpenAlert(g.rule)
+              const rule = (r as Group).rule
+              if (key === 'alert' && rule) onOpenAlert(rule)
             },
           }}
           placement="bottomRight"
@@ -248,19 +300,14 @@ const IncidentsPage = ({
             <IconMoreVertical size={16} color="var(--color-text-secondary)" />
           </span>
         </Dropdown>
-      ),
+        ),
     },
   ]
 
   return (
     <>
       <div className={obs.pageHead}>
-        <div>
-          <h1 className={obs.pageTitle}>Incidents</h1>
-          <div className={css.headSub}>
-            What those rules opened, most recent first.
-          </div>
-        </div>
+        <h1 className={obs.pageTitle}>Incidents</h1>
         <div className={obs.contentActions}>
           <Select
             size="s"
@@ -319,19 +366,29 @@ const IncidentsPage = ({
         </div>
       )}
 
-      <div className={css.dayLabel}>Today, 21 August 2026</div>
-
-      <Table
-        rowKey="key"
-        columns={columns}
-        data={groups}
-        showHeader
-        emptyState={{
-          icon: <IconSearchX color="var(--color-text-secondary)" />,
-          text: 'Nothing here',
-          description: 'No incident with this status today.',
-        }}
-      />
+      {rows.length > 0 ? (
+        <Table
+          rowKey="key"
+          columns={columns}
+          data={rows}
+          showHeader
+          conditionalRowClassNames={[
+            { condition: (r: Row) => !!r.band, className: css.bandRow },
+            {
+              condition: (r: Row) => !r.band && (r as Group).status !== 'ongoing',
+              className: css.closedRow,
+            },
+          ]}
+        />
+      ) : (
+        <div className={obs.emptyBlock}>
+          <EmptyState
+            icon={<IconSearchX color="var(--color-text-secondary)" />}
+            text="Nothing here"
+            description="No incident matches these filters today."
+          />
+        </div>
+      )}
 
       {/* Le pont dans l'autre sens : depuis les incidents, aller régler le parc. */}
       <div className={css.feedFooter}>

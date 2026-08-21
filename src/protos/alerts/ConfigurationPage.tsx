@@ -30,10 +30,7 @@ const ConfigurationPage = ({
   return (
     <>
       <div className={obs.pageHead}>
-        <div>
-          <h1 className={obs.pageTitle}>Configuration</h1>
-          <div className={css.headSub}>Who is reachable, and what never deserves an alert.</div>
-        </div>
+        <h1 className={obs.pageTitle}>Configuration</h1>
       </div>
 
       <div className={css.subTabs}>

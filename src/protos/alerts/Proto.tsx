@@ -271,12 +271,47 @@ const AlertList = ({
       ),
     },
     {
-      // La condition en clair, sur une ligne : c'est ce que la colonne
-      // « Condition » du produit cache derrière du jargon de requête.
-      title: 'Condition',
+      // Condition et portée dans la même colonne : « 2 of 10 runs fail » et
+      // « Payments » forment une phrase, deux colonnes les séparaient sans
+      // raison. Le filtre produit vit dans l'en-tête de cette colonne.
+      title: (
+        <span className={css.filterHead}>
+          Condition
+          <Popover
+            trigger="click"
+            placement="bottomLeft"
+            noPadding
+            open={scopeOpen}
+            setOpen={setScopeOpen}
+            content={
+              <div className={obs.filterMenu}>
+                <TableFilter
+                  selectedFilters={scope}
+                  setFilter={setScope}
+                  items={allScopes.map((sc) => ({ label: sc, key: sc }))}
+                />
+              </div>
+            }
+          >
+            <button
+              type="button"
+              className={scopes.length === 0 ? obs.headFilterBtn : obs.headFilterBtnOn}
+              aria-label="Filter by product"
+            >
+              <IconListFilter size={13} />
+            </button>
+          </Popover>
+        </span>
+      ),
       dataIndex: 'short',
       key: 'short',
-      render: (v: string) => <span className={`${css.truncate} ${css.dim}`}>{v}</span>,
+      render: (v: string, a: AlertRule) => (
+        <span className={css.conditionCell}>
+          <span className={`${css.truncate} ${css.dim}`}>{v}</span>
+          <span className={css.metaDot}>·</span>
+          <span className={css.scopeName}>{a.scope}</span>
+        </span>
+      ),
     },
     {
       // Le track record entre dans la liste : sept jours de comportement réel,
@@ -321,43 +356,6 @@ const AlertList = ({
           )}
         </span>
       ),
-    },
-    {
-      // Le filtre vit dans l'en-tête de SA colonne, avec le même composant que
-      // les colonnes filtrables du proto Observability.
-      title: (
-        <span className={css.filterHead}>
-          Applies to
-          <Popover
-            trigger="click"
-            placement="bottomLeft"
-            noPadding
-            open={scopeOpen}
-            setOpen={setScopeOpen}
-            content={
-              <div className={obs.filterMenu}>
-                <TableFilter
-                  selectedFilters={scope}
-                  setFilter={setScope}
-                  items={allScopes.map((sc) => ({ label: sc, key: sc }))}
-                />
-              </div>
-            }
-          >
-            <button
-              type="button"
-              className={scopes.length === 0 ? obs.headFilterBtn : obs.headFilterBtnOn}
-              aria-label="Filter by product"
-            >
-              <IconListFilter size={13} />
-            </button>
-          </Popover>
-        </span>
-      ),
-      dataIndex: 'scope',
-      key: 'scope',
-      width: 170,
-      render: (v: string) => <span className={`${css.truncate} ${css.dim}`}>{v}</span>,
     },
     {
       title: 'Notifies',

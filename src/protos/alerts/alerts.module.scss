@@ -576,12 +576,19 @@ $critical: var(--color-error, #e0372e);
 }
 
 /* Règle qui sonne trop : dit à l'endroit où on subit le bruit. */
+/* Règle qui sonne trop, à l'endroit où on subit le bruit. L'ambre du DS
+   (#f2b338) est illisible en texte sur fond clair : on garde sa teinte en fond
+   et on écrit dans son ombre foncée. */
 .noisyMark {
-  font-size: 11px;
-  color: $warning;
-  border: 1px solid rgba(242, 179, 56, 0.4);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #8a6100;
+  background: rgba(242, 179, 56, 0.18);
+  border: 1px solid rgba(242, 179, 56, 0.45);
   border-radius: 4px;
-  padding: 1px 5px;
+  padding: 0 5px;
+  white-space: nowrap;
 }
 
 /* Compteurs en ligne, sans cartes : quatre chiffres n'ont pas besoin de quatre
@@ -881,7 +888,8 @@ $critical: var(--color-error, #e0372e);
   /* Même poids que le nom au-dessus : la ligne de métadonnées se lisait molle
      à côté d'un titre en medium. */
   font-weight: 500;
-  color: $muted;
+  /* Métadonnée de troisième plan : text-third, pas text-secondary. */
+  color: $third;
 
   svg {
     flex-shrink: 0;
@@ -893,7 +901,7 @@ $critical: var(--color-error, #e0372e);
 .metaItem {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 5px;
 }
 
 .metaDot {
@@ -916,5 +924,41 @@ $critical: var(--color-error, #e0372e);
 
   &:hover {
     background: $grey;
+  }
+}
+
+/* Condition + portée dans une seule cellule : la condition en gris, le produit
+   en noir pour rester repérable à l'œil quand on cherche un périmètre. */
+.conditionCell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.scopeName {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Bande de séparation par journée, comme la page Executions du produit. */
+.bandRow :global(td) {
+  background: $grey;
+  padding-top: 7px !important;
+  padding-bottom: 7px !important;
+}
+
+.bandLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: $muted;
+}
+
+/* Incident refermé : il garde sa place dans la journée mais perd sa couleur,
+   pour qu'on se concentre sur ce qui est ouvert. */
+.closedRow {
+  opacity: 0.65;
+
+  &:hover {
+    opacity: 1;
   }
 }
