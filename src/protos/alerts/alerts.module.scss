@@ -940,11 +940,12 @@ $critical: var(--color-error, #e0372e);
   white-space: nowrap;
 }
 
-/* Bande de séparation par journée, comme la page Executions du produit. */
+/* Bande de séparation par journée, comme la page Executions du produit : nette
+   mais plus basse qu'une ligne de contenu. */
 .bandRow :global(td) {
   background: $grey;
-  padding-top: 7px !important;
-  padding-bottom: 7px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
 }
 
 .bandLabel {
