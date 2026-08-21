@@ -1,9 +1,8 @@
-import { useState } from 'react'
 import { Button, Table, EmptyState, IconPlus, IconFileX2, IconExternalLink } from '@kapptivate/ui-kit'
 import obs from '../observability/explore-tabs.module.scss'
 import css from './alerts.module.scss'
-import { ON_CALL } from './constants'
-import type { Severity } from './constants'
+import { ON_CALL, alertsRoutedTo } from './constants'
+import type { AlertRule, OnCall, Severity } from './constants'
 
 /**
  * Page Configuration, l'onglet voisin : l'astreinte et les exclusions d'erreurs.
@@ -18,8 +17,15 @@ const SEV_COLOR: Record<Severity, string> = {
   critical: 'var(--color-error, #e0372e)',
 }
 
-const ConfigurationPage = () => {
-  const [tab, setTab] = useState<'oncall' | 'exclusions'>('oncall')
+const ConfigurationPage = ({
+  tab,
+  onTabChange,
+  onOpenAlert,
+}: {
+  tab: 'oncall' | 'exclusions'
+  onTabChange: (t: 'oncall' | 'exclusions') => void
+  onOpenAlert: (a: AlertRule) => void
+}) => {
 
   return (
     <>
@@ -31,14 +37,14 @@ const ConfigurationPage = () => {
         <button
           type="button"
           className={tab === 'oncall' ? css.subTabActive : css.subTab}
-          onClick={() => setTab('oncall')}
+          onClick={() => onTabChange('oncall')}
         >
           On-call list
         </button>
         <button
           type="button"
           className={tab === 'exclusions' ? css.subTabActive : css.subTab}
-          onClick={() => setTab('exclusions')}
+          onClick={() => onTabChange('exclusions')}
         >
           Error exclusions
           <span className={css.countPill}>0</span>
@@ -63,10 +69,36 @@ const ConfigurationPage = () => {
               { title: 'Destination', dataIndex: 'channel', key: 'channel', width: 260 },
               { title: 'When', dataIndex: 'hours', key: 'hours', width: 240 },
               {
+                // Le lien retour : depuis une astreinte, les alertes qui la
+                // réveillent. Sans ça, on ne sait pas ce qu'on porte.
+                title: 'Alerts routed here',
+                key: 'alerts',
+                width: 230,
+                render: (_v: unknown, o: OnCall) => {
+                  const routed = alertsRoutedTo(o)
+                  return routed.length === 0 ? (
+                    <span className={css.dim}>-</span>
+                  ) : (
+                    <span className={css.routedList}>
+                      {routed.map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          className={css.linkName}
+                          onClick={() => onOpenAlert(a)}
+                        >
+                          {a.name}
+                        </button>
+                      ))}
+                    </span>
+                  )
+                },
+              },
+              {
                 title: 'Receives',
                 dataIndex: 'severities',
                 key: 'severities',
-                width: 190,
+                width: 160,
                 render: (v: Severity[]) => (
                   <span className={css.tagRow}>
                     {v.map((s) => (

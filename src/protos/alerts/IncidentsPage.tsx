@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
+  Button,
   Table,
   StatusTag,
   Select,
@@ -77,13 +78,23 @@ const groupIncidents = (feed: Incident[]): Group[] => {
   return [...map.values()]
 }
 
-const IncidentsPage = ({ onOpenAlert }: { onOpenAlert: (a: AlertRule) => void }) => {
+const IncidentsPage = ({
+  onOpenAlert,
+  alertFilter,
+  onClearFilter,
+}: {
+  onOpenAlert: (a: AlertRule) => void
+  /** Nom de règle : on arrive filtré quand on vient du détail d'une alerte. */
+  alertFilter: string | null
+  onClearFilter: () => void
+}) => {
   const [status, setStatus] = useState<'all' | 'ongoing' | 'closed'>('all')
 
   const groups = useMemo(() => {
-    const all = groupIncidents(INCIDENT_FEED)
+    let all = groupIncidents(INCIDENT_FEED)
+    if (alertFilter) all = all.filter((g) => g.alert === alertFilter)
     return status === 'all' ? all : all.filter((g) => g.status === status)
-  }, [status])
+  }, [status, alertFilter])
 
   const ongoing = INCIDENT_FEED.filter((i) => i.status === 'ongoing')
   const critical = ongoing.filter((i) => i.severity === 'critical')
@@ -226,6 +237,17 @@ const IncidentsPage = ({ onOpenAlert }: { onOpenAlert: (a: AlertRule) => void })
           />
         </CounterCardGroup>
       </div>
+
+      {/* Filtre venu du détail d'une alerte : visible et réversible en un clic. */}
+      {alertFilter && (
+        <div className={css.filterBar}>
+          <span className={obs.cardSub}>Filtered on</span>
+          <span className={css.filterChip}>{alertFilter}</span>
+          <Button color="invisible" size="s" onClick={onClearFilter}>
+            Clear
+          </Button>
+        </div>
+      )}
 
       <div className={css.dayLabel}>Today, 21 August 2026</div>
 

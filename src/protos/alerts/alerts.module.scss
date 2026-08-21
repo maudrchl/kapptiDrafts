@@ -58,12 +58,15 @@ $critical: var(--color-error, #e0372e);
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 16px 0;
+  padding: 16px 0 11px;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
   color: $muted;
   font: inherit;
+  /* Poids identique dans les deux états : sinon le libellé change de largeur en
+     devenant actif et la barre d'onglets se décale. */
+  font-weight: 500;
   cursor: pointer;
 
   &:hover {
@@ -75,7 +78,6 @@ $critical: var(--color-error, #e0372e);
   composes: tab;
   color: $text;
   border-bottom-color: $primary;
-  font-weight: 500;
 }
 
 /* ===== LISTE ===== */
@@ -715,4 +717,58 @@ $critical: var(--color-error, #e0372e);
 .recordDay {
   font-size: 10px;
   color: $third;
+}
+
+/* Densité intermédiaire du tableau : le mode compact du DS serrait trop, le
+   mode normal aérait trop. */
+.tableMid {
+  :global(.ant-table-cell) {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+}
+
+/* Liseré de sévérité à gauche de la ligne : ce que l'alerte a déclenché cette
+   semaine se lit avant de lire. */
+.rowCritical :global(td):first-child {
+  box-shadow: inset 3px 0 0 var(--color-error, #e0372e);
+}
+
+.rowWarning :global(td):first-child {
+  box-shadow: inset 3px 0 0 #f2b338;
+}
+
+/* Destination + astreinte derrière elle. */
+.routeWho {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Filtre actif sur la page Incidents. */
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.filterChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid $border;
+  border-radius: 12px;
+  background: $white;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Alertes routées vers une astreinte. */
+.routedList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
 }

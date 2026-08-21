@@ -70,6 +70,12 @@ export type AlertRule = {
   history: (0 | 1 | 2)[]
   /** Déclenchements par jour sur 7 jours : le track record, lisible d'un coup. */
   week: number[]
+  /**
+   * Pire sévérité réellement déclenchée sur ces 7 jours (null = rien du tout).
+   * La hauteur des barres dit combien, leur couleur dit quoi : sans ça, une
+   * alerte qui sonne souvent en warning se lisait comme une alerte critique.
+   */
+  worst: Severity | null
   owner: string
 }
 
@@ -161,6 +167,7 @@ export const ALERTS: AlertRule[] = [
     lastFired: '14 min ago',
     firedLast7d: 4,
     week: [0, 1, 0, 0, 1, 0, 2],
+    worst: 'critical',
     history: [...ok(14), 1, 1, 0, 1, 1, 2, 2, 2, 2, 2],
     owner: 'Awa Diallo',
   },
@@ -182,6 +189,7 @@ export const ALERTS: AlertRule[] = [
     lastFired: '2 days ago',
     firedLast7d: 1,
     week: [0, 0, 0, 1, 0, 0, 0],
+    worst: 'critical',
     history: [...ok(6), 1, 1, 2, 1, ...ok(14)],
     owner: 'Awa Diallo',
   },
@@ -202,6 +210,7 @@ export const ALERTS: AlertRule[] = [
     lastFired: '3 min ago',
     firedLast7d: 9,
     week: [1, 2, 1, 0, 2, 1, 2],
+    worst: 'warning',
     history: [0, 1, 1, 0, 0, 1, 2, 1, 0, 0, 1, 1, 0, 1, 2, 1, 0, 0, 1, 1, 0, 1, 1, 1],
     owner: 'Samir Benali',
   },
@@ -220,6 +229,7 @@ export const ALERTS: AlertRule[] = [
     lastFired: 'Never',
     firedLast7d: 0,
     week: [0, 0, 0, 0, 0, 0, 0],
+    worst: null,
     history: ok(24),
     owner: 'Samir Benali',
   },
@@ -240,6 +250,7 @@ export const ALERTS: AlertRule[] = [
     lastFired: '5 days ago',
     firedLast7d: 2,
     week: [0, 0, 1, 0, 0, 1, 0],
+    worst: 'warning',
     history: [...ok(18), 1, 0, 0, 1, 0, 0],
     owner: 'Léa Marchand',
   },
@@ -258,6 +269,7 @@ export const ALERTS: AlertRule[] = [
     lastFired: '3 weeks ago',
     firedLast7d: 0,
     week: [0, 0, 0, 0, 0, 0, 0],
+    worst: null,
     history: ok(24),
     owner: 'Samir Benali',
   },
@@ -276,6 +288,7 @@ export const ALERTS: AlertRule[] = [
     lastFired: '12 days ago',
     firedLast7d: 0,
     week: [0, 0, 0, 0, 0, 0, 0],
+    worst: null,
     history: ok(24),
     owner: 'Léa Marchand',
   },
@@ -409,8 +422,29 @@ export const INCIDENT_FEED: Incident[] = [
  * Astreinte : la vraie page n'était pas dans les captures, donc c'est une
  * reconstitution plausible (qui reçoit quoi, quand). À confronter au produit.
  */
-export const ON_CALL: { key: string; who: string; channel: string; hours: string; severities: Severity[] }[] = [
-  { key: 'oc-1', who: 'Awa Diallo', channel: 'Slack #alerts', hours: 'Weekdays 09:00 to 19:00', severities: ['warning', 'critical'] },
-  { key: 'oc-2', who: 'Samir Benali', channel: 'oncall@rocketcorp.io', hours: 'Nights and weekends', severities: ['critical'] },
-  { key: 'oc-3', who: 'Billing ops', channel: 'Microsoft Teams', hours: 'Weekends only', severities: ['critical'] },
+export type OnCall = {
+  key: string
+  who: string
+  channel: string
+  hours: string
+  severities: Severity[]
+  /** Destinations couvertes par cette personne : c'est ce qui relie une alerte à une astreinte. */
+  targets: string[]
+}
+
+export const ON_CALL: OnCall[] = [
+  { key: 'oc-1', who: 'Awa Diallo', channel: 'Slack #alerts', hours: 'Weekdays 09:00 to 19:00', severities: ['warning', 'critical'], targets: ['#alerts'] },
+  { key: 'oc-2', who: 'Samir Benali', channel: 'oncall@rocketcorp.io', hours: 'Nights and weekends', severities: ['critical'], targets: ['oncall@rocketcorp.io', '#ops'] },
+  { key: 'oc-3', who: 'Billing ops', channel: 'Microsoft Teams', hours: 'Weekends only', severities: ['critical'], targets: ['Billing ops'] },
+  // Le webhook ops n'est couvert par personne : une destination technique qui
+  // ne réveille aucun humain, ce que ni la page Alerts ni la page
+  // Configuration ne disent aujourd'hui.
 ]
+
+/** Qui est d'astreinte derrière une destination donnée. */
+export const onCallFor = (target: string): OnCall | undefined =>
+  ON_CALL.find((o) => o.targets.includes(target))
+
+/** Combien d'alertes routent vers cette astreinte. */
+export const alertsRoutedTo = (o: OnCall): AlertRule[] =>
+  ALERTS.filter((a) => a.notifications.some((n) => o.targets.includes(n.target)))
