@@ -142,7 +142,7 @@ export const legacyProtos: (ProtoMeta & {
     slug: 'root-cause-analysis',
     title: 'Root Cause Analysis',
     status: 'wip dev',
-    collection: 'Observability',
+    collection: 'Archive',
     description: 'Analyse de cause racine des incidents',
     icon: IconActivity,
     href: '/folder/Observability/Root Cause Analysis.html',

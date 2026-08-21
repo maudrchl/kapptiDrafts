@@ -2,9 +2,9 @@ import type { ProtoMeta } from '../registry'
 import { IconMousePointerClick } from '@kapptivate/ui-kit'
 
 const meta: ProtoMeta = {
-  title: 'Recorder — JS click fallback',
+  title: 'Recorder: JS click fallback',
   status: 'wip design',
-  collection: 'Recorder',
+  collection: 'Archive',
   updatedAt: '2026-07-15',
   icon: IconMousePointerClick,
   description:

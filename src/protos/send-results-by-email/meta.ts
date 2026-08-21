@@ -3,7 +3,7 @@ import { IconMail } from '@kapptivate/ui-kit'
 
 const meta: ProtoMeta = {
   title: 'Send results by email',
-  status: 'wip dev',
+  status: 'QA',
   collection: 'Execution',
   updatedAt: '2026-07-10',
   icon: IconMail,

@@ -3,7 +3,7 @@ import type { ProtoMeta } from '../registry'
 
 const meta: ProtoMeta = {
   title: 'Observability Experience',
-  status: 'wip design',
+  status: 'wip dev',
   collection: 'Observability',
   description: 'Logs, Traces, Service map, Kubernetes & Usage, with working filters, alert creation and quota flows',
   icon: IconEye,

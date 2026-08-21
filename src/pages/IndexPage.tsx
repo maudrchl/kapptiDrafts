@@ -80,6 +80,29 @@ const TAG_ICON_BG: Record<string, string> = {
   PM: 'rgba(14,165,233,0.12)',
 }
 
+// Clé de persistance du tri de la Table (localStorage, gérée par le DS).
+// Version bumpée volontairement : les tris mémorisés en `-v2` (par titre ou par
+// date) écrasaient le groupement par statut au chargement. Repartir d'une clé
+// neuve remet tout le monde sur le tri par défaut ci-dessous.
+const SORT_STORE_KEY = 'kapptidrafts:sort-protos-v3'
+// `persistSortKey` rend le tri de la Table *contrôlé* : tant que rien n'est
+// stocké, toutes les colonnes démarrent à `sortOrder: null` et le
+// `defaultSortOrder` de la colonne Status est ignoré. Résultat : aucune flèche
+// au chargement, et le premier clic sur Status ne bouge rien (la liste est déjà
+// dans cet ordre) — on croit que le tri est cassé. On amorce donc le tri par
+// défaut au premier chargement, avant que la Table ne lise le localStorage.
+if (!localStorage.getItem(SORT_STORE_KEY)) {
+  localStorage.setItem(
+    SORT_STORE_KEY,
+    JSON.stringify({ columnKey: 'status', order: 'ascend' }),
+  )
+}
+
+// Les protos archivés (collection « Archive ») sortent du code couleur :
+// gris neutre pour l'icône et la pastille de statut, quel que soit le statut.
+const ARCHIVE_ACCENT = '#8c8c8c'
+const ARCHIVE_ICON_BG = 'rgba(140,140,140,0.12)'
+
 // Fond de pastille par statut → donne le ressenti actif (coloré) vs deployed (posé)
 const STATUS_ICON_BG: Record<ProtoStatus, string> = {
   'wip design': 'rgba(217,138,0,0.12)',
@@ -284,11 +307,19 @@ const IndexPage = () => {
       render: (_: string, p: Row) => {
         const Icon = p.icon
         const status = p.status
-        // Une ligne taguée (Brand/PM) prend la couleur de son tag ; sinon le statut.
-        const accent = p.tag ? (TAG_ACCENT[p.tag] ?? '#7c3aed') : STATUS_ACCENT[status]
-        const accentBg = p.tag
-          ? (TAG_ICON_BG[p.tag] ?? 'rgba(124,58,237,0.12)')
-          : STATUS_ICON_BG[status]
+        const archived = p.collection === 'Archive'
+        // Archivé → gris ; sinon une ligne taguée (Brand/PM) prend la couleur
+        // de son tag, et à défaut c'est le statut qui donne la couleur.
+        const accent = archived
+          ? ARCHIVE_ACCENT
+          : p.tag
+            ? (TAG_ACCENT[p.tag] ?? '#7c3aed')
+            : STATUS_ACCENT[status]
+        const accentBg = archived
+          ? ARCHIVE_ICON_BG
+          : p.tag
+            ? (TAG_ICON_BG[p.tag] ?? 'rgba(124,58,237,0.12)')
+            : STATUS_ICON_BG[status]
         return (
           <Dropdown trigger="contextMenu" menu={pinMenu(p)} placement="bottomLeft">
             {/* Clic gauche = navigation explicite (le wrapper Dropdown
@@ -390,9 +421,12 @@ const IndexPage = () => {
           <span
             style={{
               ...styles.dot,
-              background: p.tag
-                ? (TAG_ACCENT[p.tag] ?? '#7c3aed')
-                : STATUS_ACCENT[p.status],
+              background:
+                p.collection === 'Archive'
+                  ? ARCHIVE_ACCENT
+                  : p.tag
+                    ? (TAG_ACCENT[p.tag] ?? '#7c3aed')
+                    : STATUS_ACCENT[p.status],
             }}
           />
           <Text size="s">{p.tag ?? p.status}</Text>
@@ -477,7 +511,7 @@ const IndexPage = () => {
                 data={currentItems}
                 columns={columns}
                 onClickRow={open}
-                persistSortKey="kapptidrafts:sort-protos-v2"
+                persistSortKey={SORT_STORE_KEY}
               />
             </div>
           )}
