@@ -21,10 +21,13 @@ import {
   IconTrash,
   IconSearchX,
   IconAlertTriangle,
+  IconArrowRight,
 } from '@kapptivate/ui-kit'
 import { AlertTriangle, Bell, Settings } from 'lucide-react'
 import { useReportScreen } from '../../context/ScreenContext'
 import { Sidebar } from '../test-campaign-variables/shared'
+import IncidentsPage from './IncidentsPage'
+import ConfigurationPage from './ConfigurationPage'
 // Habillage repris du proto Observability : même en-tête de page, mêmes tables,
 // mêmes valeurs mono. Une seule grammaire visuelle pour les deux protos.
 import obs from '../observability/explore-tabs.module.scss'
@@ -85,11 +88,15 @@ const STATE_LABEL: Record<AlertState, string> = {
 }
 
 const Proto = () => {
+  const [tab, setTab] = useState<'incidents' | 'alerts' | 'configuration'>('alerts')
   const [createOpen, setCreateOpen] = useState(false)
+  // Le détail d'une alerte vit au-dessus des onglets : on l'ouvre depuis la
+  // liste des alertes ET depuis un incident, sans changer de page.
   const [detail, setDetail] = useState<AlertRule | null>(null)
-  // Les épingles de commentaires suivent l'écran affiché (modale et drawer
-  // compris), sinon elles bavent d'un écran à l'autre.
-  useReportScreen(createOpen ? 'modal:create' : detail ? `detail:${detail.id}` : 'list')
+
+  useReportScreen(
+    createOpen ? 'modal:create' : detail ? `detail:${detail.id}` : tab,
+  )
 
   return (
     // Coquille produit : la page se juge avec la navigation autour d'elle.
@@ -97,21 +104,50 @@ const Proto = () => {
       <Sidebar active="incidents" />
       <div className={css.main}>
         <nav className={css.tabs}>
-          <button type="button" className={css.tab}>
+          <button
+            type="button"
+            className={tab === 'incidents' ? css.tabActive : css.tab}
+            onClick={() => setTab('incidents')}
+          >
             <AlertTriangle size={14} /> Incidents
           </button>
-          <button type="button" className={css.tabActive}>
+          <button
+            type="button"
+            className={tab === 'alerts' ? css.tabActive : css.tab}
+            onClick={() => setTab('alerts')}
+          >
             <Bell size={14} /> Alerts
           </button>
-          <button type="button" className={css.tab}>
+          <button
+            type="button"
+            className={tab === 'configuration' ? css.tabActive : css.tab}
+            onClick={() => setTab('configuration')}
+          >
             <Settings size={14} /> Configuration
           </button>
         </nav>
         <div className={obs.contentBody}>
-          <AlertList onCreate={() => setCreateOpen(true)} detail={detail} onDetail={setDetail} />
+          {tab === 'incidents' && <IncidentsPage onOpenAlert={setDetail} />}
+          {tab === 'alerts' && (
+            <AlertList onCreate={() => setCreateOpen(true)} onDetail={setDetail} />
+          )}
+          {tab === 'configuration' && <ConfigurationPage />}
         </div>
       </div>
 
+      {/* Détail et création sont des surcouches : on ne perd jamais sa page. */}
+      <AlertDrawer
+        alert={detail}
+        onClose={() => setDetail(null)}
+        onSeeIncidents={() => {
+          setDetail(null)
+          setTab('incidents')
+        }}
+        onTuneNoise={() => {
+          setDetail(null)
+          setTab('configuration')
+        }}
+      />
       <CreateAlertModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   )
@@ -121,11 +157,9 @@ const Proto = () => {
 
 const AlertList = ({
   onCreate,
-  detail,
   onDetail,
 }: {
   onCreate: () => void
-  detail: AlertRule | null
   onDetail: (a: AlertRule | null) => void
 }) => {
   const [search, setSearch] = useState('')
@@ -239,15 +273,23 @@ const AlertList = ({
           description: 'Try another search.',
         }}
       />
-
-      <AlertDrawer alert={detail} onClose={() => onDetail(null)} />
     </>
   )
 }
 
 /* ─────────────────────────── Détail d'une règle ─────────────────────────── */
 
-const AlertDrawer = ({ alert, onClose }: { alert: AlertRule | null; onClose: () => void }) => {
+const AlertDrawer = ({
+  alert,
+  onClose,
+  onSeeIncidents,
+  onTuneNoise,
+}: {
+  alert: AlertRule | null
+  onClose: () => void
+  onSeeIncidents: () => void
+  onTuneNoise: () => void
+}) => {
   const [muted, setMuted] = useState(false)
   const incidents = alert ? INCIDENTS.filter((i) => i.alertId === alert.id) : []
   // Une alerte qui n'a jamais rien fait n'a pas besoin d'un historique de 24
@@ -342,6 +384,21 @@ const AlertDrawer = ({ alert, onClose }: { alert: AlertRule | null; onClose: () 
                 <div className={obs.cardSub}>
                   Last 24 evaluations. {alert.firedLast7d} incidents in the last 7 days, last one{' '}
                   {alert.lastFired?.toLowerCase()}.
+                </div>
+
+                {/* Aller voir les incidents que cette règle a ouverts, plutôt que
+                    de les chercher à la main dans l'autre onglet. */}
+                <div className={css.drawerLinks}>
+                  <Button color="secondary" size="s" onClick={onSeeIncidents}>
+                    See incidents
+                    <Button.Icon icon={IconArrowRight} />
+                  </Button>
+                  {alert.firedLast7d >= 5 && (
+                    <Button color="secondary" size="s" onClick={onTuneNoise}>
+                      Silence expected errors
+                      <Button.Icon icon={IconArrowRight} />
+                    </Button>
+                  )}
                 </div>
 
                 {incidents.length > 0 && (

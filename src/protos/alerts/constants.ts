@@ -345,3 +345,51 @@ export const PREVIEW_RUNS: { day: string; failed: number; total: number }[] = [
   { day: 'Tue', failed: 2, total: 48 },
   { day: 'Wed', failed: 6, total: 48 },
 ]
+
+/* ────────────────────── Page Incidents (onglet voisin) ────────────────────── */
+
+/**
+ * Flux d'incidents, structure reprise de la page produit : un incident par
+ * déclenchement, avec son ID, l'horodatage, son statut et ses étiquettes
+ * (zone, test, produit). Données transposées dans l'univers Rocket Corp.
+ *
+ * Un défaut de la vraie page qu'on ne reproduit pas : elle affiche deux lignes
+ * par déclenchement (une par alerte qui a matché), donc la même panne apparaît
+ * en double à quelques secondes d'écart.
+ */
+export type Incident = {
+  id: string
+  alert: string
+  severity: Severity
+  at: string
+  ago: string
+  status: 'ongoing' | 'closed'
+  zone: string
+  test: string
+  product: string
+}
+
+export const INCIDENT_FEED: Incident[] = [
+  { id: '#3992772', alert: 'Checkout journey failing', severity: 'critical', at: '21/08/2026 - 16:27:03', ago: 'a few seconds ago', status: 'ongoing', zone: 'eu-west/Paris', test: 'Checkout / card payment', product: 'Payments' },
+  { id: '#3992771', alert: 'Checkout journey failing', severity: 'critical', at: '21/08/2026 - 16:26:58', ago: 'a few seconds ago', status: 'ongoing', zone: 'eu-west/Paris', test: 'Checkout / wallet payment', product: 'Payments' },
+  { id: '#3992768', alert: 'USSD response time', severity: 'warning', at: '21/08/2026 - 16:24:47', ago: '2 minutes ago', status: 'ongoing', zone: 'eu-west/Paris', test: 'FastPay / balance', product: 'FastPay' },
+  { id: '#3992764', alert: 'USSD response time', severity: 'warning', at: '21/08/2026 - 16:22:44', ago: '4 minutes ago', status: 'ongoing', zone: 'eu-central/Frankfurt', test: 'FastPay / transfer', product: 'FastPay' },
+  { id: '#3992762', alert: 'Checkout journey failing', severity: 'critical', at: '21/08/2026 - 16:21:36', ago: '6 minutes ago', status: 'closed', zone: 'eu-west/Paris', test: 'Checkout / card payment', product: 'Payments' },
+  { id: '#3992760', alert: 'Success rate below target', severity: 'warning', at: '21/08/2026 - 16:21:14', ago: '6 minutes ago', status: 'closed', zone: 'eu-west/Paris', test: 'Menu / browse', product: 'demo-site' },
+  { id: '#3992757', alert: 'USSD response time', severity: 'warning', at: '21/08/2026 - 16:20:35', ago: '7 minutes ago', status: 'closed', zone: 'eu-central/Frankfurt', test: 'FastPay / balance', product: 'FastPay' },
+  { id: '#3992753', alert: 'Login failures spike', severity: 'warning', at: '21/08/2026 - 16:17:55', ago: '9 minutes ago', status: 'closed', zone: 'us-east/Virginia', test: 'Accounts / login', product: 'Accounts' },
+  { id: '#3992749', alert: 'Checkout journey failing', severity: 'critical', at: '21/08/2026 - 16:11:02', ago: '16 minutes ago', status: 'closed', zone: 'eu-west/Paris', test: 'Checkout / apple pay', product: 'Payments' },
+  { id: '#3992744', alert: 'Success rate below target', severity: 'critical', at: '21/08/2026 - 15:58:20', ago: '29 minutes ago', status: 'closed', zone: 'eu-west/Paris', test: 'Order / submit', product: 'demo-site' },
+]
+
+/* ──────────────────── Page Configuration (onglet voisin) ──────────────────── */
+
+/**
+ * Astreinte : la vraie page n'était pas dans les captures, donc c'est une
+ * reconstitution plausible (qui reçoit quoi, quand). À confronter au produit.
+ */
+export const ON_CALL: { key: string; who: string; channel: string; hours: string; severities: Severity[] }[] = [
+  { key: 'oc-1', who: 'Awa Diallo', channel: 'Slack #alerts', hours: 'Weekdays 09:00 to 19:00', severities: ['warning', 'critical'] },
+  { key: 'oc-2', who: 'Samir Benali', channel: 'oncall@rocketcorp.io', hours: 'Nights and weekends', severities: ['critical'] },
+  { key: 'oc-3', who: 'Billing ops', channel: 'Microsoft Teams', hours: 'Weekends only', severities: ['critical'] },
+]

@@ -483,3 +483,141 @@ $critical: var(--color-error, #e0372e);
   gap: 6px;
   font-weight: 500;
 }
+
+/* ===== PAGES VOISINES (Incidents, Configuration) ===== */
+
+/* Nom de règle cliquable depuis un incident : c'est le pont entre les deux
+   pages, il doit se voir comme un lien. */
+.linkName {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  color: $text;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: $border;
+  text-underline-offset: 3px;
+
+  &:hover {
+    text-decoration-color: $primary;
+  }
+}
+
+/* Nombre de déclenchements regroupés dans un incident. */
+.countPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: $grey;
+  border: 1px solid $border;
+  font-size: 11px;
+  font-weight: 500;
+  color: $muted;
+}
+
+/* Règle qui sonne trop : dit à l'endroit où on subit le bruit. */
+.noisyMark {
+  font-size: 11px;
+  color: $warning;
+  border: 1px solid rgba(242, 179, 56, 0.4);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* Compteurs en ligne, sans cartes : quatre chiffres n'ont pas besoin de quatre
+   boîtes bordées. */
+.statRow {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 24px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statValue {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.dayLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: $muted;
+  margin-bottom: 8px;
+}
+
+/* Sorties du drawer vers les pages voisines. */
+.drawerLinks {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.feedFooter {
+  margin-top: 12px;
+}
+
+/* Sous-onglets de la page Configuration. */
+.subTabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid $border;
+  margin-bottom: 20px;
+}
+
+.subTab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: $muted;
+  font: inherit;
+  cursor: pointer;
+
+  &:hover {
+    color: $text;
+  }
+}
+
+.subTabActive {
+  composes: subTab;
+  color: $text;
+  font-weight: 500;
+  border-bottom-color: $primary;
+}
+
+.pageIntro {
+  font-size: 13px;
+  color: $muted;
+  margin-bottom: 16px;
+}
+
+.emptyBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 56px 24px;
+  border: 1px dashed $border;
+  border-radius: $radius;
+  background: $white;
+}
+
+.emptyActions {
+  display: flex;
+  gap: 10px;
+}
