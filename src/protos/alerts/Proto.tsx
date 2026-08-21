@@ -6,14 +6,11 @@ import {
   Tag,
   StatusTag,
   SearchInput,
-  Segmented,
   Drawer,
   Toggle,
   Input,
   Select,
   Banner,
-  CounterCardGroup,
-  CounterCard,
   IconPlus,
   IconArrowLeft,
   IconBell,
@@ -39,6 +36,8 @@ import {
   PREVIEW_RUNS,
   KIND_LABEL,
   KIND_ICON,
+  KIND_ACCENT,
+  KIND_ACCENT_BG,
   CHANNEL_LABEL,
 } from './constants'
 import type { AlertRule, AlertState, Intent, Severity } from './constants'
@@ -80,9 +79,6 @@ const STATE_LABEL: Record<AlertState, string> = {
   ok: 'watching',
   muted: 'muted',
 }
-
-/** Seuil de bruit : au-delà, l'alerte prévient si souvent qu'on l'ignore. */
-const NOISY_THRESHOLD = 5
 
 const Proto = () => {
   const [screen, setScreen] = useState<'list' | 'create'>('list')
@@ -131,26 +127,17 @@ const AlertList = ({
   onDetail: (a: AlertRule | null) => void
 }) => {
   const [search, setSearch] = useState('')
-  const [tab, setTab] = useState<'all' | 'firing' | 'muted'>('all')
-
-  const firing = ALERTS.filter((a) => a.state === 'firing')
-  const silent = ALERTS.filter((a) => a.notifications.length === 0)
-  const noisy = ALERTS.filter((a) => a.firedLast7d >= NOISY_THRESHOLD)
-  const muted = ALERTS.filter((a) => a.state === 'muted')
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return ALERTS.filter((a) => {
-      const matchQ =
-        !q ||
+    if (!q) return ALERTS
+    return ALERTS.filter(
+      (a) =>
         a.name.toLowerCase().includes(q) ||
         a.sentence.toLowerCase().includes(q) ||
-        a.scope.toLowerCase().includes(q)
-      const matchTab =
-        tab === 'all' || (tab === 'firing' && a.state === 'firing') || (tab === 'muted' && a.state === 'muted')
-      return matchQ && matchTab
-    })
-  }, [search, tab])
+        a.scope.toLowerCase().includes(q),
+    )
+  }, [search])
 
   const columns = [
     {
@@ -158,213 +145,90 @@ const AlertList = ({
       dataIndex: 'name',
       key: 'name',
       render: (v: string, a: AlertRule) => (
-        <div className={css.nameCell}>
-          <span className={css.nameLine}>
-            {/* Pastille = sévérité en cours, grise quand l'alerte ne sonne pas. */}
-            <span
-              className={obs.sevDot}
-              style={{ background: a.firingSeverity ? SEV_COLOR[a.firingSeverity] : IDLE_DOT }}
-            />
-            {v}
-          </span>
-          {/* La condition en clair, là où la page actuelle met du jargon de requête. */}
-          <span className={obs.cardSub}>{a.sentence}</span>
-        </div>
+        <span className={css.nameLine}>
+          {/* Pastille = sévérité en cours, grise quand l'alerte ne sonne pas. */}
+          <span
+            className={obs.sevDot}
+            style={{ background: a.firingSeverity ? SEV_COLOR[a.firingSeverity] : IDLE_DOT }}
+          />
+          {v}
+        </span>
       ),
+    },
+    {
+      // La condition en clair, sur une ligne : c'est ce que la colonne
+      // « Condition » du produit cache derrière du jargon de requête.
+      title: 'Condition',
+      dataIndex: 'sentence',
+      key: 'sentence',
+      render: (v: string) => <span className={css.truncate}>{v}</span>,
     },
     {
       title: 'Watches',
       dataIndex: 'scope',
       key: 'scope',
-      width: 160,
-      render: (v: string, a: AlertRule) => (
-        <div className={css.stack}>
-          <Tag mono>{v}</Tag>
-          <span className={obs.cardSub}>
-            {a.scopeCount} {a.kind === 'agent' ? 'agents' : 'tests'}
-          </span>
-        </div>
-      ),
-    },
-    {
-      title: 'Escalates at',
-      key: 'thresholds',
-      width: 190,
-      render: (_v: unknown, a: AlertRule) =>
-        // Un script custom n'a pas de seuil lisible : on le dit, au lieu de
-        // répéter deux fois « set in the script ».
-        a.kind === 'script' ? (
-          <span className={obs.cardSub}>defined in the script</span>
-        ) : (
-          <span className={css.thresholds}>
-            <span className={css.sevMark}>
-              <span className={obs.sevDot} style={{ background: SEV_COLOR.warning }} />
-              <span className={obs.mono}>{a.warning}</span>
-            </span>
-            <span className={css.arrow}>→</span>
-            <span className={css.sevMark}>
-              <span className={obs.sevDot} style={{ background: SEV_COLOR.critical }} />
-              <span className={obs.mono}>{a.critical}</span>
-            </span>
-          </span>
-        ),
+      width: 130,
+      render: (v: string) => <Tag mono>{v}</Tag>,
     },
     {
       title: 'Notifies',
       key: 'notifications',
-      width: 190,
+      width: 170,
       render: (_v: unknown, a: AlertRule) =>
         a.notifications.length === 0 ? (
-          // Le vrai défaut de la règle, dit à l'endroit où on le lirait.
+          // Le seul défaut qu'on signale dans la liste : une alerte muette.
           <StatusTag variant="ghost" color="warning">
             nobody
           </StatusTag>
         ) : (
-          <div className={css.stack}>
-            {a.notifications.map((n) => (
-              <span key={n.channel + n.target} className={css.nowrap}>
-                <span className={obs.cellName}>{n.target}</span>
-                {n.severities.length === 1 && (
-                  <span className={obs.cardSub}> {n.severities[0]} only</span>
-                )}
-              </span>
-            ))}
-          </div>
+          <span className={css.truncate}>
+            {a.notifications[0].target}
+            {a.notifications.length > 1 && (
+              <span className={obs.cardSub}> +{a.notifications.length - 1}</span>
+            )}
+          </span>
         ),
     },
     {
       title: 'Status',
       dataIndex: 'state',
       key: 'state',
-      width: 120,
-      render: (v: AlertState, a: AlertRule) => (
-        <div className={css.stack}>
-          <StatusTag variant="ghost" color={STATE_COLOR[v]}>
-            {STATE_LABEL[v]}
-          </StatusTag>
-          {a.state === 'firing' && a.since && <span className={obs.cardSub}>for {a.since}</span>}
-        </div>
-      ),
-    },
-    {
-      title: 'Last fired',
-      dataIndex: 'lastFired',
-      key: 'lastFired',
-      width: 145,
-      render: (v: string, a: AlertRule) => (
-        <div className={css.stack}>
-          <span className={`${obs.mono} ${css.nowrap}`}>{v}</span>
-          {a.firedLast7d >= NOISY_THRESHOLD && (
-            <span className={obs.cardSub}>{a.firedLast7d} in 7 days</span>
-          )}
-        </div>
+      width: 100,
+      render: (v: AlertState) => (
+        <StatusTag variant="ghost" color={STATE_COLOR[v]}>
+          {STATE_LABEL[v]}
+        </StatusTag>
       ),
     },
   ]
 
   return (
     <>
+      {/* En-tête volontairement nu : la recherche vit à côté du bouton, et
+          l'état du parc se lit dans le tableau, pas dans une rangée de cartes. */}
       <div className={obs.pageHead}>
-        <div>
-          <h1 className={obs.pageTitle}>Alerts</h1>
-          <div className={css.headSub}>
-            {ALERTS.length} alerts on this workspace. {firing.length} firing right now.
-          </div>
-        </div>
+        <h1 className={obs.pageTitle}>Alerts</h1>
         <div className={obs.contentActions}>
+          <SearchInput value={search} onChange={setSearch} placeholder="Search" width="220px" />
           <Button color="primary" onClick={onCreate}>
             <Button.Icon icon={IconPlus} />
-            New alert
+            Create alert
           </Button>
         </div>
       </div>
 
-      {/* Les 4 chiffres qui décident quoi faire de cette page, dans l'ordre où
-          on s'en soucie : ce qui sonne, ce qui ne prévient personne, ce qui
-          sonne trop, ce qui est en pause. */}
-      <div className={obs.kpiRow}>
-        <CounterCardGroup>
-          <CounterCard
-            title="Firing now"
-            value={firing.length}
-            trend={
-              <StatusTag variant="ghost" color={firing.length ? 'failed' : 'success'}>
-                {firing.length ? `${firing.length} incidents open` : 'all clear'}
-              </StatusTag>
-            }
-          />
-          <CounterCard
-            title="Notifying nobody"
-            value={silent.length}
-            trend={
-              <StatusTag variant="ghost" color={silent.length ? 'warning' : 'success'}>
-                {silent.length ? 'no destination' : 'all routed'}
-              </StatusTag>
-            }
-          />
-          <CounterCard
-            title="Too noisy"
-            value={noisy.length}
-            trend={
-              <StatusTag variant="ghost" color={noisy.length ? 'warning' : 'success'}>
-                {noisy.length ? `${NOISY_THRESHOLD}+ times in 7 days` : 'nothing spamming'}
-              </StatusTag>
-            }
-          />
-          <CounterCard
-            title="Muted"
-            value={muted.length}
-            trend={
-              <StatusTag variant="ghost" color="neutral">
-                {muted.length ? 'not watching' : 'none paused'}
-              </StatusTag>
-            }
-          />
-        </CounterCardGroup>
-      </div>
-
-      <div className={obs.usageStack}>
-        {silent.length > 0 && (
-          <Banner variant="warning">
-            <Banner.Description>
-              {silent.length === 1
-                ? `“${silent[0].name}” has no destination: it opens incidents that nobody is told about.`
-                : `${silent.length} alerts have no destination: they open incidents that nobody is told about.`}
-            </Banner.Description>
-            <Banner.Aside>
-              <Button color="secondary" size="s" onClick={() => onDetail(silent[0])}>
-                Fix routing
-              </Button>
-            </Banner.Aside>
-          </Banner>
-        )}
-
-        <div className={css.toolbar}>
-          <SearchInput value={search} onChange={setSearch} placeholder="Search alerts" width="280px" />
-          <Segmented<'all' | 'firing' | 'muted'>
-            value={tab}
-            onChange={setTab}
-            options={[
-              { label: `All (${ALERTS.length})`, value: 'all' },
-              { label: `Firing (${firing.length})`, value: 'firing' },
-              { label: `Muted (${muted.length})`, value: 'muted' },
-            ]}
-          />
-        </div>
-
-        <Table
-          rowKey="id"
-          columns={columns}
-          data={rows}
-          showHeader
-          onClickRow={onDetail}
-          emptyState={{
-            icon: <IconSearchX color="var(--color-text-secondary)" />,
-            text: 'No alert matches',
-            description: 'Try a broader search, or switch back to all alerts.',
-          }}
-        />
-      </div>
+      <Table
+        rowKey="id"
+        columns={columns}
+        data={rows}
+        showHeader
+        onClickRow={onDetail}
+        emptyState={{
+          icon: <IconSearchX color="var(--color-text-secondary)" />,
+          text: 'No alert matches',
+          description: 'Try another search.',
+        }}
+      />
 
       <AlertDrawer alert={detail} onClose={() => onDetail(null)} />
     </>
@@ -570,8 +434,9 @@ const IntentPicker = ({ onPick }: { onPick: (i: Intent) => void }) => {
     const Icon = KIND_ICON[i.kind]
     return (
       <button key={i.kind} type="button" className={className} onClick={() => onPick(i)}>
-        <span className={css.intentIcon}>
-          <Icon size={17} color="var(--color-text-secondary)" />
+        {/* Une teinte par nature : on reconnaît l'intention avant de lire. */}
+        <span className={css.intentIcon} style={{ background: KIND_ACCENT_BG[i.kind] }}>
+          <Icon size={18} color={KIND_ACCENT[i.kind]} />
         </span>
         <span className={css.intentText}>
           <span className={css.intentTitle}>{i.question}</span>

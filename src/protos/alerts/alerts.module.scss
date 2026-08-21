@@ -121,6 +121,15 @@ $critical: var(--color-error, #e0372e);
   white-space: nowrap;
 }
 
+/* Une seule ligne par cellule : ce qui dépasse est coupé, pas empilé. */
+.truncate {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Deux seuils sur une ligne, en mono : ça se compare à l'œil. */
 .thresholds {
   display: flex;

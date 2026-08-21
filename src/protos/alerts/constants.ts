@@ -85,6 +85,28 @@ export const KIND_ICON: Record<AlertKind, ComponentType<{ size?: number; color?:
   script: IconSquareCode,
 }
 
+/**
+ * Une teinte par nature d'alerte, sur le modèle de l'index kapptiDrafts :
+ * icône dans la couleur, pastille dans la même couleur à 12%. Ça donne aux
+ * intentions un repère visuel immédiat, là où la page actuelle aligne des
+ * titres gris identiques.
+ */
+export const KIND_ACCENT: Record<AlertKind, string> = {
+  'run-failure': '#e0372e',
+  'success-rate': '#f2b338',
+  metric: '#0577ff',
+  agent: '#7c3aed',
+  script: '#667085',
+}
+
+export const KIND_ACCENT_BG: Record<AlertKind, string> = {
+  'run-failure': 'rgba(224,55,46,0.1)',
+  'success-rate': 'rgba(242,179,56,0.14)',
+  metric: 'rgba(5,119,255,0.1)',
+  agent: 'rgba(124,58,237,0.1)',
+  script: 'rgba(102,112,133,0.1)',
+}
+
 export const CHANNEL_ICON: Record<ChannelKind, ComponentType<{ size?: number; color?: string }>> = {
   slack: IconMessageSquare,
   email: IconMail,
