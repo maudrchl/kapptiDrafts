@@ -185,7 +185,14 @@ $critical: var(--color-error, #e0372e);
 .drawer {
   display: flex;
   flex-direction: column;
-  padding-bottom: 8px;
+  gap: 16px;
+  padding-bottom: 16px;
+}
+
+/* La règle, en corps un peu plus haut que le reste de la carte. */
+.ruleSentence {
+  font-size: 15px;
+  margin-bottom: 8px;
 }
 
 /* Identité de la règle sur une seule ligne, l'état de la règle à droite. */
@@ -194,7 +201,6 @@ $critical: var(--color-error, #e0372e);
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
 }
 
 .metaToggle {
@@ -736,6 +742,7 @@ $critical: var(--color-error, #e0372e);
 
 .recordVerdict {
   font-size: 15px;
+  margin-bottom: 6px;
   font-weight: 500;
   margin-bottom: 2px;
 
@@ -816,4 +823,59 @@ $critical: var(--color-error, #e0372e);
   flex-direction: column;
   gap: 2px;
   align-items: flex-start;
+}
+
+/* ===== FLUX D'INCIDENTS (repris du produit : compact et visuel) ===== */
+
+.typeBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.incidentCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.incidentId {
+  font-family: var(--font-mono, 'Geist Mono'), ui-monospace, monospace;
+  font-size: 11px;
+  color: $third;
+}
+
+.incidentMeta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: $muted;
+}
+
+.metaDot {
+  color: $third;
+}
+
+/* Étiquettes sur deux lignes au plus, comme dans le produit. */
+.tagsCell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kebab {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background: $grey;
+  }
 }

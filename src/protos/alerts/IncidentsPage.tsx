@@ -1,12 +1,18 @@
 import { useMemo, useState } from 'react'
 import {
   Button,
+  Tag,
+  Dropdown,
   Table,
   StatusTag,
   Select,
   CounterCardGroup,
   CounterCard,
   IconSearchX,
+  IconAlertTriangle,
+  IconMoreVertical,
+  IconCalendarDays,
+  IconTimer,
 } from '@kapptivate/ui-kit'
 import obs from '../observability/explore-tabs.module.scss'
 import css from './alerts.module.scss'
@@ -103,75 +109,110 @@ const IncidentsPage = ({
 
   const columns = [
     {
+      // Pastille de type, comme dans le produit : la sévérité se voit avant de
+      // lire quoi que ce soit.
+      title: 'Type',
+      key: 'type',
+      width: 70,
+      render: (_v: unknown, g: Group) => (
+        <span
+          className={css.typeBadge}
+          style={{ background: SEV_COLOR[g.severity] }}
+          title={g.severity}
+        >
+          <IconAlertTriangle size={15} color="#fff" />
+        </span>
+      ),
+    },
+    {
       title: 'Alert triggered',
       dataIndex: 'alert',
       key: 'alert',
       render: (v: string, g: Group) => (
-        <span className={css.nameLine}>
-          <span className={obs.sevDot} style={{ background: SEV_COLOR[g.severity] }} />
-          {/* Le lien vers la règle : constater le bruit et le régler au même endroit. */}
-          {g.rule ? (
-            <button
-              type="button"
-              className={css.linkName}
-              onClick={(e) => {
-                e.stopPropagation()
-                onOpenAlert(g.rule as AlertRule)
-              }}
-            >
-              {v}
-            </button>
-          ) : (
-            v
-          )}
-          {/* Regroupement : un seul incident lisible au lieu de quatre lignes. */}
-          {g.count > 1 && <span className={css.countPill}>{g.count}</span>}
-          {g.rule && g.rule.firedLast7d >= NOISY_THRESHOLD && (
-            <span className={css.noisyMark}>noisy</span>
-          )}
-        </span>
+        <div className={css.incidentCell}>
+          <span className={css.nameLine}>
+            {/* Le lien vers la règle : constater le bruit et le régler au même endroit. */}
+            {g.rule ? (
+              <button
+                type="button"
+                className={css.linkName}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpenAlert(g.rule as AlertRule)
+                }}
+              >
+                {v}
+              </button>
+            ) : (
+              v
+            )}
+            <span className={css.incidentId}>[{g.lastId}]</span>
+            {/* Regroupement : un incident lisible au lieu de quatre lignes. */}
+            {g.count > 1 && <span className={css.countPill}>{g.count}</span>}
+            {g.rule && g.rule.firedLast7d >= NOISY_THRESHOLD && (
+              <span className={css.noisyMark}>noisy</span>
+            )}
+          </span>
+          <span className={css.incidentMeta}>
+            <IconCalendarDays size={12} color="var(--color-text-third)" />
+            <span className={obs.mono}>{g.at}</span>
+            <span className={css.metaDot}>·</span>
+            <IconTimer size={12} color="var(--color-text-third)" />
+            {g.ago}
+          </span>
+        </div>
       ),
-    },
-    {
-      title: 'Where',
-      dataIndex: 'test',
-      key: 'test',
-      width: 260,
-      render: (v: string, g: Group) => (
-        <span className={css.truncate}>
-          {v}
-          <span className={obs.cardSub}> · {g.product}</span>
-        </span>
-      ),
-    },
-    {
-      title: 'Zone',
-      dataIndex: 'zone',
-      key: 'zone',
-      width: 170,
-      render: (v: string) => <span className={obs.cardSub}>{v}</span>,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 110,
+      width: 120,
       render: (v: Group['status']) => (
-        <StatusTag variant="ghost" color={v === 'ongoing' ? 'failed' : 'success'}>
+        <StatusTag variant="outline" color={v === 'ongoing' ? 'failed' : 'success'}>
           {v}
         </StatusTag>
       ),
     },
     {
-      title: 'Last seen',
-      dataIndex: 'ago',
-      key: 'ago',
-      width: 150,
-      render: (v: string, g: Group) => (
-        <span className={css.stack}>
-          <span className={css.nowrap}>{v}</span>
-          <span className={`${obs.mono} ${obs.cardSub} ${css.nowrap}`}>{g.lastId}</span>
+      // Étiquettes du produit : le libellé en gras, la valeur à côté.
+      title: 'Tags',
+      key: 'tags',
+      render: (_v: unknown, g: Group) => (
+        <span className={css.tagsCell}>
+          <Tag color="grey" size="xs" smallPadding>
+            <b>Zone:</b> {g.zone}
+          </Tag>
+          <Tag color="grey" size="xs" smallPadding>
+            <b>Test:</b> {g.test}
+          </Tag>
+          <Tag color="grey" size="xs" smallPadding>
+            <b>Product:</b> {g.product}
+          </Tag>
         </span>
+      ),
+    },
+    {
+      title: '',
+      key: 'actions',
+      width: 50,
+      render: (_v: unknown, g: Group) => (
+        <Dropdown
+          menu={{
+            items: [
+              { key: 'alert', label: 'Open the alert' },
+              { key: 'close', label: 'Close incident' },
+            ],
+            onClick: ({ key }: { key: string }) => {
+              if (key === 'alert' && g.rule) onOpenAlert(g.rule)
+            },
+          }}
+          placement="bottomRight"
+        >
+          <span className={css.kebab} aria-label="Actions">
+            <IconMoreVertical size={16} color="var(--color-text-secondary)" />
+          </span>
+        </Dropdown>
       ),
     },
   ]
