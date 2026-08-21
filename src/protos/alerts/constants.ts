@@ -64,7 +64,13 @@ export type AlertRule = {
   firingSeverity?: Severity
   since?: string
   lastFired?: string
-  /** Nombre de déclenchements sur 7 jours : sert à repérer les alertes bruyantes. */
+  /**
+   * Incidents ouverts sur 7 jours, séparés par sévérité. Un seul compte
+   * mentait : une règle qui a produit 3 critiques et 1 warning s'affichait
+   * « 4 criticals ». `firedLast7d` reste la somme, pour le verdict.
+   */
+  firedWarning: number
+  firedCritical: number
   firedLast7d: number
   /** 24 dernières évaluations : 0 = ok, 1 = warning, 2 = critical. */
   history: (0 | 1 | 2)[]
@@ -136,12 +142,25 @@ export const CHANNEL_LABEL: Record<ChannelKind, string> = {
  * Une alerte qui n'a jamais sonné et une alerte qui sonne tous les jours sont
  * deux problèmes, et aucun des deux n'est visible dans le produit aujourd'hui.
  */
-export const trackRecord = (firedLast7d: number): { tone: 'quiet' | 'healthy' | 'noisy'; text: string } =>
-  firedLast7d === 0
-    ? { tone: 'quiet', text: 'Never fired in the last 7 days' }
-    : firedLast7d >= 5
-      ? { tone: 'noisy', text: `Too noisy: ${firedLast7d} incidents in 7 days, more than one a day` }
-      : { tone: 'healthy', text: `${firedLast7d} incidents in the last 7 days` }
+export const trackRecord = (a: {
+  firedLast7d: number
+  firedWarning: number
+  firedCritical: number
+}): { tone: 'quiet' | 'healthy' | 'noisy'; text: string } => {
+  const split = [
+    a.firedCritical ? `${a.firedCritical} critical` : '',
+    a.firedWarning ? `${a.firedWarning} warning` : '',
+  ]
+    .filter(Boolean)
+    .join(', ')
+  if (a.firedLast7d === 0) return { tone: 'quiet', text: 'Never fired in the last 7 days' }
+  if (a.firedLast7d >= 5)
+    return {
+      tone: 'noisy',
+      text: `Too noisy: ${a.firedLast7d} incidents in 7 days (${split}), more than one a day`,
+    }
+  return { tone: 'healthy', text: `${a.firedLast7d} incidents in the last 7 days (${split})` }
+}
 
 /** Historique d'évaluations : petit générateur pour garder les données lisibles. */
 const ok = (n: number): (0 | 1 | 2)[] => Array.from({ length: n }, () => 0 as const)
@@ -165,6 +184,8 @@ export const ALERTS: AlertRule[] = [
     firingSeverity: 'critical',
     since: '14 min',
     lastFired: '14 min ago',
+    firedWarning: 1,
+    firedCritical: 3,
     firedLast7d: 4,
     week: [0, 1, 0, 0, 1, 0, 2],
     worst: 'critical',
@@ -187,6 +208,8 @@ export const ALERTS: AlertRule[] = [
     ],
     state: 'ok',
     lastFired: '2 days ago',
+    firedWarning: 0,
+    firedCritical: 1,
     firedLast7d: 1,
     week: [0, 0, 0, 1, 0, 0, 0],
     worst: 'critical',
@@ -208,6 +231,8 @@ export const ALERTS: AlertRule[] = [
     firingSeverity: 'warning',
     since: '3 min',
     lastFired: '3 min ago',
+    firedWarning: 9,
+    firedCritical: 0,
     firedLast7d: 9,
     week: [1, 2, 1, 0, 2, 1, 2],
     worst: 'warning',
@@ -227,6 +252,8 @@ export const ALERTS: AlertRule[] = [
     notifications: [{ channel: 'slack', target: '#ops', severities: ['warning', 'critical'] }],
     state: 'ok',
     lastFired: 'Never',
+    firedWarning: 0,
+    firedCritical: 0,
     firedLast7d: 0,
     week: [0, 0, 0, 0, 0, 0, 0],
     worst: null,
@@ -248,6 +275,8 @@ export const ALERTS: AlertRule[] = [
     notifications: [],
     state: 'ok',
     lastFired: '5 days ago',
+    firedWarning: 2,
+    firedCritical: 0,
     firedLast7d: 2,
     week: [0, 0, 1, 0, 0, 1, 0],
     worst: 'warning',
@@ -267,6 +296,8 @@ export const ALERTS: AlertRule[] = [
     notifications: [{ channel: 'webhook', target: 'hooks.rocketcorp.io/ops', severities: ['critical'] }],
     state: 'muted',
     lastFired: '3 weeks ago',
+    firedWarning: 0,
+    firedCritical: 0,
     firedLast7d: 0,
     week: [0, 0, 0, 0, 0, 0, 0],
     worst: null,
@@ -286,6 +317,8 @@ export const ALERTS: AlertRule[] = [
     notifications: [{ channel: 'teams', target: 'Billing ops', severities: ['critical'] }],
     state: 'muted',
     lastFired: '12 days ago',
+    firedWarning: 0,
+    firedCritical: 0,
     firedLast7d: 0,
     week: [0, 0, 0, 0, 0, 0, 0],
     worst: null,

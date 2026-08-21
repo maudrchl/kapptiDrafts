@@ -48,7 +48,7 @@ import {
   CHANNEL_LABEL,
   onCallFor,
 } from './constants'
-import type { AlertRule, AlertState, Intent, Severity } from './constants'
+import type { AlertIncident, AlertRule, AlertState, Intent, Severity } from './constants'
 
 /**
  * Proto « Alerts » — reprise de la page Incidents > Alerts.
@@ -247,9 +247,13 @@ const AlertList = ({
       title: 'Status',
       dataIndex: 'state',
       key: 'state',
-      width: 150,
-      // « Firing » seul ne disait pas si on est en warning ou en critique : la
-      // sévérité en cours donne sa couleur ET son mot au statut.
+      width: 110,
+      /**
+       * Partage du travail avec la colonne « Last 7 days » : ici l'état
+       * MAINTENANT (un mot), là-bas le comportement de la semaine (les comptes
+       * par sévérité). Écrire « firing · critical » redisait ce que la semaine
+       * dit déjà : la sévérité en cours ne garde donc que la couleur.
+       */
       render: (v: AlertState, a: AlertRule) => (
         <StatusTag
           variant="ghost"
@@ -261,7 +265,7 @@ const AlertList = ({
               : STATE_COLOR[v]
           }
         >
-          {v === 'firing' ? `firing · ${a.firingSeverity}` : STATE_LABEL[v]}
+          {STATE_LABEL[v]}
         </StatusTag>
       ),
     },
@@ -274,7 +278,7 @@ const AlertList = ({
       key: 'week',
       width: 130,
       render: (week: number[], a: AlertRule) => (
-        <span className={css.record} title={trackRecord(a.firedLast7d).text}>
+        <span className={css.record} title={trackRecord(a).text}>
           <span className={css.spark}>
             {week.map((n, i) => (
               <span
@@ -288,15 +292,24 @@ const AlertList = ({
               />
             ))}
           </span>
-          {/* En mots : « 9 warnings » et « 2 criticals » ne se confondent pas,
-              là où deux nuances de pastille se confondaient. */}
-          <span className={a.worst ? css.recordLabel : css.recordNone} data-sev={a.worst ?? 'none'}>
-            {a.firedLast7d === 0
-              ? 'nothing'
-              : `${a.firedLast7d} ${a.worst === 'critical' ? 'critical' : 'warning'}${
-                  a.firedLast7d > 1 ? 's' : ''
-                }`}
-          </span>
+          {/* En mots, et les deux sévérités séparées : « 3 criticals » seul
+              mentait sur une règle qui a aussi produit des warnings. */}
+          {a.firedLast7d === 0 ? (
+            <span className={css.recordNone}>nothing</span>
+          ) : (
+            <span className={css.recordCounts}>
+              {a.firedCritical > 0 && (
+                <span className={css.recordLabel} data-sev="critical">
+                  {a.firedCritical} critical{a.firedCritical > 1 ? 's' : ''}
+                </span>
+              )}
+              {a.firedWarning > 0 && (
+                <span className={css.recordLabel} data-sev="warning">
+                  {a.firedWarning} warning{a.firedWarning > 1 ? 's' : ''}
+                </span>
+              )}
+            </span>
+          )}
         </span>
       ),
     },
@@ -410,10 +423,33 @@ const AlertDrawer = ({
   // Une alerte qui n'a jamais rien fait n'a pas besoin d'un historique de 24
   // cases grises ni d'un tableau vide : une phrase suffit.
   const everFired = !!alert && alert.lastFired !== 'Never'
-  const record = trackRecord(alert?.firedLast7d ?? 0)
+  const record = trackRecord(alert ?? { firedLast7d: 0, firedWarning: 0, firedCritical: 0 })
 
   return (
-    <Drawer open={!!alert} onClose={onClose} width={720} title={alert?.name ?? ''}>
+    <Drawer
+      open={!!alert}
+      onClose={onClose}
+      width={720}
+      title={alert?.name ?? ''}
+      // Convention du DS : les actions de l'objet vivent dans l'en-tête du
+      // drawer, pas en pied de contenu.
+      extra={
+        <span className={css.tagRow}>
+          <Button color="secondary" size="s">
+            <Button.Icon icon={IconPencil} />
+            Edit
+          </Button>
+          <Button color="secondary" size="s">
+            <Button.Icon icon={IconCopy} />
+            Duplicate
+          </Button>
+          <Button color="danger-s" size="s">
+            <Button.Icon icon={IconTrash} />
+            Delete
+          </Button>
+        </span>
+      }
+    >
       {alert && (
         <div className={css.drawer}>
           {/* Une seule ligne d'identité : statut, nature, portée, propriétaire. */}
@@ -424,6 +460,15 @@ const AlertDrawer = ({
             <span className={obs.cardSub}>
               {KIND_LABEL[alert.kind]} · {alert.scope} · {alert.scopeCount}{' '}
               {alert.kind === 'agent' ? 'agents' : 'tests'} · {alert.owner}
+            </span>
+            {/* Mettre en pause est un état de la règle : il vit avec son
+                identité, pas au fond du contenu. */}
+            <span className={css.metaToggle}>
+              <Toggle
+                title={muted ? 'Paused' : 'Active'}
+                value={!muted}
+                onChange={(v) => setMuted(!v)}
+              />
             </span>
           </div>
 
@@ -530,18 +575,51 @@ const AlertDrawer = ({
               </div>
             ) : (
               <>
+                {/* Un vrai Table du DS : la liste a des colonnes, elles
+                    méritent leur en-tête. Il ne s'affiche que s'il y a des
+                    incidents, donc plus d'état vide géant. */}
                 {incidents.length > 0 && (
-                  <div className={css.incidentList}>
-                    {incidents.map((i) => (
-                      <div key={i.id} className={css.incidentRow}>
-                        <span className={css.sevMark}>
-                          <span className={obs.sevDot} style={{ background: SEV_COLOR[i.severity] }} />
-                          <span className={`${obs.mono} ${css.nowrap}`}>{i.openedAt}</span>
-                        </span>
-                        <span className={css.truncate}>{i.trigger}</span>
-                        <span className={`${obs.cardSub} ${css.nowrap}`}>{i.duration}</span>
-                      </div>
-                    ))}
+                  <div className={css.drawerTable}>
+                    <Table
+                      rowKey="id"
+                      showHeader
+                      compact
+                      columns={[
+                        {
+                          title: 'Opened',
+                          dataIndex: 'openedAt',
+                          key: 'openedAt',
+                          width: 150,
+                          render: (v: string, i: AlertIncident) => (
+                            <span className={css.sevMark}>
+                              <span
+                                className={obs.sevDot}
+                                style={{ background: SEV_COLOR[i.severity] }}
+                              />
+                              <span className={`${obs.mono} ${css.nowrap}`}>{v}</span>
+                            </span>
+                          ),
+                        },
+                        {
+                          title: 'Severity',
+                          dataIndex: 'severity',
+                          key: 'severity',
+                          width: 100,
+                          render: (v: Severity) => <span className={css.dim}>{v}</span>,
+                        },
+                        { title: 'What tripped it', dataIndex: 'trigger', key: 'trigger' },
+                        {
+                          title: 'Duration',
+                          dataIndex: 'duration',
+                          key: 'duration',
+                          width: 100,
+                          render: (v: string) => (
+                            <span className={`${obs.mono} ${css.nowrap}`}>{v}</span>
+                          ),
+                        },
+                      ]}
+                      data={incidents}
+                    />
                   </div>
                 )}
 
@@ -563,28 +641,6 @@ const AlertDrawer = ({
             )}
           </section>
 
-          <div className={css.drawerFooter}>
-            <Toggle
-              title={muted ? 'Paused' : 'Active'}
-              description={muted ? 'No incident, no notification' : 'Evaluated every minute'}
-              value={!muted}
-              onChange={(v) => setMuted(!v)}
-            />
-            <span className={css.tagRow}>
-              <Button color="secondary" size="s">
-                <Button.Icon icon={IconPencil} />
-                Edit
-              </Button>
-              <Button color="secondary" size="s">
-                <Button.Icon icon={IconCopy} />
-                Duplicate
-              </Button>
-              <Button color="danger-s" size="s">
-                <Button.Icon icon={IconTrash} />
-                Delete
-              </Button>
-            </span>
-          </div>
         </div>
       )}
     </Drawer>

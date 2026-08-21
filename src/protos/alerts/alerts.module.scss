@@ -188,13 +188,17 @@ $critical: var(--color-error, #e0372e);
   padding-bottom: 8px;
 }
 
-/* Identité de la règle sur une seule ligne. */
+/* Identité de la règle sur une seule ligne, l'état de la règle à droite. */
 .metaLine {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 16px;
+}
+
+.metaToggle {
+  margin-left: auto;
 }
 
 .ruleBox {
@@ -221,7 +225,12 @@ $critical: var(--color-error, #e0372e);
   }
 }
 
-/* Incidents en lignes légères plutôt qu'en tableau : trois valeurs par ligne
+/* Le tableau d'incidents du drawer respire un peu au-dessus. */
+.drawerTable {
+  margin-top: 14px;
+}
+
+/* (conservé) Incidents en lignes légères plutôt qu'en tableau : trois valeurs par ligne
    n'ont pas besoin d'un en-tête de colonnes. */
 .incidentList {
   display: flex;
@@ -678,8 +687,21 @@ $critical: var(--color-error, #e0372e);
   color: $third;
 }
 
+/* Les deux comptes côte à côte, séparés par une fine barre. */
+.recordCounts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
 .recordLabel {
   font-size: 11px;
+
+  & + & {
+    padding-left: 6px;
+    border-left: 1px solid $border;
+  }
 
   &[data-sev='critical'] {
     color: var(--color-error, #e0372e);
