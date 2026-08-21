@@ -40,6 +40,8 @@ const SEV_COLOR: Record<Severity, string> = {
 /** Au-delà, la règle sonne trop pour qu'on lise encore ses incidents. */
 const NOISY_THRESHOLD = 5
 
+type TagFilter = { kind: 'zone' | 'test' | 'product'; value: string }
+
 type Group = {
   key: string
   alert: string
@@ -95,12 +97,22 @@ const IncidentsPage = ({
   onClearFilter: () => void
 }) => {
   const [status, setStatus] = useState<'all' | 'ongoing' | 'closed'>('all')
+  // Filtres d'étiquettes : on clique une étiquette de ligne pour restreindre le
+  // flux (zone, test, produit), plusieurs se combinent.
+  const [tags, setTags] = useState<TagFilter[]>([])
+  const toggleTag = (t: TagFilter) =>
+    setTags((cur) =>
+      cur.some((x) => x.kind === t.kind && x.value === t.value)
+        ? cur.filter((x) => !(x.kind === t.kind && x.value === t.value))
+        : [...cur, t],
+    )
 
   const groups = useMemo(() => {
     let all = groupIncidents(INCIDENT_FEED)
     if (alertFilter) all = all.filter((g) => g.alert === alertFilter)
+    for (const t of tags) all = all.filter((g) => g[t.kind] === t.value)
     return status === 'all' ? all : all.filter((g) => g.status === status)
-  }, [status, alertFilter])
+  }, [status, alertFilter, tags])
 
   const ongoing = INCIDENT_FEED.filter((i) => i.status === 'ongoing')
   const critical = ongoing.filter((i) => i.severity === 'critical')
@@ -153,9 +165,11 @@ const IncidentsPage = ({
               <span className={css.noisyMark}>noisy</span>
             )}
           </span>
+          {/* Pas de mono ici : c'est de la métadonnée de lecture, pas une valeur
+              technique à aligner. Geist, 12 px, comme le reste de la ligne. */}
           <span className={css.incidentMeta}>
             <IconCalendarDays size={12} color="var(--color-text-third)" />
-            <span className={obs.mono}>{g.at}</span>
+            {g.at}
             <span className={css.metaDot}>·</span>
             <IconTimer size={12} color="var(--color-text-third)" />
             {g.ago}
@@ -178,19 +192,34 @@ const IncidentsPage = ({
       // Étiquettes du produit : le libellé en gras, la valeur à côté.
       title: 'Tags',
       key: 'tags',
-      render: (_v: unknown, g: Group) => (
-        <span className={css.tagsCell}>
-          <Tag color="grey" size="xs" smallPadding>
-            <b>Zone:</b> {g.zone}
-          </Tag>
-          <Tag color="grey" size="xs" smallPadding>
-            <b>Test:</b> {g.test}
-          </Tag>
-          <Tag color="grey" size="xs" smallPadding>
-            <b>Product:</b> {g.product}
-          </Tag>
-        </span>
-      ),
+      render: (_v: unknown, g: Group) => {
+        // Cliquer une étiquette filtre le flux : c'est le geste qu'on essaie
+        // naturellement, et le produit ne le propose pas.
+        const chip = (kind: TagFilter['kind'], label: string, value: string) => {
+          const on = tags.some((t) => t.kind === kind && t.value === value)
+          return (
+            <Tag
+              color={on ? 'orange' : 'grey'}
+              size="xs"
+              smallPadding
+              className={css.tagChip}
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleTag({ kind, value })
+              }}
+            >
+              <b>{label}:</b> {value}
+            </Tag>
+          )
+        }
+        return (
+          <span className={css.tagsCell}>
+            {chip('zone', 'Zone', g.zone)}
+            {chip('test', 'Test', g.test)}
+            {chip('product', 'Product', g.product)}
+          </span>
+        )
+      },
     },
     {
       title: '',
@@ -284,13 +313,35 @@ const IncidentsPage = ({
         </CounterCardGroup>
       </div>
 
-      {/* Filtre venu du détail d'une alerte : visible et réversible en un clic. */}
-      {alertFilter && (
+      {/* Filtres actifs : celui venu du détail d'une alerte et ceux posés en
+          cliquant une étiquette. Tous visibles, tous réversibles. */}
+      {(alertFilter || tags.length > 0) && (
         <div className={css.filterBar}>
           <span className={obs.cardSub}>Filtered on</span>
-          <span className={css.filterChip}>{alertFilter}</span>
-          <Button color="invisible" size="s" onClick={onClearFilter}>
-            Clear
+          {alertFilter && (
+            <button type="button" className={css.filterChip} onClick={onClearFilter}>
+              {alertFilter} ✕
+            </button>
+          )}
+          {tags.map((t) => (
+            <button
+              key={t.kind + t.value}
+              type="button"
+              className={css.filterChip}
+              onClick={() => toggleTag(t)}
+            >
+              {t.value} ✕
+            </button>
+          ))}
+          <Button
+            color="invisible"
+            size="s"
+            onClick={() => {
+              onClearFilter()
+              setTags([])
+            }}
+          >
+            Clear all
           </Button>
         </div>
       )}
