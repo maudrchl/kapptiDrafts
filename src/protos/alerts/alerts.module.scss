@@ -1,0 +1,413 @@
+/* ============================================================
+ *  Proto Alerts
+ *
+ *  Habillage aligné sur le proto Observability : on importe directement son
+ *  module (`explore-tabs.module.scss`) pour l'en-tête de page, les tables et
+ *  les valeurs mono, et on n'ajoute ici que ce qui lui manque (onglets de
+ *  section, phrase de condition éditable, panneau d'aperçu).
+ *
+ *  Règle héritée de l'observabilité : la sévérité est un attribut discret
+ *  (pastille + texte gris), le seul signal coloré fort de la ligne est le
+ *  Status.
+ * ============================================================ */
+
+$border: var(--color-border-grey, #e4e4e7);
+$white: var(--color-surface-white, #fff);
+$grey: var(--color-surface-grey, #fafafb);
+$text: var(--color-text-primary, #24292f);
+$muted: var(--color-text-secondary, #667085);
+$third: var(--color-text-third, #98a2b3);
+$primary: var(--color-primary, #ed7846);
+$radius: var(--radius-md, 6px);
+$warning: #f2b338;
+$critical: var(--color-error, #e0372e);
+
+.app {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: $white;
+  color: $text;
+  font-size: 14px;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  background: $grey;
+}
+
+/* Onglets de section du produit : la page Alerts vit sous Incidents. */
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 24px;
+  background: $white;
+  border-bottom: 1px solid $border;
+  flex-shrink: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: $muted;
+  font: inherit;
+  cursor: pointer;
+
+  &:hover {
+    color: $text;
+  }
+}
+
+.tabActive {
+  composes: tab;
+  color: $text;
+  border-bottom-color: $primary;
+  font-weight: 500;
+}
+
+/* ===== LISTE ===== */
+
+/* Sous-titre de l'en-tête : une phrase qui dit l'état du parc, pas un compteur. */
+.headSub {
+  font-size: 13px;
+  color: $muted;
+  margin-top: 4px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Cellule « Alert » : nom sur une ligne, condition en clair juste dessous. */
+.nameCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nameLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+/* Deux seuils sur une ligne, en mono : ça se compare à l'œil. */
+.thresholds {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.sevMark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.arrow {
+  color: $third;
+}
+
+/* ===== DÉTAIL (drawer) ===== */
+
+.tagRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* La règle, écrite comme on la dirait à l'oral. */
+.sentenceBox {
+  padding: 14px 16px;
+  border: 1px solid $border;
+  border-radius: $radius;
+  background: $grey;
+}
+
+.sentenceMeta {
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
+}
+
+/* Historique d'évaluations : un seuil mal réglé se voit en un coup d'œil. */
+.strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 32px;
+  margin: 10px 0 6px;
+}
+
+.stripBar {
+  width: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.routeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid $border;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.drawerFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.sectionLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: $text;
+  margin-bottom: 8px;
+}
+
+/* ===== CRÉATION ===== */
+
+.intentList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 720px;
+}
+
+.intentRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1px solid $border;
+  border-radius: $radius;
+  background: $white;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover {
+    border-color: $primary;
+  }
+}
+
+/* L'échappatoire script : présente, mais visiblement pas un choix de premier rang. */
+.intentRowAdvanced {
+  composes: intentRow;
+  background: transparent;
+  border-style: dashed;
+}
+
+.intentIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: $radius;
+  background: $grey;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.intentText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.intentTitle {
+  font-weight: 500;
+}
+
+.advancedLabel {
+  font-size: 12px;
+  color: $third;
+  margin: 20px 0 8px;
+}
+
+.formGrid {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.formCol {
+  flex: 1 1 460px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Chaque bloc du formulaire est une section séparée par un filet, pas une carte
+   de plus : le formulaire se lit d'une traite. */
+.block {
+  padding: 20px 0;
+  border-bottom: 1px solid $border;
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+/* La condition s'écrit comme une phrase, les champs sont dans le texte. */
+.sentenceEdit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.hint {
+  font-size: 12px;
+  color: $third;
+  margin-top: 8px;
+}
+
+.routeEdit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.routeLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 88px;
+  flex-shrink: 0;
+  color: $muted;
+}
+
+.formFooter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 20px;
+}
+
+/* Aperçu : le seuil se juge sur des données réelles, pas dans le vide. */
+.preview {
+  flex: 0 1 320px;
+  min-width: 280px;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  border: 1px solid $border;
+  border-radius: $radius;
+  background: $white;
+}
+
+.previewCount {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-top: 12px;
+}
+
+.previewChart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 84px;
+  margin: 16px 0 6px;
+}
+
+.previewCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.previewBar {
+  width: 100%;
+  max-width: 22px;
+  border-radius: 3px;
+}
+
+.previewDay {
+  font-size: 11px;
+  color: $third;
+}
+
+.previewSep {
+  height: 1px;
+  background: $border;
+  margin: 16px 0;
+}
+
+/* Ce qui partira vraiment, écrit tel quel. */
+.notifCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid $border;
+  border-radius: $radius;
+  background: $grey;
+  margin-top: 8px;
+}
+
+.notifTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}

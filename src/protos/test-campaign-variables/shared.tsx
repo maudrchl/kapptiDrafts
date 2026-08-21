@@ -32,7 +32,7 @@ export const TitleMark = () => (
   </svg>
 )
 
-type NavKey = 'tests' | 'configurations'
+type NavKey = 'tests' | 'configurations' | 'incidents'
 
 /** Sidebar produit partagée entre les deux écrans. `active` surligne l'entrée courante. */
 export const Sidebar = ({ active }: { active: NavKey }) => (
@@ -60,7 +60,7 @@ export const Sidebar = ({ active }: { active: NavKey }) => (
     <button className={styles.navItem}>
       <Eye size={14} /> Overview
     </button>
-    <button className={styles.navItem}>
+    <button className={active === 'incidents' ? styles.navItemActive : styles.navItem}>
       <Bell size={14} /> Incidents
     </button>
     <button className={styles.navItem}>
