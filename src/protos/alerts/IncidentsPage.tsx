@@ -249,12 +249,11 @@ const IncidentsPage = ({
       onCell: hiddenCell,
       render: (v: Group['status'], r: Row) =>
         r.band ? null : (
-        // Annulé reste dans la famille verte (l'incident est refermé, ce n'est
-        // pas un problème), mais son icône barrée le distingue d'un incident
-        // réellement résolu.
+        // Résolu = vert, annulé = gris avec son icône barrée : un incident
+        // annulé n'a rien été réparé, il n'a simplement pas eu lieu.
         <StatusTag
           variant="outline"
-          color={v === 'ongoing' ? 'failed' : 'success'}
+          color={v === 'ongoing' ? 'failed' : v === 'resolved' ? 'success' : 'neutral'}
           icon={v === 'canceled' ? <IconCircleSlash size={12} /> : undefined}
         >
           {v}
