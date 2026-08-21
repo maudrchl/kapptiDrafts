@@ -14,6 +14,7 @@ import {
   IconAlertTriangle,
   IconMoreVertical,
   IconCircleSlash,
+  IconCircleDot,
   IconCalendarDays,
   IconTimer,
 } from '@kapptivate/ui-kit'
@@ -235,12 +236,24 @@ const IncidentsPage = ({
       onCell: hiddenCell,
       render: (v: Group['status'], r: Row) =>
         r.band ? null : (
-        // Résolu = vert, annulé = gris avec son icône barrée : un incident
-        // annulé n'a rien été réparé, il n'a simplement pas eu lieu.
+        /**
+         * La colonne Status raconte le CYCLE DE VIE, pas la gravité : celle-ci
+         * est déjà portée par la pastille de type à gauche. D'où bleu pour ce
+         * qui est en cours, vert pour ce qui est résolu, gris pour ce qui a été
+         * annulé. Le rouge sur « ongoing » redisait la sévérité et écrasait la
+         * ligne, et la croix du DS disait « terminé », l'inverse d'un incident
+         * ouvert : un point actif la remplace.
+         */
         <StatusTag
           variant="outline"
-          color={v === 'ongoing' ? 'failed' : v === 'resolved' ? 'success' : 'neutral'}
-          icon={v === 'canceled' ? <IconCircleSlash size={12} /> : undefined}
+          color={v === 'ongoing' ? 'info' : v === 'resolved' ? 'success' : 'neutral'}
+          icon={
+            v === 'ongoing' ? (
+              <IconCircleDot size={12} />
+            ) : v === 'canceled' ? (
+              <IconCircleSlash size={12} />
+            ) : undefined
+          }
         >
           {v}
         </StatusTag>

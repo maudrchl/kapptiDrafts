@@ -185,7 +185,6 @@ $critical: var(--color-error, #e0372e);
 .drawer {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   padding-bottom: 16px;
 }
 
@@ -201,10 +200,67 @@ $critical: var(--color-error, #e0372e);
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  padding-bottom: 4px;
 }
 
 .metaToggle {
   margin-left: auto;
+}
+
+/* La règle : une phrase, ses seuils dessous, sans carte autour. */
+.ruleBlock {
+  padding: 16px 0;
+  border-bottom: 1px solid $border;
+}
+
+/* Liste de définitions : libellé à gauche, valeur à droite. Compact, et la
+   hiérarchie vient de la typo, pas d'une carte par fait. */
+.defList {
+  margin: 0;
+  padding: 0;
+}
+
+.defRow {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid $border;
+
+  dt {
+    font-size: 13px;
+    color: $muted;
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+  }
+}
+
+.routeLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  & + & {
+    margin-top: 6px;
+  }
+}
+
+.inlineLink {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: $primary;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.recordBlock {
+  padding-top: 16px;
 }
 
 .ruleBox {
