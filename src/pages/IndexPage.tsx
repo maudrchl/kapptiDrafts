@@ -16,6 +16,7 @@ import {
   IconSearchX,
   IconCode,
   IconFileType,
+  IconGlobe,
   IconPin,
   IconMousePointer2,
   IconFlag,
@@ -28,6 +29,7 @@ import {
   catalog,
   STATUS_ORDER,
   type CatalogEntry,
+  type ProtoKind,
   type ProtoStatus,
 } from '../protos/registry'
 import { useCurrentUser } from '../context/CurrentUser'
@@ -45,6 +47,20 @@ const withPin =
   (sorter: (a: Row, b: Row) => number) =>
   (a: Row, b: Row) =>
     pinRank(a, b) || sorter(a, b)
+
+// Colonne « Type » : nature technique du proto. `external` = app hébergée dans
+// un autre repo (ex. le site marketing en Next.js), embarquée ici en iframe.
+const KIND_LABEL: Record<ProtoKind, string> = {
+  react: 'React',
+  html: 'HTML',
+  external: 'External app',
+}
+
+const KIND_ICON: Record<ProtoKind, typeof IconCode> = {
+  react: IconCode,
+  html: IconFileType,
+  external: IconGlobe,
+}
 
 const STATUS_ACCENT: Record<ProtoStatus, string> = {
   'wip design': '#d98a00',
@@ -307,13 +323,9 @@ const IndexPage = () => {
       width: 180,
       sorter: withPin((a, b) => a.kind.localeCompare(b.kind)),
       sortIcon: renderSortIcon,
-      render: (kind: 'react' | 'html') => (
-        <Tag
-          color="grey"
-          icon={kind === 'react' ? IconCode : IconFileType}
-          size="xs"
-        >
-          {kind === 'react' ? 'React' : 'HTML'}
+      render: (kind: ProtoKind) => (
+        <Tag color="grey" icon={KIND_ICON[kind]} size="xs">
+          {KIND_LABEL[kind]}
         </Tag>
       ),
     },

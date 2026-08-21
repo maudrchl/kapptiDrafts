@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import type { ComponentType, LazyExoticComponent } from 'react'
-import { IconListStart, IconActivity, IconComponent, IconNavigation, IconRocket } from '@kapptivate/ui-kit'
+import { IconListStart, IconActivity, IconComponent, IconNavigation, IconRocket, IconGlobe } from '@kapptivate/ui-kit'
 import IconBrush from './BrushIcon'
 
 export type ProtoIcon = ComponentType<{ size?: number; color?: string }>
@@ -71,7 +71,13 @@ function slugFromPath(path: string): string {
   return path.split('/')[1]
 }
 
-export type ProtoKind = 'react' | 'html'
+/**
+ * `react`    : proto React de ce repo (route /p/:slug)
+ * `html`     : archive HTML servie depuis /public/folder
+ * `external` : app déployée ailleurs (autre repo, autre stack), embarquée en
+ *              iframe pour bénéficier de la couche collab de kapptidrafts.
+ */
+export type ProtoKind = 'react' | 'html' | 'external'
 
 /** Entrée normalisée pour le catalogue de la home (React + HTML confondus). */
 export type CatalogEntry = ProtoMeta & {
@@ -86,7 +92,12 @@ export type CatalogEntry = ProtoMeta & {
  * Prototypes HTML legacy (archives autonomes servies depuis `/folder`).
  * On n'en crée plus de nouveaux — les nouveaux protos sont en React.
  */
-export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
+export const legacyProtos: (ProtoMeta & {
+  slug: string
+  href: string
+  /** Défaut `html`. `external` pour une URL absolue (app hébergée ailleurs). */
+  kind?: ProtoKind
+})[] = [
   {
     slug: 'suivi-poc2-lbc',
     title: 'Suivi PoC LBC',
@@ -95,6 +106,20 @@ export const legacyProtos: (ProtoMeta & { slug: string; href: string })[] = [
     description: 'Suivi des conditions du POC 2 — LeBonCoin × kapptivate',
     icon: IconRocket,
     href: '/suivi-poc2-lbc',
+  },
+  {
+    slug: 'website',
+    title: 'Website',
+    status: 'wip dev',
+    tag: 'Brand',
+    description: 'Marketing site (kapptivate-website), live Vercel deployment, EN/FR',
+    icon: IconGlobe,
+    // Repo kapptivate/kapptivate-website : Next.js + next-intl + Keystatic, donc
+    // impossible à porter dans cette SPA. On embarque le déploiement live : le
+    // catalogue reste à jour tout seul et la couche collab s'applique par-dessus.
+    href: 'https://kapptivate.vercel.app',
+    kind: 'external',
+    updatedAt: '2026-06-15',
   },
   {
     slug: 'exploration-ui',
@@ -191,7 +216,7 @@ export const catalog: CatalogEntry[] = [
     const gd = __PROTO_DATES__[p.href]
     return {
       slug: p.slug,
-      kind: 'html',
+      kind: p.kind ?? 'html',
       target: p.href,
       title: p.title,
       status: p.status,
