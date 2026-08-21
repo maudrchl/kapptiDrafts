@@ -192,21 +192,7 @@ const IncidentsPage = ({
           </span>
           <span className={css.incidentText}>
           <span className={css.nameLine}>
-            {/* Le lien vers la règle : constater le bruit et le régler au même endroit. */}
-            {g.rule ? (
-              <button
-                type="button"
-                className={css.linkName}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onOpenAlert(g.rule as AlertRule)
-                }}
-              >
-                {v}
-              </button>
-            ) : (
-              v
-            )}
+              {v}
             <span className={css.incidentId}>[{g.lastId}]</span>
             {/* Regroupement : un incident lisible au lieu de quatre lignes. */}
             {g.count > 1 && <span className={css.countPill}>{g.count}</span>}
@@ -392,6 +378,13 @@ const IncidentsPage = ({
           columns={columns}
           data={rows}
           showHeader
+          // Toute la ligne ouvre la règle qui a créé l'incident : constater le
+          // bruit et le régler au même endroit, sans lien souligné dans le nom.
+          onClickRow={(r: Row) => {
+            if (r.band) return
+            const rule = (r as Group).rule
+            if (rule) onOpenAlert(rule)
+          }}
           conditionalRowClassNames={[
             { condition: (r: Row) => !!r.band, className: css.bandRow },
           ]}
