@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Text,
   Button,
@@ -11,6 +11,7 @@ import {
   Input,
   Select,
   Banner,
+  Modal,
   IconPlus,
   IconArrowLeft,
   IconBell,
@@ -74,18 +75,21 @@ const STATE_COLOR: Record<AlertState, 'failed' | 'success' | 'neutral'> = {
   muted: 'neutral',
 }
 
+// Vocabulaire repris d'incidents.io : une alerte sonne (firing), est revenue à
+// la normale (healthy), ou a été mise en pause (paused). « Watching » et
+// « muted » ne disaient pas dans quel état était la règle.
 const STATE_LABEL: Record<AlertState, string> = {
   firing: 'firing',
-  ok: 'watching',
-  muted: 'muted',
+  ok: 'healthy',
+  muted: 'paused',
 }
 
 const Proto = () => {
-  const [screen, setScreen] = useState<'list' | 'create'>('list')
+  const [createOpen, setCreateOpen] = useState(false)
   const [detail, setDetail] = useState<AlertRule | null>(null)
-  // Les épingles de commentaires suivent l'écran affiché, sinon elles bavent
-  // de la liste vers le formulaire de création.
-  useReportScreen(screen === 'create' ? 'create' : detail ? `detail:${detail.id}` : 'list')
+  // Les épingles de commentaires suivent l'écran affiché (modale et drawer
+  // compris), sinon elles bavent d'un écran à l'autre.
+  useReportScreen(createOpen ? 'modal:create' : detail ? `detail:${detail.id}` : 'list')
 
   return (
     // Coquille produit : la page se juge avec la navigation autour d'elle.
@@ -104,13 +108,11 @@ const Proto = () => {
           </button>
         </nav>
         <div className={obs.contentBody}>
-          {screen === 'create' ? (
-            <CreateAlert onBack={() => setScreen('list')} />
-          ) : (
-            <AlertList onCreate={() => setScreen('create')} detail={detail} onDetail={setDetail} />
-          )}
+          <AlertList onCreate={() => setCreateOpen(true)} detail={detail} onDetail={setDetail} />
         </div>
       </div>
+
+      <CreateAlertModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   )
 }
@@ -134,7 +136,7 @@ const AlertList = ({
     return ALERTS.filter(
       (a) =>
         a.name.toLowerCase().includes(q) ||
-        a.sentence.toLowerCase().includes(q) ||
+        a.short.toLowerCase().includes(q) ||
         a.scope.toLowerCase().includes(q),
     )
   }, [search])
@@ -159,16 +161,24 @@ const AlertList = ({
       // La condition en clair, sur une ligne : c'est ce que la colonne
       // « Condition » du produit cache derrière du jargon de requête.
       title: 'Condition',
-      dataIndex: 'sentence',
-      key: 'sentence',
+      dataIndex: 'short',
+      key: 'short',
       render: (v: string) => <span className={css.truncate}>{v}</span>,
     },
     {
-      title: 'Watches',
+      title: 'Applies to',
       dataIndex: 'scope',
       key: 'scope',
-      width: 130,
-      render: (v: string) => <Tag mono>{v}</Tag>,
+      width: 190,
+      render: (v: string, a: AlertRule) => (
+        <span className={css.truncate}>
+          {v}
+          <span className={obs.cardSub}>
+            {' '}
+            · {a.scopeCount} {a.kind === 'agent' ? 'agents' : 'tests'}
+          </span>
+        </span>
+      ),
     },
     {
       title: 'Notifies',
@@ -240,58 +250,47 @@ const AlertList = ({
 const AlertDrawer = ({ alert, onClose }: { alert: AlertRule | null; onClose: () => void }) => {
   const [muted, setMuted] = useState(false)
   const incidents = alert ? INCIDENTS.filter((i) => i.alertId === alert.id) : []
+  // Une alerte qui n'a jamais rien fait n'a pas besoin d'un historique de 24
+  // cases grises ni d'un tableau vide : une phrase suffit.
+  const everFired = !!alert && alert.lastFired !== 'Never'
 
   return (
     <Drawer open={!!alert} onClose={onClose} width={720} title={alert?.name ?? ''}>
       {alert && (
-        <div className={obs.usageStack}>
-          <div className={css.tagRow}>
+        <div className={css.drawer}>
+          {/* Une seule ligne d'identité : statut, nature, portée, propriétaire. */}
+          <div className={css.metaLine}>
             <StatusTag variant="ghost" color={STATE_COLOR[alert.state]}>
               {STATE_LABEL[alert.state]}
             </StatusTag>
-            <Tag mono>{KIND_LABEL[alert.kind]}</Tag>
-            <Tag mono>{alert.scope}</Tag>
             <span className={obs.cardSub}>
-              {alert.scopeCount} {alert.kind === 'agent' ? 'agents' : 'tests'} · owned by {alert.owner}
+              {KIND_LABEL[alert.kind]} · {alert.scope} · {alert.scopeCount}{' '}
+              {alert.kind === 'agent' ? 'agents' : 'tests'} · {alert.owner}
             </span>
           </div>
 
           {/* La règle, écrite comme on la dirait à l'oral. */}
-          <div className={css.sentenceBox}>
-            <Text>{alert.sentence}</Text>
-            <div className={css.sentenceMeta}>
-              <span className={css.sevMark}>
-                <span className={obs.sevDot} style={{ background: SEV_COLOR.warning }} />
-                <span className={obs.cardSub}>warning at {alert.warning}</span>
-              </span>
-              <span className={css.sevMark}>
-                <span className={obs.sevDot} style={{ background: SEV_COLOR.critical }} />
-                <span className={obs.cardSub}>critical at {alert.critical}</span>
-              </span>
+          <div className={css.ruleBox}>
+            {alert.sentence}
+            <div className={css.ruleSev}>
+              {alert.kind === 'script' ? (
+                <span className={obs.cardSub}>Thresholds are defined in the script</span>
+              ) : (
+                <>
+                  <span className={css.sevMark}>
+                    <span className={obs.sevDot} style={{ background: SEV_COLOR.warning }} />
+                    <span className={obs.cardSub}>warning · {alert.warning}</span>
+                  </span>
+                  <span className={css.sevMark}>
+                    <span className={obs.sevDot} style={{ background: SEV_COLOR.critical }} />
+                    <span className={obs.cardSub}>critical · {alert.critical}</span>
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Une alerte se juge sur ce qu'elle a fait, pas sur sa définition. */}
-          <section>
-            <div className={css.sectionLabel}>Last 24 evaluations</div>
-            <div className={css.strip}>
-              {alert.history.map((h, i) => (
-                <span
-                  key={i}
-                  className={css.stripBar}
-                  style={{
-                    background: h === 2 ? SEV_COLOR.critical : h === 1 ? SEV_COLOR.warning : IDLE_DOT,
-                    height: h === 0 ? 10 : h === 1 ? 20 : 28,
-                  }}
-                />
-              ))}
-            </div>
-            <div className={obs.cardSub}>
-              {alert.firedLast7d} incidents in the last 7 days. Last one {alert.lastFired?.toLowerCase()}.
-            </div>
-          </section>
-
-          <section>
+          <section className={css.drawerSection}>
             <div className={css.sectionLabel}>Who gets told</div>
             {alert.notifications.length === 0 ? (
               <Banner variant="warning">
@@ -307,10 +306,10 @@ const AlertDrawer = ({ alert, onClose }: { alert: AlertRule | null; onClose: () 
                     <span className={obs.cardSub}>{CHANNEL_LABEL[n.channel]}</span>
                   </span>
                   <span className={css.tagRow}>
-                    {n.severities.map((s) => (
-                      <span key={s} className={css.sevMark}>
-                        <span className={obs.sevDot} style={{ background: SEV_COLOR[s] }} />
-                        <span className={obs.cardSub}>{s}</span>
+                    {n.severities.map((sev) => (
+                      <span key={sev} className={css.sevMark}>
+                        <span className={obs.sevDot} style={{ background: SEV_COLOR[sev] }} />
+                        <span className={obs.cardSub}>{sev}</span>
                       </span>
                     ))}
                   </span>
@@ -319,53 +318,53 @@ const AlertDrawer = ({ alert, onClose }: { alert: AlertRule | null; onClose: () 
             )}
           </section>
 
-          <section>
-            <div className={css.sectionLabel}>Recent incidents</div>
-            <Table
-              rowKey="id"
-              compact
-              showHeader
-              columns={[
-                {
-                  title: 'Opened',
-                  dataIndex: 'openedAt',
-                  key: 'openedAt',
-                  width: 140,
-                  render: (v: string) => <span className={obs.mono}>{v}</span>,
-                },
-                {
-                  title: 'Severity',
-                  dataIndex: 'severity',
-                  key: 'severity',
-                  width: 110,
-                  render: (v: Severity) => (
-                    <span className={obs.sevCell}>
-                      <span className={obs.sevDot} style={{ background: SEV_COLOR[v] }} />
-                      {v}
-                    </span>
-                  ),
-                },
-                { title: 'What tripped it', dataIndex: 'trigger', key: 'trigger' },
-                {
-                  title: 'Duration',
-                  dataIndex: 'duration',
-                  key: 'duration',
-                  width: 100,
-                  render: (v: string) => <span className={obs.mono}>{v}</span>,
-                },
-              ]}
-              data={incidents}
-              emptyState={{
-                icon: <IconBell color="var(--color-text-secondary)" />,
-                text: 'Never fired',
-                description: 'This alert has not opened a single incident yet.',
-              }}
-            />
+          {/* Une alerte se juge sur ce qu'elle a fait, pas sur sa définition. */}
+          <section className={css.drawerSection}>
+            <div className={css.sectionLabel}>Track record</div>
+            {!everFired ? (
+              <div className={obs.cardSub}>
+                Never fired since it was created. Either all is well, or the thresholds are out of reach.
+              </div>
+            ) : (
+              <>
+                <div className={css.strip}>
+                  {alert.history.map((h, i) => (
+                    <span
+                      key={i}
+                      className={css.stripBar}
+                      style={{
+                        background: h === 2 ? SEV_COLOR.critical : h === 1 ? SEV_COLOR.warning : IDLE_DOT,
+                        height: h === 0 ? 8 : h === 1 ? 18 : 26,
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className={obs.cardSub}>
+                  Last 24 evaluations. {alert.firedLast7d} incidents in the last 7 days, last one{' '}
+                  {alert.lastFired?.toLowerCase()}.
+                </div>
+
+                {incidents.length > 0 && (
+                  <div className={css.incidentList}>
+                    {incidents.map((i) => (
+                      <div key={i.id} className={css.incidentRow}>
+                        <span className={css.sevMark}>
+                          <span className={obs.sevDot} style={{ background: SEV_COLOR[i.severity] }} />
+                          <span className={`${obs.mono} ${css.nowrap}`}>{i.openedAt}</span>
+                        </span>
+                        <span className={css.truncate}>{i.trigger}</span>
+                        <span className={`${obs.cardSub} ${css.nowrap}`}>{i.duration}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </section>
 
           <div className={css.drawerFooter}>
             <Toggle
-              title={muted ? 'Muted' : 'Watching'}
+              title={muted ? 'Paused' : 'Active'}
               description={muted ? 'No incident, no notification' : 'Evaluated every minute'}
               value={!muted}
               onChange={(v) => setMuted(!v)}
@@ -391,32 +390,54 @@ const AlertDrawer = ({ alert, onClose }: { alert: AlertRule | null; onClose: () 
   )
 }
 
-/* ────────────────────────────── Création ────────────────────────────── */
-
-const CreateAlert = ({ onBack }: { onBack: () => void }) => {
+/**
+ * La création tient dans une modale : on ne quitte pas la liste pour écrire une
+ * règle. Deux temps dans la même fenêtre, l'intention puis la condition, et le
+ * bouton d'action vit dans le pied de la modale.
+ */
+const CreateAlertModal = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const [intent, setIntent] = useState<Intent | null>(null)
+  // Fermer la modale remet le flux à son premier temps.
+  useEffect(() => {
+    if (!open) setIntent(null)
+  }, [open])
 
   return (
-    <>
-      <div className={obs.pageHead}>
-        <div>
-          <Button color="secondary" size="s" onClick={intent ? () => setIntent(null) : onBack}>
-            <Button.Icon icon={IconArrowLeft} />
-            {intent ? 'Back to alert types' : 'Back to alerts'}
+    <Modal
+      open={open}
+      onCancel={onClose}
+      // La fenêtre s'élargit quand le formulaire arrive avec son aperçu.
+      width={intent ? 960 : 620}
+      title={intent ? intent.question : 'Create alert'}
+    >
+      <Modal.Content maxHeight="70vh" overflow="auto">
+        {!intent ? (
+          <>
+            <div className={css.modalIntro}>
+              Pick the situation. The alert type, the query and the thresholds follow from it.
+            </div>
+            <IntentPicker onPick={setIntent} />
+          </>
+        ) : (
+          <AlertForm intent={intent} />
+        )}
+      </Modal.Content>
+      <Modal.Footer>
+        {intent ? (
+          <>
+            <Button color="primary">Create alert</Button>
+            <Button color="secondary" onClick={() => setIntent(null)}>
+              <Button.Icon icon={IconArrowLeft} />
+              Back
+            </Button>
+          </>
+        ) : (
+          <Button color="secondary" onClick={onClose}>
+            Cancel
           </Button>
-          <h1 className={obs.pageTitle} style={{ marginTop: 16 }}>
-            {intent ? intent.question : 'What do you want to be warned about?'}
-          </h1>
-          <div className={css.headSub}>
-            {intent
-              ? KIND_LABEL[intent.kind]
-              : 'Pick the situation. The alert type, the query and the thresholds follow from it.'}
-          </div>
-        </div>
-      </div>
-
-      {!intent ? <IntentPicker onPick={setIntent} /> : <AlertForm intent={intent} onCancel={onBack} />}
-    </>
+        )}
+      </Modal.Footer>
+    </Modal>
   )
 }
 
@@ -461,7 +482,7 @@ const IntentPicker = ({ onPick }: { onPick: (i: Intent) => void }) => {
  * tout de suite à « est-ce que mon seuil est bon ? » en rejouant les 7 derniers
  * jours. C'est ce que le formulaire actuel laisse entièrement à l'intuition.
  */
-const AlertForm = ({ intent, onCancel }: { intent: Intent; onCancel: () => void }) => {
+const AlertForm = ({ intent }: { intent: Intent }) => {
   const [name, setName] = useState('Checkout journey failing')
   const [window_, setWindow] = useState('10')
   const [warnAt, setWarnAt] = useState('2')
@@ -589,13 +610,6 @@ const AlertForm = ({ intent, onCancel }: { intent: Intent; onCancel: () => void 
             />
           </div>
         </section>
-
-        <div className={css.formFooter}>
-          <Button color="primary">Create alert</Button>
-          <Button color="secondary" onClick={onCancel}>
-            Cancel
-          </Button>
-        </div>
       </div>
 
       {/* Aperçu : le seuil se juge sur des données réelles, pas dans le vide. */}

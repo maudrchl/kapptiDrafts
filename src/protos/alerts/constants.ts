@@ -48,8 +48,10 @@ export type AlertRule = {
   id: string
   name: string
   kind: AlertKind
-  /** La condition en une phrase lisible : c'est elle qui remplace la colonne « Condition ». */
+  /** La condition en une phrase lisible : sert dans le détail. */
   sentence: string
+  /** Version courte pour la liste : le seuil de warning, sans habillage. */
+  short: string
   /** Seuils par sévérité, formulés dans l'unité de l'alerte. */
   warning: string
   critical: string
@@ -130,6 +132,7 @@ export const ALERTS: AlertRule[] = [
     name: 'Checkout journey failing',
     kind: 'run-failure',
     sentence: 'When 2 of the last 10 runs fail',
+    short: '2 of 10 runs fail',
     warning: '2 of 10 runs',
     critical: '4 of 10 runs',
     scope: 'Payments',
@@ -151,8 +154,9 @@ export const ALERTS: AlertRule[] = [
     name: 'Success rate below target',
     kind: 'success-rate',
     sentence: 'When the success rate over the last 24 h falls below 95%',
-    warning: 'below 95%',
-    critical: 'below 90%',
+    short: 'success rate < 95% over 24 h',
+    warning: 'under 95%',
+    critical: 'under 90%',
     scope: 'All products',
     scopeCount: 151,
     notifications: [
@@ -170,6 +174,7 @@ export const ALERTS: AlertRule[] = [
     name: 'USSD response time',
     kind: 'metric',
     sentence: 'When the mean response time stays at or above 45 s for 5 min',
+    short: 'response time ≥ 45 s for 5 min',
     warning: '45 s or more',
     critical: '60 s or more',
     scope: 'FastPay',
@@ -188,8 +193,9 @@ export const ALERTS: AlertRule[] = [
     name: 'Abidjan lab agents offline',
     kind: 'agent',
     sentence: 'When an agent stops reporting for 5 min',
-    warning: 'after 5 min',
-    critical: 'after 15 min',
+    short: 'no report for 5 min',
+    warning: 'silent for 5 min',
+    critical: 'silent for 15 min',
     scope: 'Abidjan lab',
     scopeCount: 4,
     notifications: [{ channel: 'slack', target: '#ops', severities: ['warning', 'critical'] }],
@@ -204,6 +210,7 @@ export const ALERTS: AlertRule[] = [
     name: 'Login failures spike',
     kind: 'metric',
     sentence: 'When failed logins reach 20 over 15 min',
+    short: '20 failed logins in 15 min',
     warning: '20 or more',
     critical: '50 or more',
     scope: 'Accounts',
@@ -222,8 +229,9 @@ export const ALERTS: AlertRule[] = [
     name: 'Legacy TICK script',
     kind: 'script',
     sentence: 'Custom script, 34 lines',
-    warning: 'set in the script',
-    critical: 'set in the script',
+    short: 'custom script, 34 lines',
+    warning: 'defined in the script',
+    critical: 'defined in the script',
     scope: 'All products',
     scopeCount: 151,
     notifications: [{ channel: 'webhook', target: 'hooks.rocketcorp.io/ops', severities: ['critical'] }],
@@ -238,6 +246,7 @@ export const ALERTS: AlertRule[] = [
     name: 'Weekend batch check',
     kind: 'run-failure',
     sentence: 'When 1 of the last 3 runs fails',
+    short: '1 of 3 runs fails',
     warning: '1 of 3 runs',
     critical: '2 of 3 runs',
     scope: 'Billing',
