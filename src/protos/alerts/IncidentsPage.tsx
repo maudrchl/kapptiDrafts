@@ -121,27 +121,21 @@ const IncidentsPage = ({
 
   const columns = [
     {
-      // Pastille de type, comme dans le produit : la sévérité se voit avant de
-      // lire quoi que ce soit.
-      title: 'Type',
-      key: 'type',
-      width: 70,
-      render: (_v: unknown, g: Group) => (
-        <span
-          className={css.typeBadge}
-          style={{ background: SEV_COLOR[g.severity] }}
-          title={g.severity}
-        >
-          <IconAlertTriangle size={15} color="#fff" />
-        </span>
-      ),
-    },
-    {
       title: 'Alert triggered',
       dataIndex: 'alert',
       key: 'alert',
       render: (v: string, g: Group) => (
         <div className={css.incidentCell}>
+          {/* Pastille de type, comme dans le produit : la sévérité se voit avant
+              de lire, et elle est collée au nom qu'elle qualifie. */}
+          <span
+            className={css.typeBadge}
+            style={{ background: SEV_COLOR[g.severity] }}
+            title={g.severity}
+          >
+            <IconAlertTriangle size={15} color="#fff" />
+          </span>
+          <span className={css.incidentText}>
           <span className={css.nameLine}>
             {/* Le lien vers la règle : constater le bruit et le régler au même endroit. */}
             {g.rule ? (
@@ -162,7 +156,12 @@ const IncidentsPage = ({
             {/* Regroupement : un incident lisible au lieu de quatre lignes. */}
             {g.count > 1 && <span className={css.countPill}>{g.count}</span>}
             {g.rule && g.rule.firedLast7d >= NOISY_THRESHOLD && (
-              <span className={css.noisyMark}>noisy</span>
+              <span
+                className={css.noisyMark}
+                title={`This rule opened ${g.rule.firedLast7d} incidents in the last 7 days. Worth tuning its thresholds, or excluding the errors you expect.`}
+              >
+                {g.rule.firedLast7d} this week
+              </span>
             )}
           </span>
           {/* Pas de mono ici : c'est de la métadonnée de lecture, pas une valeur
@@ -179,6 +178,7 @@ const IncidentsPage = ({
               <IconTimer size={12} color="var(--color-text-third)" />
               {g.ago}
             </span>
+          </span>
           </span>
         </div>
       ),
@@ -275,47 +275,14 @@ const IncidentsPage = ({
         </div>
       </div>
 
-      {/* Les cartes de synthèse du DS, comme la page produit, mais elles
-          comptent des incidents ouverts : « Daily active alerts » comptait des
-          déclenchements, pas des problèmes. */}
+      {/* Les cartes de synthèse du DS. Sans commentaire sous le chiffre : « needs
+          attention » ne disait rien que le chiffre ne dise déjà. */}
       <div className={obs.kpiRow}>
         <CounterCardGroup>
-          <CounterCard
-            title="Ongoing"
-            value={ongoing.length}
-            trend={
-              <StatusTag variant="ghost" color={ongoing.length ? 'failed' : 'success'}>
-                {ongoing.length ? 'needs attention' : 'all clear'}
-              </StatusTag>
-            }
-          />
-          <CounterCard
-            title="Critical"
-            value={critical.length}
-            trend={
-              <StatusTag variant="ghost" color={critical.length ? 'failed' : 'success'}>
-                {critical.length ? 'paging on-call' : 'none'}
-              </StatusTag>
-            }
-          />
-          <CounterCard
-            title="Warning"
-            value={warning.length}
-            trend={
-              <StatusTag variant="ghost" color={warning.length ? 'warning' : 'success'}>
-                {warning.length ? 'worth a look' : 'none'}
-              </StatusTag>
-            }
-          />
-          <CounterCard
-            title="Closed today"
-            value={closed.length}
-            trend={
-              <StatusTag variant="ghost" color="neutral">
-                back to normal
-              </StatusTag>
-            }
-          />
+          <CounterCard title="Ongoing" value={ongoing.length} />
+          <CounterCard title="Critical" value={critical.length} />
+          <CounterCard title="Warning" value={warning.length} />
+          <CounterCard title="Closed today" value={closed.length} />
         </CounterCardGroup>
       </div>
 

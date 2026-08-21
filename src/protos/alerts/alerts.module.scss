@@ -851,7 +851,16 @@ $critical: var(--color-error, #e0372e);
   flex-shrink: 0;
 }
 
+/* Pastille de type + texte dans la même cellule : une colonne « Type » séparée
+   laissait 40 px de vide entre le carré et le nom. */
 .incidentCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.incidentText {
   display: flex;
   flex-direction: column;
   gap: 3px;
