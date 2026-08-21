@@ -867,8 +867,7 @@ $critical: var(--color-error, #e0372e);
 .incidentMeta {
   display: flex;
   align-items: center;
-  /* Icône collée à sa valeur : 5 px laissaient l'icône flotter. */
-  gap: 4px;
+  gap: 0;
   font-size: 12px;
   /* Même poids que le nom au-dessus : la ligne de métadonnées se lisait molle
      à côté d'un titre en medium. */
@@ -880,9 +879,17 @@ $critical: var(--color-error, #e0372e);
   }
 }
 
+/* Icône collée à sa valeur : 2 px, les icônes lucide portant déjà du blanc
+   dans leur viewBox. */
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .metaDot {
   color: $third;
-  padding: 0 2px;
+  padding: 0 5px;
 }
 
 /* Étiquettes sur deux lignes au plus, comme dans le produit. */

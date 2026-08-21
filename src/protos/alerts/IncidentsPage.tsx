@@ -167,12 +167,18 @@ const IncidentsPage = ({
           </span>
           {/* Pas de mono ici : c'est de la métadonnée de lecture, pas une valeur
               technique à aligner. Geist, 12 px, comme le reste de la ligne. */}
+          {/* Chaque icône forme un groupe avec sa valeur : l'écart ne vit
+              qu'entre les groupes, pas entre l'icône et son texte. */}
           <span className={css.incidentMeta}>
-            <IconCalendarDays size={12} color="var(--color-text-third)" />
-            {g.at}
+            <span className={css.metaItem}>
+              <IconCalendarDays size={12} color="var(--color-text-third)" />
+              {g.at}
+            </span>
             <span className={css.metaDot}>·</span>
-            <IconTimer size={12} color="var(--color-text-third)" />
-            {g.ago}
+            <span className={css.metaItem}>
+              <IconTimer size={12} color="var(--color-text-third)" />
+              {g.ago}
+            </span>
           </span>
         </div>
       ),
