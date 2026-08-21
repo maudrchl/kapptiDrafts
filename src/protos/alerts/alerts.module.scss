@@ -942,11 +942,18 @@ $critical: var(--color-error, #e0372e);
 
 /* Bande de séparation par journée, à l'identique de la page Executions :
    fond surface-grey, hauteur 25 px, 4 px de padding vertical. */
-.bandRow :global(td) {
-  background-color: var(--color-surface-grey);
-  height: 25px;
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
+/* Le DS impose une hauteur de ligne au tbody : on la force sur la bande, sinon
+   la cellule de 25 px reste étirée à 60. */
+.bandRow {
+  height: 25px !important;
+
+  :global(td) {
+    background-color: var(--color-surface-grey);
+    height: 25px !important;
+    line-height: 1.4;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
 }
 
 /* Incident refermé : sa pastille de type passe en gris, ce qui suffit à le

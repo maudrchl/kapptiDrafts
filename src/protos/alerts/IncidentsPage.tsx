@@ -61,6 +61,7 @@ type Group = {
   count: number
   ago: string
   at: string
+  duration?: string
   lastId: string
 }
 
@@ -88,6 +89,7 @@ const groupIncidents = (feed: Incident[]): Group[] => {
       count: 1,
       ago: i.ago,
       at: i.at,
+      duration: i.duration,
       lastId: i.id,
     })
   }
@@ -183,7 +185,9 @@ const IncidentsPage = ({
           >
             <IconAlertTriangle
               size={15}
-              color={g.status === 'ongoing' ? '#fff' : 'var(--color-grey-400, #98a2b3)'}
+              // grey-400 sur grey-200 ne se voyait pas : l'icône passe en
+              // text-secondary, plus foncé que son fond.
+              color={g.status === 'ongoing' ? '#fff' : 'var(--color-text-secondary, #667085)'}
             />
           </span>
           <span className={css.incidentText}>
@@ -225,9 +229,11 @@ const IncidentsPage = ({
               {g.at}
             </span>
             <span className={css.metaDot}>·</span>
+            {/* Un incident refermé se juge sur sa durée, pas sur son âge :
+                « lasted 1 h 12 min » dit quelque chose, « yesterday » non. */}
             <span className={css.metaItem}>
               <IconTimer size={12} color="var(--color-text-third)" />
-              {g.ago}
+              {g.status === 'ongoing' || !g.duration ? g.ago : `lasted ${g.duration}`}
             </span>
           </span>
           </span>
