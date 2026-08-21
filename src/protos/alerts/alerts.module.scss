@@ -76,7 +76,7 @@ $critical: var(--color-error, #e0372e);
 
 .tabActive {
   composes: tab;
-  color: $text;
+  color: $primary;
   border-bottom-color: $primary;
 }
 
@@ -139,6 +139,13 @@ $critical: var(--color-error, #e0372e);
 .filterTrigger {
   display: inline-flex;
   cursor: pointer;
+
+  /* Le FilterIcon du DS ne prend pas de taille en props : on la fixe ici pour
+     qu'il s'aligne sur le corps de l'en-tête. */
+  :global(svg) {
+    width: 12px;
+    height: 12px;
+  }
 }
 
 /* Alerte qui ne prévient personne : ambre, mais au même corps que le reste. */
@@ -657,6 +664,32 @@ $critical: var(--color-error, #e0372e);
 /* ===== TRACK RECORD ===== */
 
 /* Version liste : sept barres, un seul élément graphique par ligne. */
+/* Track record d'une ligne : les barres, puis en mots ce qu'elles ont
+   déclenché. */
+.record {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+}
+
+.recordNone {
+  font-size: 11px;
+  color: $third;
+}
+
+.recordLabel {
+  font-size: 11px;
+
+  &[data-sev='critical'] {
+    color: var(--color-error, #e0372e);
+  }
+
+  &[data-sev='warning'] {
+    color: #b8860b;
+  }
+}
+
 .spark {
   display: flex;
   align-items: flex-end;
@@ -726,16 +759,6 @@ $critical: var(--color-error, #e0372e);
     padding-top: 12px;
     padding-bottom: 12px;
   }
-}
-
-/* Liseré de sévérité à gauche de la ligne : ce que l'alerte a déclenché cette
-   semaine se lit avant de lire. */
-.rowCritical :global(td):first-child {
-  box-shadow: inset 3px 0 0 var(--color-error, #e0372e);
-}
-
-.rowWarning :global(td):first-child {
-  box-shadow: inset 3px 0 0 #f2b338;
 }
 
 /* Destination + astreinte derrière elle. */

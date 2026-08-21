@@ -210,6 +210,7 @@ const AlertList = ({
   // une colonne de texte. Les produits viennent des alertes elles-mêmes.
   const [scope, setScope] = useState<string>('all')
   const scopes = useMemo(() => [...new Set(ALERTS.map((a) => a.scope))].sort(), [])
+  const firing = ALERTS.filter((a) => a.state === 'firing')
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -229,9 +230,9 @@ const AlertList = ({
       title: 'Alert',
       dataIndex: 'name',
       key: 'name',
-      // Un seul élément fort par ligne : le nom. La pastille de sévérité
-      // doublait le Status, seul signal coloré de la ligne (règle héritée du
-      // proto Observability).
+      // Le nom seul : la pastille est déjà le vocabulaire du Status, deux
+      // pastilles sur une ligne ne veulent plus rien dire. Ce que la règle
+      // déclenche est écrit sous ses barres, en mots.
       render: (v: string) => <span className={css.nameLine}>{v}</span>,
     },
     {
@@ -271,20 +272,31 @@ const AlertList = ({
       title: 'Last 7 days',
       dataIndex: 'week',
       key: 'week',
-      width: 120,
+      width: 130,
       render: (week: number[], a: AlertRule) => (
-        <span className={css.spark} title={trackRecord(a.firedLast7d).text}>
-          {week.map((n, i) => (
-            <span
-              key={i}
-              className={css.sparkBar}
-              style={{
-                height: n === 0 ? 4 : n === 1 ? 12 : 18,
-                // Couleur = ce que l'alerte déclenche, hauteur = combien de fois.
-                background: n === 0 || !a.worst ? IDLE_DOT : SEV_COLOR[a.worst],
-              }}
-            />
-          ))}
+        <span className={css.record} title={trackRecord(a.firedLast7d).text}>
+          <span className={css.spark}>
+            {week.map((n, i) => (
+              <span
+                key={i}
+                className={css.sparkBar}
+                style={{
+                  height: n === 0 ? 4 : n === 1 ? 12 : 18,
+                  // Couleur = ce que l'alerte déclenche, hauteur = combien de fois.
+                  background: n === 0 || !a.worst ? IDLE_DOT : SEV_COLOR[a.worst],
+                }}
+              />
+            ))}
+          </span>
+          {/* En mots : « 9 warnings » et « 2 criticals » ne se confondent pas,
+              là où deux nuances de pastille se confondaient. */}
+          <span className={a.worst ? css.recordLabel : css.recordNone} data-sev={a.worst ?? 'none'}>
+            {a.firedLast7d === 0
+              ? 'nothing'
+              : `${a.firedLast7d} ${a.worst === 'critical' ? 'critical' : 'warning'}${
+                  a.firedLast7d > 1 ? 's' : ''
+                }`}
+          </span>
         </span>
       ),
     },
@@ -346,7 +358,12 @@ const AlertList = ({
       {/* En-tête volontairement nu : la recherche vit à côté du bouton, et
           l'état du parc se lit dans le tableau, pas dans une rangée de cartes. */}
       <div className={obs.pageHead}>
-        <h1 className={obs.pageTitle}>Alerts</h1>
+        <div>
+          <h1 className={obs.pageTitle}>Alerts</h1>
+          <div className={css.headSub}>
+            The rules that watch your tests. {firing.length} of {ALERTS.length} firing right now.
+          </div>
+        </div>
         <div className={obs.contentActions}>
           <SearchInput value={search} onChange={setSearch} placeholder="Search" width="220px" />
           <Button color="primary" onClick={onCreate}>
@@ -362,13 +379,6 @@ const AlertList = ({
         data={rows}
         showHeader
         classNames={css.tableMid}
-        // Liseré à gauche de la ligne : rouge si l'alerte a déclenché du
-        // critique cette semaine, ambre si elle n'a produit que des warnings,
-        // rien si elle n'a rien déclenché. Ça se lit avant de lire.
-        conditionalRowClassNames={[
-          { condition: (r: AlertRule) => r.worst === 'critical', className: css.rowCritical },
-          { condition: (r: AlertRule) => r.worst === 'warning', className: css.rowWarning },
-        ]}
         onClickRow={onDetail}
         emptyState={{
           icon: <IconSearchX color="var(--color-text-secondary)" />,

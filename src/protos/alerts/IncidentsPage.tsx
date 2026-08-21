@@ -179,7 +179,12 @@ const IncidentsPage = ({
   return (
     <>
       <div className={obs.pageHead}>
-        <h1 className={obs.pageTitle}>Incidents</h1>
+        <div>
+          <h1 className={obs.pageTitle}>Incidents</h1>
+          <div className={css.headSub}>
+            What those rules opened, most recent first.
+          </div>
+        </div>
         <div className={obs.contentActions}>
           <Select
             size="s"
