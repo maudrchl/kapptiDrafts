@@ -68,6 +68,8 @@ export type AlertRule = {
   firedLast7d: number
   /** 24 dernières évaluations : 0 = ok, 1 = warning, 2 = critical. */
   history: (0 | 1 | 2)[]
+  /** Déclenchements par jour sur 7 jours : le track record, lisible d'un coup. */
+  week: number[]
   owner: string
 }
 
@@ -123,6 +125,18 @@ export const CHANNEL_LABEL: Record<ChannelKind, string> = {
   webhook: 'Webhook',
 }
 
+/**
+ * Verdict du track record : c'est lui qu'on affiche, pas seulement le compte.
+ * Une alerte qui n'a jamais sonné et une alerte qui sonne tous les jours sont
+ * deux problèmes, et aucun des deux n'est visible dans le produit aujourd'hui.
+ */
+export const trackRecord = (firedLast7d: number): { tone: 'quiet' | 'healthy' | 'noisy'; text: string } =>
+  firedLast7d === 0
+    ? { tone: 'quiet', text: 'Never fired in the last 7 days' }
+    : firedLast7d >= 5
+      ? { tone: 'noisy', text: `Too noisy: ${firedLast7d} incidents in 7 days, more than one a day` }
+      : { tone: 'healthy', text: `${firedLast7d} incidents in the last 7 days` }
+
 /** Historique d'évaluations : petit générateur pour garder les données lisibles. */
 const ok = (n: number): (0 | 1 | 2)[] => Array.from({ length: n }, () => 0 as const)
 
@@ -146,6 +160,7 @@ export const ALERTS: AlertRule[] = [
     since: '14 min',
     lastFired: '14 min ago',
     firedLast7d: 4,
+    week: [0, 1, 0, 0, 1, 0, 2],
     history: [...ok(14), 1, 1, 0, 1, 1, 2, 2, 2, 2, 2],
     owner: 'Awa Diallo',
   },
@@ -166,6 +181,7 @@ export const ALERTS: AlertRule[] = [
     state: 'ok',
     lastFired: '2 days ago',
     firedLast7d: 1,
+    week: [0, 0, 0, 1, 0, 0, 0],
     history: [...ok(6), 1, 1, 2, 1, ...ok(14)],
     owner: 'Awa Diallo',
   },
@@ -185,6 +201,7 @@ export const ALERTS: AlertRule[] = [
     since: '3 min',
     lastFired: '3 min ago',
     firedLast7d: 9,
+    week: [1, 2, 1, 0, 2, 1, 2],
     history: [0, 1, 1, 0, 0, 1, 2, 1, 0, 0, 1, 1, 0, 1, 2, 1, 0, 0, 1, 1, 0, 1, 1, 1],
     owner: 'Samir Benali',
   },
@@ -202,6 +219,7 @@ export const ALERTS: AlertRule[] = [
     state: 'ok',
     lastFired: 'Never',
     firedLast7d: 0,
+    week: [0, 0, 0, 0, 0, 0, 0],
     history: ok(24),
     owner: 'Samir Benali',
   },
@@ -221,6 +239,7 @@ export const ALERTS: AlertRule[] = [
     state: 'ok',
     lastFired: '5 days ago',
     firedLast7d: 2,
+    week: [0, 0, 1, 0, 0, 1, 0],
     history: [...ok(18), 1, 0, 0, 1, 0, 0],
     owner: 'Léa Marchand',
   },
@@ -238,6 +257,7 @@ export const ALERTS: AlertRule[] = [
     state: 'muted',
     lastFired: '3 weeks ago',
     firedLast7d: 0,
+    week: [0, 0, 0, 0, 0, 0, 0],
     history: ok(24),
     owner: 'Samir Benali',
   },
@@ -255,6 +275,7 @@ export const ALERTS: AlertRule[] = [
     state: 'muted',
     lastFired: '12 days ago',
     firedLast7d: 0,
+    week: [0, 0, 0, 0, 0, 0, 0],
     history: ok(24),
     owner: 'Léa Marchand',
   },

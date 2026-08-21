@@ -1,5 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Button, Table, StatusTag, Select, IconArrowRight, IconSearchX } from '@kapptivate/ui-kit'
+import {
+  Table,
+  StatusTag,
+  Select,
+  CounterCardGroup,
+  CounterCard,
+  IconSearchX,
+} from '@kapptivate/ui-kit'
 import obs from '../observability/explore-tabs.module.scss'
 import css from './alerts.module.scss'
 import { ALERTS, INCIDENT_FEED } from './constants'
@@ -176,29 +183,48 @@ const IncidentsPage = ({ onOpenAlert }: { onOpenAlert: (a: AlertRule) => void })
         </div>
       </div>
 
-      {/* Les compteurs du produit, mais formulés en incidents ouverts : « Daily
-          active alerts » comptait des déclenchements, pas des problèmes. */}
-      <div className={css.statRow}>
-        <div className={css.stat}>
-          <span className={obs.cardSub}>Ongoing</span>
-          <span className={css.statValue}>{ongoing.length}</span>
-        </div>
-        <div className={css.stat}>
-          <span className={obs.cardSub}>Critical</span>
-          <span className={css.statValue} style={{ color: SEV_COLOR.critical }}>
-            {critical.length}
-          </span>
-        </div>
-        <div className={css.stat}>
-          <span className={obs.cardSub}>Warning</span>
-          <span className={css.statValue} style={{ color: SEV_COLOR.warning }}>
-            {warning.length}
-          </span>
-        </div>
-        <div className={css.stat}>
-          <span className={obs.cardSub}>Closed today</span>
-          <span className={css.statValue}>{closed.length}</span>
-        </div>
+      {/* Les cartes de synthèse du DS, comme la page produit, mais elles
+          comptent des incidents ouverts : « Daily active alerts » comptait des
+          déclenchements, pas des problèmes. */}
+      <div className={obs.kpiRow}>
+        <CounterCardGroup>
+          <CounterCard
+            title="Ongoing"
+            value={ongoing.length}
+            trend={
+              <StatusTag variant="ghost" color={ongoing.length ? 'failed' : 'success'}>
+                {ongoing.length ? 'needs attention' : 'all clear'}
+              </StatusTag>
+            }
+          />
+          <CounterCard
+            title="Critical"
+            value={critical.length}
+            trend={
+              <StatusTag variant="ghost" color={critical.length ? 'failed' : 'success'}>
+                {critical.length ? 'paging on-call' : 'none'}
+              </StatusTag>
+            }
+          />
+          <CounterCard
+            title="Warning"
+            value={warning.length}
+            trend={
+              <StatusTag variant="ghost" color={warning.length ? 'warning' : 'success'}>
+                {warning.length ? 'worth a look' : 'none'}
+              </StatusTag>
+            }
+          />
+          <CounterCard
+            title="Closed today"
+            value={closed.length}
+            trend={
+              <StatusTag variant="ghost" color="neutral">
+                back to normal
+              </StatusTag>
+            }
+          />
+        </CounterCardGroup>
       </div>
 
       <div className={css.dayLabel}>Today, 21 August 2026</div>

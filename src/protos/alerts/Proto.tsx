@@ -20,6 +20,8 @@ import {
   IconCopy,
   IconTrash,
   IconSearchX,
+  Dropdown,
+  FilterIcon,
   IconAlertTriangle,
   IconArrowRight,
 } from '@kapptivate/ui-kit'
@@ -42,6 +44,7 @@ import {
   KIND_ICON,
   KIND_ACCENT,
   KIND_ACCENT_BG,
+  trackRecord,
   CHANNEL_LABEL,
 } from './constants'
 import type { AlertRule, AlertState, Intent, Severity } from './constants'
@@ -72,6 +75,8 @@ const SEV_COLOR: Record<Severity, string> = {
 
 const IDLE_DOT = 'var(--color-border-grey, #e4e4e7)'
 
+const WEEK_DAYS = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed']
+
 const STATE_COLOR: Record<AlertState, 'failed' | 'success' | 'neutral'> = {
   firing: 'failed',
   ok: 'success',
@@ -85,6 +90,22 @@ const STATE_LABEL: Record<AlertState, string> = {
   firing: 'firing',
   ok: 'healthy',
   muted: 'paused',
+}
+
+/** Au-delà, la règle sonne trop souvent pour qu'on lise encore ses incidents. */
+const NOISY_THRESHOLD = 5
+
+/**
+ * Ordre par défaut de la liste : ce qui va mal remonte. Ce qui sonne d'abord
+ * (critique avant warning), puis ce qui sonne trop pour être encore lu, puis ce
+ * qui ne prévient personne, le calme ensuite, et les alertes en pause en bas.
+ */
+const urgency = (a: AlertRule): number => {
+  if (a.state === 'muted') return 5
+  if (a.state === 'firing') return a.firingSeverity === 'critical' ? 0 : 1
+  if (a.firedLast7d >= NOISY_THRESHOLD) return 2
+  if (a.notifications.length === 0) return 3
+  return 4
 }
 
 const Proto = () => {
@@ -163,33 +184,33 @@ const AlertList = ({
   onDetail: (a: AlertRule | null) => void
 }) => {
   const [search, setSearch] = useState('')
+  // Filtre par produit : « Applies to » devient une dimension de tri, pas juste
+  // une colonne de texte. Les produits viennent des alertes elles-mêmes.
+  const [scope, setScope] = useState<string>('all')
+  const scopes = useMemo(() => [...new Set(ALERTS.map((a) => a.scope))].sort(), [])
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return ALERTS
-    return ALERTS.filter(
-      (a) =>
+    const found = ALERTS.filter((a) => {
+      const matchQ =
+        !q ||
         a.name.toLowerCase().includes(q) ||
         a.short.toLowerCase().includes(q) ||
-        a.scope.toLowerCase().includes(q),
-    )
-  }, [search])
+        a.scope.toLowerCase().includes(q)
+      return matchQ && (scope === 'all' || a.scope === scope)
+    })
+    return [...found].sort((a, b) => urgency(a) - urgency(b) || a.name.localeCompare(b.name))
+  }, [search, scope])
 
   const columns = [
     {
       title: 'Alert',
       dataIndex: 'name',
       key: 'name',
-      render: (v: string, a: AlertRule) => (
-        <span className={css.nameLine}>
-          {/* Pastille = sévérité en cours, grise quand l'alerte ne sonne pas. */}
-          <span
-            className={obs.sevDot}
-            style={{ background: a.firingSeverity ? SEV_COLOR[a.firingSeverity] : IDLE_DOT }}
-          />
-          {v}
-        </span>
-      ),
+      // Un seul élément fort par ligne : le nom. La pastille de sévérité
+      // doublait le Status, seul signal coloré de la ligne (règle héritée du
+      // proto Observability).
+      render: (v: string) => <span className={css.nameLine}>{v}</span>,
     },
     {
       // La condition en clair, sur une ligne : c'est ce que la colonne
@@ -197,22 +218,37 @@ const AlertList = ({
       title: 'Condition',
       dataIndex: 'short',
       key: 'short',
-      render: (v: string) => <span className={css.truncate}>{v}</span>,
+      render: (v: string) => <span className={`${css.truncate} ${css.dim}`}>{v}</span>,
     },
     {
-      title: 'Applies to',
-      dataIndex: 'scope',
-      key: 'scope',
-      width: 190,
-      render: (v: string, a: AlertRule) => (
-        <span className={css.truncate}>
-          {v}
-          <span className={obs.cardSub}>
-            {' '}
-            · {a.scopeCount} {a.kind === 'agent' ? 'agents' : 'tests'}
-          </span>
+      // L'en-tête porte son filtre (même geste que la colonne Status de l'index
+      // kapptiDrafts) : on regarde le parc d'un produit sans quitter la page.
+      title: (
+        <span className={css.filterHead}>
+          Applies to
+          <Dropdown
+            menu={{
+              selectable: true as const,
+              selectedKeys: [scope],
+              onClick: ({ key }: { key: string }) => setScope(key),
+              items: [
+                { key: 'all', label: 'All products' },
+                { type: 'divider' as const },
+                ...scopes.map((sc) => ({ key: sc, label: sc })),
+              ],
+            }}
+            placement="bottomRight"
+          >
+            <span className={css.filterTrigger}>
+              <FilterIcon filter={scope === 'all' ? '' : 'filter'} />
+            </span>
+          </Dropdown>
         </span>
       ),
+      dataIndex: 'scope',
+      key: 'scope',
+      width: 170,
+      render: (v: string) => <span className={`${css.truncate} ${css.dim}`}>{v}</span>,
     },
     {
       title: 'Notifies',
@@ -220,27 +256,63 @@ const AlertList = ({
       width: 170,
       render: (_v: unknown, a: AlertRule) =>
         a.notifications.length === 0 ? (
-          // Le seul défaut qu'on signale dans la liste : une alerte muette.
-          <StatusTag variant="ghost" color="warning">
-            nobody
-          </StatusTag>
+          // Le seul défaut qu'on signale dans la liste : une alerte muette. En
+          // texte, au même corps que les autres cellules : le StatusTag faisait
+          // une pastille plus grosse que tout le reste de la ligne.
+          <span className={css.nobody}>nobody</span>
         ) : (
-          <span className={css.truncate}>
-            {a.notifications[0].target}
+          <span className={css.notifies}>
+            <span className={`${css.truncate} ${css.dim}`}>{a.notifications[0].target}</span>
+            {/* Les destinations suivantes tiennent dans une bulle, même signe que
+                le compteur d'incidents regroupés. */}
             {a.notifications.length > 1 && (
-              <span className={obs.cardSub}> +{a.notifications.length - 1}</span>
+              <span className={css.countPill}>+{a.notifications.length - 1}</span>
             )}
           </span>
         ),
     },
     {
+      // Le track record entre dans la liste : sept jours de comportement réel,
+      // un seul élément graphique. C'est ce qui distingue une règle utile d'une
+      // règle qui sonne tous les jours ou qui n'a jamais servi.
+      title: 'Last 7 days',
+      dataIndex: 'week',
+      key: 'week',
+      width: 120,
+      render: (week: number[], a: AlertRule) => (
+        <span className={css.spark} title={trackRecord(a.firedLast7d).text}>
+          {week.map((n, i) => (
+            <span
+              key={i}
+              className={css.sparkBar}
+              style={{
+                height: n === 0 ? 3 : n === 1 ? 10 : 16,
+                background: n === 0 ? IDLE_DOT : n === 1 ? SEV_COLOR.warning : SEV_COLOR.critical,
+              }}
+            />
+          ))}
+        </span>
+      ),
+    },
+    {
       title: 'Status',
       dataIndex: 'state',
       key: 'state',
-      width: 100,
-      render: (v: AlertState) => (
-        <StatusTag variant="ghost" color={STATE_COLOR[v]}>
-          {STATE_LABEL[v]}
+      width: 150,
+      // « Firing » seul ne disait pas si on est en warning ou en critique : la
+      // sévérité en cours donne sa couleur ET son mot au statut.
+      render: (v: AlertState, a: AlertRule) => (
+        <StatusTag
+          variant="ghost"
+          color={
+            v === 'firing'
+              ? a.firingSeverity === 'critical'
+                ? 'failed'
+                : 'warning'
+              : STATE_COLOR[v]
+          }
+        >
+          {v === 'firing' ? `firing · ${a.firingSeverity}` : STATE_LABEL[v]}
         </StatusTag>
       ),
     },
@@ -266,11 +338,12 @@ const AlertList = ({
         columns={columns}
         data={rows}
         showHeader
+        compact
         onClickRow={onDetail}
         emptyState={{
           icon: <IconSearchX color="var(--color-text-secondary)" />,
           text: 'No alert matches',
-          description: 'Try another search.',
+          description: 'Try another search, or switch back to all products.',
         }}
       />
     </>
@@ -295,6 +368,7 @@ const AlertDrawer = ({
   // Une alerte qui n'a jamais rien fait n'a pas besoin d'un historique de 24
   // cases grises ni d'un tableau vide : une phrase suffit.
   const everFired = !!alert && alert.lastFired !== 'Never'
+  const record = trackRecord(alert?.firedLast7d ?? 0)
 
   return (
     <Drawer open={!!alert} onClose={onClose} width={720} title={alert?.name ?? ''}>
@@ -360,47 +434,41 @@ const AlertDrawer = ({
             )}
           </section>
 
-          {/* Une alerte se juge sur ce qu'elle a fait, pas sur sa définition. */}
+          {/* Le track record en tête, avec son verdict : une alerte se juge sur
+              ce qu'elle a fait, pas sur sa définition. */}
           <section className={css.drawerSection}>
-            <div className={css.sectionLabel}>Track record</div>
+            <div className={css.recordHead}>
+              <div>
+                <div className={css.sectionLabel}>Track record</div>
+                <div className={css.recordVerdict} data-tone={record.tone}>
+                  {record.text}
+                </div>
+                {everFired && (
+                  <div className={obs.cardSub}>Last one {alert.lastFired?.toLowerCase()}.</div>
+                )}
+              </div>
+              <div className={css.recordSpark}>
+                {alert.week.map((n, i) => (
+                  <span key={i} className={css.recordCol}>
+                    <span
+                      className={css.recordBar}
+                      style={{
+                        height: n === 0 ? 4 : n === 1 ? 22 : 38,
+                        background: n === 0 ? IDLE_DOT : n === 1 ? SEV_COLOR.warning : SEV_COLOR.critical,
+                      }}
+                    />
+                    <span className={css.recordDay}>{WEEK_DAYS[i]}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+
             {!everFired ? (
               <div className={obs.cardSub}>
-                Never fired since it was created. Either all is well, or the thresholds are out of reach.
+                Either all is well, or the thresholds are out of reach. Nothing has crossed them yet.
               </div>
             ) : (
               <>
-                <div className={css.strip}>
-                  {alert.history.map((h, i) => (
-                    <span
-                      key={i}
-                      className={css.stripBar}
-                      style={{
-                        background: h === 2 ? SEV_COLOR.critical : h === 1 ? SEV_COLOR.warning : IDLE_DOT,
-                        height: h === 0 ? 8 : h === 1 ? 18 : 26,
-                      }}
-                    />
-                  ))}
-                </div>
-                <div className={obs.cardSub}>
-                  Last 24 evaluations. {alert.firedLast7d} incidents in the last 7 days, last one{' '}
-                  {alert.lastFired?.toLowerCase()}.
-                </div>
-
-                {/* Aller voir les incidents que cette règle a ouverts, plutôt que
-                    de les chercher à la main dans l'autre onglet. */}
-                <div className={css.drawerLinks}>
-                  <Button color="secondary" size="s" onClick={onSeeIncidents}>
-                    See incidents
-                    <Button.Icon icon={IconArrowRight} />
-                  </Button>
-                  {alert.firedLast7d >= 5 && (
-                    <Button color="secondary" size="s" onClick={onTuneNoise}>
-                      Silence expected errors
-                      <Button.Icon icon={IconArrowRight} />
-                    </Button>
-                  )}
-                </div>
-
                 {incidents.length > 0 && (
                   <div className={css.incidentList}>
                     {incidents.map((i) => (
@@ -415,6 +483,21 @@ const AlertDrawer = ({
                     ))}
                   </div>
                 )}
+
+                {/* Aller voir les incidents que cette règle a ouverts, plutôt que
+                    de les chercher à la main dans l'autre onglet. */}
+                <div className={css.drawerLinks}>
+                  <Button color="secondary" size="s" onClick={onSeeIncidents}>
+                    See incidents
+                    <Button.Icon icon={IconArrowRight} />
+                  </Button>
+                  {record.tone === 'noisy' && (
+                    <Button color="secondary" size="s" onClick={onTuneNoise}>
+                      Silence expected errors
+                      <Button.Icon icon={IconArrowRight} />
+                    </Button>
+                  )}
+                </div>
               </>
             )}
           </section>
