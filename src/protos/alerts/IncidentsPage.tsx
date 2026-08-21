@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   Button,
+  Text,
   Tag,
   Dropdown,
   Table,
@@ -12,6 +13,7 @@ import {
   EmptyState,
   IconAlertTriangle,
   IconMoreVertical,
+  IconCircleSlash,
   IconCalendarDays,
   IconTimer,
 } from '@kapptivate/ui-kit'
@@ -157,7 +159,14 @@ const IncidentsPage = ({
       key: 'alert',
       onCell: bandCell,
       render: (v: string, r: Row) => {
-        if (r.band) return <span className={css.bandLabel}>{r.band}</span>
+        // Même composant que la séparation par journée des Executions :
+        // Text xs / medium / secondary dans une cellule de 25 px.
+        if (r.band)
+          return (
+            <Text size="xs" weight="medium" color="secondary">
+              {r.band}
+            </Text>
+          )
         const g = r as Group
         return (
         <div className={css.incidentCell}>
@@ -166,13 +175,15 @@ const IncidentsPage = ({
           <span
             className={css.typeBadge}
             style={{
-              background: g.status === 'ongoing' ? SEV_COLOR[g.severity] : 'var(--color-surface-grey, #f4f4f5)',
+              // surface-grey était presque blanc : la pastille disparaissait.
+              background:
+                g.status === 'ongoing' ? SEV_COLOR[g.severity] : 'var(--color-grey-200, #e4e4e7)',
             }}
             title={g.severity}
           >
             <IconAlertTriangle
               size={15}
-              color={g.status === 'ongoing' ? '#fff' : 'var(--color-text-third)'}
+              color={g.status === 'ongoing' ? '#fff' : 'var(--color-grey-400, #98a2b3)'}
             />
           </span>
           <span className={css.incidentText}>
@@ -232,9 +243,13 @@ const IncidentsPage = ({
       onCell: hiddenCell,
       render: (v: Group['status'], r: Row) =>
         r.band ? null : (
+        // Annulé reste dans la famille verte (l'incident est refermé, ce n'est
+        // pas un problème), mais son icône barrée le distingue d'un incident
+        // réellement résolu.
         <StatusTag
           variant="outline"
-          color={v === 'ongoing' ? 'failed' : v === 'resolved' ? 'success' : 'neutral'}
+          color={v === 'ongoing' ? 'failed' : 'success'}
+          icon={v === 'canceled' ? <IconCircleSlash size={12} /> : undefined}
         >
           {v}
         </StatusTag>
@@ -374,10 +389,6 @@ const IncidentsPage = ({
           showHeader
           conditionalRowClassNames={[
             { condition: (r: Row) => !!r.band, className: css.bandRow },
-            {
-              condition: (r: Row) => !r.band && (r as Group).status !== 'ongoing',
-              className: css.closedRow,
-            },
           ]}
         />
       ) : (

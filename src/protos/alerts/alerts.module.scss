@@ -940,26 +940,15 @@ $critical: var(--color-error, #e0372e);
   white-space: nowrap;
 }
 
-/* Bande de séparation par journée, comme la page Executions du produit : nette
-   mais plus basse qu'une ligne de contenu. */
+/* Bande de séparation par journée, à l'identique de la page Executions :
+   fond surface-grey, hauteur 25 px, 4 px de padding vertical. */
 .bandRow :global(td) {
-  background: $grey;
+  background-color: var(--color-surface-grey);
+  height: 25px;
   padding-top: 4px !important;
   padding-bottom: 4px !important;
 }
 
-.bandLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: $muted;
-}
-
-/* Incident refermé : il garde sa place dans la journée mais perd sa couleur,
-   pour qu'on se concentre sur ce qui est ouvert. */
-.closedRow {
-  opacity: 0.65;
-
-  &:hover {
-    opacity: 1;
-  }
-}
+/* Incident refermé : sa pastille de type passe en gris, ce qui suffit à le
+   distinguer. Pas d'opacité sur la ligne : le texte devenait délavé et illisible
+   alors qu'il reste consultable. */
